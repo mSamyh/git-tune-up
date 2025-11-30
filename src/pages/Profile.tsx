@@ -23,7 +23,7 @@ interface Profile {
   full_name: string;
   phone: string;
   blood_group: string;
-  district: string;
+  district: string | null;
   atoll: string | null;
   island: string | null;
   address: string | null;

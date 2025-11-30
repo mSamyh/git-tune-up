@@ -91,7 +91,7 @@ const Register = () => {
         blood_group: formData.bloodGroup,
         atoll: selectedAtoll,
         island: selectedIsland,
-        district: selectedAtoll && selectedIsland ? `${selectedAtoll} - ${selectedIsland}` : "",
+        district: selectedAtoll && selectedIsland ? `${selectedAtoll} - ${selectedIsland}` : null,
         address: null,
       });
 

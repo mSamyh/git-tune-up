@@ -63,9 +63,10 @@ export const CSVImporter = () => {
           }
         });
 
-        if (donor.full_name && donor.phone && donor.blood_group && donor.district) {
+        if (donor.full_name && donor.phone && donor.blood_group) {
           donors.push({
             ...donor,
+            district: donor.district || null,
             is_available: true,
             is_registered: false,
             availability_status: null,
@@ -77,7 +78,7 @@ export const CSVImporter = () => {
         toast({
           variant: "destructive",
           title: "No valid donors found",
-          description: "Make sure your CSV has: name, phone, blood_group, district columns",
+          description: "Make sure your CSV has: name, phone, blood_group columns",
         });
         return;
       }
@@ -125,7 +126,7 @@ export const CSVImporter = () => {
           Import Donors from CSV
         </CardTitle>
         <CardDescription>
-          Upload a CSV file with columns: name, phone, blood_group, district (optional: address, atoll, island)
+          Upload a CSV file with columns: name, phone, blood_group (optional: district, address, atoll, island)
         </CardDescription>
       </CardHeader>
       <CardContent>
