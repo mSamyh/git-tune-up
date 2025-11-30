@@ -39,6 +39,7 @@ const DonorDirectory = () => {
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
+      .eq("user_type", "donor")
       .order("created_at", { ascending: false });
 
     if (!error && data) {
