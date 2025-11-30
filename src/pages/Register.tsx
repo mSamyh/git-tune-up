@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Droplet } from "lucide-react";
+import { LocationSelector } from "@/components/LocationSelector";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -20,6 +21,8 @@ const Register = () => {
     bloodGroup: "",
     otp: "",
   });
+  const [selectedAtoll, setSelectedAtoll] = useState("");
+  const [selectedIsland, setSelectedIsland] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -80,13 +83,15 @@ const Register = () => {
         throw new Error("User not authenticated");
       }
 
-      // Create profile with default district
+      // Create profile with location
       const { error: profileError } = await supabase.from("profiles").insert({
         id: user.id,
         full_name: formData.fullName,
         phone: formData.phone,
         blood_group: formData.bloodGroup,
-        district: "Dhaka", // Default district, can be updated in profile
+        atoll: selectedAtoll,
+        island: selectedIsland,
+        district: selectedAtoll && selectedIsland ? `${selectedAtoll} - ${selectedIsland}` : "",
         address: null,
       });
 
@@ -184,7 +189,17 @@ const Register = () => {
               </Select>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading || !otpSent}>
+            <div className="space-y-2">
+              <Label>Location</Label>
+              <LocationSelector
+                selectedAtoll={selectedAtoll}
+                selectedIsland={selectedIsland}
+                onAtollChange={setSelectedAtoll}
+                onIslandChange={setSelectedIsland}
+              />
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading || !otpSent || !selectedAtoll || !selectedIsland}>
               {loading ? "Registering..." : "Complete Registration"}
             </Button>
           </form>

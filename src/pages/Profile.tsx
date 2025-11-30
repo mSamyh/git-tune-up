@@ -15,12 +15,15 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { BottomNav } from "@/components/BottomNav";
 import { AvatarUpload } from "@/components/AvatarUpload";
+import { LocationSelector } from "@/components/LocationSelector";
 
 interface Profile {
   full_name: string;
   phone: string;
   blood_group: string;
   district: string;
+  atoll: string | null;
+  island: string | null;
   address: string | null;
   is_available: boolean;
   avatar_url: string | null;
@@ -47,6 +50,8 @@ const Profile = () => {
   const [hospitalName, setHospitalName] = useState("");
   const [availabilityStatus, setAvailabilityStatus] = useState("available");
   const [userType, setUserType] = useState("donor");
+  const [selectedAtoll, setSelectedAtoll] = useState("");
+  const [selectedIsland, setSelectedIsland] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -79,6 +84,8 @@ const Profile = () => {
       setProfile(data);
       setAvailabilityStatus(data.availability_status || 'available');
       setUserType(data.user_type || 'donor');
+      setSelectedAtoll(data.atoll || '');
+      setSelectedIsland(data.island || '');
       if (data.last_donation_date) {
         setLastDonationDate(new Date(data.last_donation_date));
       }
@@ -238,6 +245,42 @@ const Profile = () => {
     }
   };
 
+  const updateLocation = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user || !selectedAtoll || !selectedIsland) {
+      toast({
+        variant: "destructive",
+        title: "Missing information",
+        description: "Please select both atoll and island",
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ 
+        atoll: selectedAtoll,
+        island: selectedIsland,
+        district: `${selectedAtoll} - ${selectedIsland}`
+      })
+      .eq("id", user.id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: "Location updated",
+        description: "Your location has been updated successfully",
+      });
+      fetchProfile();
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -337,13 +380,37 @@ const Profile = () => {
                   <MapPin className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-sm text-muted-foreground">Location</p>
-                    <p className="font-semibold">{profile.district}</p>
+                    <p className="font-semibold">
+                      {profile.atoll && profile.island
+                        ? `${profile.atoll} - ${profile.island}`
+                        : profile.district || "Not set"}
+                    </p>
                     {profile.address && (
                       <p className="text-sm text-muted-foreground">{profile.address}</p>
                     )}
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-4 p-4 border rounded-lg">
+              <div>
+                <Label className="text-base font-semibold">Update Location</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Select your atoll and island
+                </p>
+              </div>
+              
+              <LocationSelector
+                selectedAtoll={selectedAtoll}
+                selectedIsland={selectedIsland}
+                onAtollChange={setSelectedAtoll}
+                onIslandChange={setSelectedIsland}
+              />
+              
+              <Button onClick={updateLocation} className="w-full">
+                Save Location
+              </Button>
             </div>
 
             <div className="space-y-4 p-4 border rounded-lg">
