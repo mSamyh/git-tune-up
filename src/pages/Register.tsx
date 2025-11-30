@@ -61,20 +61,33 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Verify OTP
-      const { data: otpData, error: otpError } = await supabase
+      // Verify OTP - check for exact match
+      const { data: otpRecords, error: fetchError } = await supabase
         .from("otp_verifications")
         .select("*")
         .eq("phone", formData.phone)
         .eq("otp", formData.otp)
         .eq("verified", false)
-        .gte("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
+        .order("created_at", { ascending: false });
 
-      if (otpError || !otpData) {
-        throw new Error("Invalid or expired OTP");
+      if (fetchError) {
+        console.error("OTP fetch error:", fetchError);
+        throw new Error("Failed to verify OTP");
+      }
+
+      if (!otpRecords || otpRecords.length === 0) {
+        throw new Error("Invalid OTP code. Please check and try again.");
+      }
+
+      // Get the most recent OTP
+      const otpData = otpRecords[0];
+
+      // Check if OTP is expired
+      const expiresAt = new Date(otpData.expires_at);
+      const now = new Date();
+      
+      if (now > expiresAt) {
+        throw new Error("OTP has expired. Please request a new code.");
       }
 
       // Get current user
