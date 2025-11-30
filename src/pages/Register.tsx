@@ -61,33 +61,16 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Verify OTP - check for exact match
-      const { data: otpRecords, error: fetchError } = await supabase
-        .from("otp_verifications")
-        .select("*")
-        .eq("phone", formData.phone)
-        .eq("otp", formData.otp)
-        .eq("verified", false)
-        .order("created_at", { ascending: false });
+      // Verify OTP via backend function
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke("verify-otp", {
+        body: { phone: formData.phone, otp: formData.otp },
+      });
 
-      if (fetchError) {
-        console.error("OTP fetch error:", fetchError);
-        throw new Error("Failed to verify OTP");
-      }
-
-      if (!otpRecords || otpRecords.length === 0) {
-        throw new Error("Invalid OTP code. Please check and try again.");
-      }
-
-      // Get the most recent OTP
-      const otpData = otpRecords[0];
-
-      // Check if OTP is expired
-      const expiresAt = new Date(otpData.expires_at);
-      const now = new Date();
-      
-      if (now > expiresAt) {
-        throw new Error("OTP has expired. Please request a new code.");
+      if (verifyError || !verifyData?.success) {
+        const message =
+          (verifyData as any)?.error ||
+          (verifyError instanceof Error ? verifyError.message : "Failed to verify OTP");
+        throw new Error(message);
       }
 
       // Get current user
@@ -109,11 +92,6 @@ const Register = () => {
 
       if (profileError) throw profileError;
 
-      // Mark OTP as verified
-      await supabase
-        .from("otp_verifications")
-        .update({ verified: true })
-        .eq("id", otpData.id);
 
       toast({
         title: "Registration complete!",
