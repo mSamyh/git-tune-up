@@ -459,6 +459,7 @@ const Profile = () => {
                     if (!user) return;
 
                     // Update profile with last donation date
+                    // The database trigger will automatically add it to donation_history
                     const { error: profileError } = await supabase
                       .from("profiles")
                       .update({ last_donation_date: format(lastDonationDate, "yyyy-MM-dd") })
@@ -473,26 +474,14 @@ const Profile = () => {
                       return;
                     }
 
-                    // Add to donation history automatically
-                    const { error: historyError } = await supabase
-                      .from("donation_history")
-                      .insert({
-                        donor_id: user.id,
-                        donation_date: format(lastDonationDate, "yyyy-MM-dd"),
-                        hospital_name: "Added from profile",
-                        units_donated: 1
-                      });
-
-                    if (historyError) {
-                      console.error("Failed to add to history:", historyError);
-                    }
-
                     toast({
                       title: "Date updated",
                       description: "Your last donation date has been updated and added to history",
                     });
-                    fetchProfile();
-                    fetchDonationCount();
+                    
+                    // Refresh all data
+                    await fetchProfile();
+                    await fetchDonationCount();
                   }} 
                   className="flex-1"
                 >
@@ -509,7 +498,10 @@ const Profile = () => {
                       // Clear last donation date
                       const { error } = await supabase
                         .from("profiles")
-                        .update({ last_donation_date: null })
+                        .update({ 
+                          last_donation_date: null,
+                          availability_status: 'available'
+                        })
                         .eq("id", user.id);
 
                       if (error) {
@@ -526,7 +518,10 @@ const Profile = () => {
                         title: "Date cleared",
                         description: "Your last donation date has been cleared",
                       });
-                      fetchProfile();
+                      
+                      // Refresh all data
+                      await fetchProfile();
+                      await fetchDonationCount();
                     }}
                   >
                     Clear
