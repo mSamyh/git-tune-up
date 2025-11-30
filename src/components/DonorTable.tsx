@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Medal, ChevronLeft, ChevronRight } from "lucide-react";
 import { DonorProfileDialog } from "./DonorProfileDialog";
+import { TopDonorBadge, getTopDonorRank } from "./TopDonorBadge";
 
 interface Donor {
   id: string;
@@ -178,17 +179,10 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
     }
   };
 
-  const getTopDonorBadge = (index: number) => {
-    if (index === 0) return <Medal className="h-4 w-4 text-yellow-500" />;
-    if (index === 1) return <Medal className="h-4 w-4 text-gray-400" />;
-    if (index === 2) return <Medal className="h-4 w-4 text-amber-700" />;
-    return null;
-  };
-
-  // Sort by donation count to get top donors (only from unique combined list)
+  // Sort by donation count to get top 5 donors (only from unique combined list)
   const topDonors = [...donors]
     .sort((a, b) => (b.donation_count || 0) - (a.donation_count || 0))
-    .slice(0, 3);
+    .slice(0, 5);
 
   if (loading) {
     return (
@@ -224,8 +218,7 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
           </TableHeader>
           <TableBody>
             {paginatedDonors.map((donor, index) => {
-              const isTopDonor = topDonors.some(td => td.id === donor.id);
-              const topDonorIndex = topDonors.findIndex(td => td.id === donor.id);
+              const topDonorRank = getTopDonorRank(donor.id, topDonors);
               
               return (
                 <TableRow key={donor.id} className="cursor-pointer hover:bg-muted/50">
@@ -238,10 +231,8 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
                         <AvatarImage src={donor.avatar_url || undefined} />
                         <AvatarFallback>{donor.full_name.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      {isTopDonor && (
-                        <div className="absolute -top-1 -right-1">
-                          {getTopDonorBadge(topDonorIndex)}
-                        </div>
+                      {topDonorRank > 0 && (
+                        <TopDonorBadge rank={topDonorRank} className="absolute -top-1 -right-1" />
                       )}
                     </div>
                     <div>
@@ -299,6 +290,7 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
           donor={selectedDonor}
           isOpen={!!selectedDonor}
           onClose={() => setSelectedDonor(null)}
+          topDonors={topDonors}
         />
       )}
     </div>

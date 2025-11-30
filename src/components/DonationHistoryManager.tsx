@@ -177,8 +177,19 @@ export const DonationHistoryManager = () => {
                   mode="single"
                   selected={donationDate}
                   onSelect={setDonationDate}
-                  disabled={(date) => date > new Date()}
+                  disabled={(date) => {
+                    // Can't select future dates
+                    if (date > new Date()) return true;
+                    // Can't select dates older than existing last_donation_date
+                    const donor = donors.find(d => d.id === selectedDonor);
+                    if (donor?.last_donation_date) {
+                      const existingDate = new Date(donor.last_donation_date);
+                      if (date < existingDate) return true;
+                    }
+                    return false;
+                  }}
                   initialFocus
+                  className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>
             </Popover>
