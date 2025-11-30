@@ -86,8 +86,8 @@ const Auth = () => {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary">
             <Droplet className="h-8 w-8 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">Blood Donor System</CardTitle>
-          <CardDescription>Login or create an account to continue</CardDescription>
+          <CardTitle className="text-2xl">LeyHadhiiya</CardTitle>
+          <CardDescription>Blood donors network - Login or create an account to continue</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">

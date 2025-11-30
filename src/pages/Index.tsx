@@ -43,8 +43,8 @@ const Index = () => {
             <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary animate-pulse">
               <Droplet className="h-12 w-12 text-primary-foreground" />
             </div>
-            <h1 className="text-5xl font-bold mb-4 text-foreground">Blood Donor Management</h1>
-            <p className="text-xl text-muted-foreground mb-8">Save lives by donating blood</p>
+            <h1 className="text-5xl font-bold mb-4 text-foreground">LeyHadhiiya</h1>
+            <p className="text-xl text-muted-foreground mb-8">Blood donors network - Save lives by donating blood</p>
             <div className="flex gap-4 justify-center">
               <Button size="lg" onClick={() => navigate("/auth")}>
                 <Heart className="mr-2 h-5 w-5" />
@@ -86,7 +86,10 @@ const Index = () => {
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
               <Droplet className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold">Blood Donor</span>
+            <div className="flex flex-col items-start">
+              <span className="text-xl font-bold">LeyHadhiiya</span>
+              <span className="text-xs text-muted-foreground">Blood donors network</span>
+            </div>
           </button>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={handleLogout}>
