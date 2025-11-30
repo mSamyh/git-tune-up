@@ -74,7 +74,7 @@ const Index = () => {
             <Button 
               variant="link" 
               onClick={() => navigate("/faq")}
-              className="text-primary hover:underline"
+              className="text-primary hover:underline p-0 h-auto"
             >
               FAQ
             </Button>
@@ -105,7 +105,7 @@ const Index = () => {
           <Button 
             variant="link" 
             onClick={() => navigate("/faq")}
-            className="text-primary hover:underline"
+            className="text-primary hover:underline p-0 h-auto"
           >
             FAQ
           </Button>
