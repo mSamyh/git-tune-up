@@ -74,6 +74,7 @@ export type Database = {
           hospital_name: string
           id: string
           notes: string | null
+          units_donated: number | null
         }
         Insert: {
           blood_request_id?: string | null
@@ -83,6 +84,7 @@ export type Database = {
           hospital_name: string
           id?: string
           notes?: string | null
+          units_donated?: number | null
         }
         Update: {
           blood_request_id?: string | null
@@ -92,6 +94,7 @@ export type Database = {
           hospital_name?: string
           id?: string
           notes?: string | null
+          units_donated?: number | null
         }
         Relationships: [
           {
@@ -140,6 +143,9 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          availability_status: string | null
+          available_date: string | null
+          avatar_url: string | null
           blood_group: string
           created_at: string | null
           district: string
@@ -152,6 +158,9 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          availability_status?: string | null
+          available_date?: string | null
+          avatar_url?: string | null
           blood_group: string
           created_at?: string | null
           district: string
@@ -164,6 +173,9 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          availability_status?: string | null
+          available_date?: string | null
+          avatar_url?: string | null
           blood_group?: string
           created_at?: string | null
           district?: string
@@ -202,6 +214,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_donation_count: { Args: { donor_uuid: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
