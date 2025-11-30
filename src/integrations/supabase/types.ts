@@ -113,6 +113,54 @@ export type Database = {
           },
         ]
       }
+      donor_directory: {
+        Row: {
+          address: string | null
+          availability_status: string | null
+          available_date: string | null
+          avatar_url: string | null
+          blood_group: string
+          created_at: string | null
+          district: string
+          full_name: string
+          id: string
+          is_available: boolean | null
+          last_donation_date: string | null
+          phone: string
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          availability_status?: string | null
+          available_date?: string | null
+          avatar_url?: string | null
+          blood_group: string
+          created_at?: string | null
+          district: string
+          full_name: string
+          id?: string
+          is_available?: boolean | null
+          last_donation_date?: string | null
+          phone: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          availability_status?: string | null
+          available_date?: string | null
+          avatar_url?: string | null
+          blood_group?: string
+          created_at?: string | null
+          district?: string
+          full_name?: string
+          id?: string
+          is_available?: boolean | null
+          last_donation_date?: string | null
+          phone?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       otp_verifications: {
         Row: {
           created_at: string | null
