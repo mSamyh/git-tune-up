@@ -47,9 +47,10 @@ serve(async (req) => {
     }
 
     const textbeeApiKey = Deno.env.get('TEXTBEE_API_KEY');
+    const textbeeDeviceId = Deno.env.get('TEXTBEE_DEVICE_ID');
     
-    if (!textbeeApiKey) {
-      throw new Error('TEXTBEE_API_KEY not configured');
+    if (!textbeeApiKey || !textbeeDeviceId) {
+      throw new Error('TEXTBEE_API_KEY and TEXTBEE_DEVICE_ID must be configured');
     }
 
     const message = `URGENT: Blood needed! ${bloodGroup} blood required at ${requestDetails.hospitalName}. Patient: ${requestDetails.patientName}. Contact: ${requestDetails.contactName} (${requestDetails.contactPhone})`;
@@ -57,26 +58,22 @@ serve(async (req) => {
     // Send SMS to all matching donors
     const phoneNumbers = donors.map(d => d.phone);
 
-    // Send individual SMS to each donor
-    const smsPromises = phoneNumbers.map(phone => 
-      fetch('https://api.textbee.dev/api/v2/sms/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${textbeeApiKey}`,
-        },
-        body: JSON.stringify({
-          to: phone,
-          text: message,
-        }),
-      })
-    );
+    const response = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${textbeeDeviceId}/send-sms`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': textbeeApiKey,
+      },
+      body: JSON.stringify({
+        recipients: phoneNumbers,
+        message: message,
+      }),
+    });
 
-    const responses = await Promise.all(smsPromises);
-    const failed = responses.filter(r => !r.ok);
-    
-    if (failed.length > 0) {
-      console.error(`Failed to send ${failed.length} SMS messages`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Textbee error:', errorText);
+      throw new Error('Failed to send SMS notifications');
     }
 
     console.log(`Blood request SMS sent to ${phoneNumbers.length} donors`);
