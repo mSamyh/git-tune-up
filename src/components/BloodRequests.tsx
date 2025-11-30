@@ -130,16 +130,18 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
         description: error.message,
       });
     } else {
-      // Create notification for requestor
-      await supabase
-        .from("notifications")
-        .insert({
-          user_id: selectedRequest.requested_by,
-          type: "response_update",
-          title: "New Response to Your Blood Request",
-          message: `A donor has responded to your request for ${selectedRequest.blood_group}`,
-          related_request_id: selectedRequest.id,
-        });
+      // Create notification for requestor if they exist
+      if (selectedRequest.requested_by) {
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: selectedRequest.requested_by,
+            type: "response_update",
+            title: "New Response to Your Blood Request",
+            message: `A donor has responded to your request for ${selectedRequest.blood_group}`,
+            related_request_id: selectedRequest.id,
+          });
+      }
 
       toast({
         title: "Response sent",

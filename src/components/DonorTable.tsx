@@ -4,10 +4,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Medal } from "lucide-react";
+import { Medal, ChevronLeft, ChevronRight } from "lucide-react";
 import { DonorProfileDialog } from "./DonorProfileDialog";
 
 interface Donor {
@@ -31,12 +30,17 @@ interface DonorTableProps {
   bloodGroupFilter?: string;
 }
 
+const ITEMS_PER_PAGE = 20;
+
 export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
   const [donors, setDonors] = useState<Donor[]>([]);
   const [filteredDonors, setFilteredDonors] = useState<Donor[]>([]);
+  const [paginatedDonors, setPaginatedDonors] = useState<Donor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalDonors, setTotalDonors] = useState(0);
 
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -51,6 +55,10 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
   useEffect(() => {
     filterAndSortDonors();
   }, [bloodGroupFilter]);
+
+  useEffect(() => {
+    paginateDonors();
+  }, [filteredDonors, currentPage]);
 
   const fetchDonors = async () => {
     // Fetch registered donors (from profiles where user_type is 'donor' or 'both')
@@ -140,7 +148,17 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
     });
 
     setFilteredDonors(filtered);
+    setTotalDonors(filtered.length);
+    setCurrentPage(1); // Reset to first page when filters change
   };
+
+  const paginateDonors = () => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    setPaginatedDonors(filteredDonors.slice(startIndex, endIndex));
+  };
+
+  const totalPages = Math.ceil(totalDonors / ITEMS_PER_PAGE);
 
   const getAvailabilityBadge = (donor: Donor) => {
     const status = donor.availability_status || 'available';
@@ -180,13 +198,16 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <Input
           placeholder="Search by name..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="flex-1"
         />
+        <div className="text-sm text-muted-foreground whitespace-nowrap">
+          Total Donors: <span className="font-semibold text-foreground">{totalDonors}</span>
+        </div>
       </div>
 
       <div className="rounded-lg border overflow-hidden">
@@ -196,19 +217,20 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
               <TableHead>Donor</TableHead>
               <TableHead>Blood Group</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Donations</TableHead>
-              <TableHead>Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredDonors.map((donor, index) => {
+            {paginatedDonors.map((donor, index) => {
               const isTopDonor = topDonors.some(td => td.id === donor.id);
               const topDonorIndex = topDonors.findIndex(td => td.id === donor.id);
               
               return (
-                <TableRow key={donor.id}>
-                  <TableCell className="flex items-center gap-3">
-                    <div className="relative">
+                <TableRow key={donor.id} className="cursor-pointer hover:bg-muted/50">
+                  <TableCell 
+                    className="flex items-center gap-3"
+                    onClick={() => setSelectedDonor(donor)}
+                  >
+                    <div className="relative cursor-pointer">
                       <Avatar className={donor.source === 'directory' ? "ring-2 ring-yellow-500" : ""}>
                         <AvatarImage src={donor.avatar_url || undefined} />
                         <AvatarFallback>{donor.full_name.charAt(0)}</AvatarFallback>
@@ -226,25 +248,15 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={() => setSelectedDonor(donor)}>
                     <Badge variant="outline">{donor.blood_group}</Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={() => setSelectedDonor(donor)}>
                     {donor.is_registered !== false ? (
                       getAvailabilityBadge(donor)
                     ) : (
                       <span className="text-muted-foreground text-sm">-</span>
                     )}
-                  </TableCell>
-                  <TableCell>{donor.donation_count || 0}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedDonor(donor)}
-                    >
-                      View
-                    </Button>
                   </TableCell>
                 </TableRow>
               );
@@ -252,6 +264,32 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
           </TableBody>
         </Table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {selectedDonor && (
         <DonorProfileDialog
