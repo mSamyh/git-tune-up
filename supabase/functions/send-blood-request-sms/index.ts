@@ -77,6 +77,20 @@ serve(async (req) => {
     // Send SMS to all matching available donors
     const phoneNumbers = donors.map(d => d.phone);
 
+    // Log SMS attempts for each donor
+    const smsLogPromises = donors.map(donor => 
+      supabase.from('sms_logs').insert({
+        recipient_phone: donor.phone,
+        recipient_name: donor.full_name,
+        message_body: message,
+        status: 'pending',
+        blood_group: bloodGroup,
+        hospital_name: requestDetails.hospitalName
+      })
+    );
+
+    await Promise.all(smsLogPromises);
+
     const response = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${textbeeDeviceId}/send-sms`, {
       method: 'POST',
       headers: {
@@ -92,8 +106,30 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Textbee error:', errorText);
+      
+      // Update SMS logs to failed status
+      await supabase
+        .from('sms_logs')
+        .update({ 
+          status: 'failed',
+          failed_at: new Date().toISOString(),
+          error_message: errorText
+        })
+        .in('recipient_phone', phoneNumbers)
+        .eq('status', 'pending');
+      
       throw new Error('Failed to send SMS notifications');
     }
+
+    // Update SMS logs to sent status
+    await supabase
+      .from('sms_logs')
+      .update({ 
+        status: 'sent',
+        sent_at: new Date().toISOString()
+      })
+      .in('recipient_phone', phoneNumbers)
+      .eq('status', 'pending');
 
     console.log(`Blood request SMS sent to ${phoneNumbers.length} donors`);
 

@@ -405,7 +405,10 @@ const Profile = () => {
               <div>
                 <Label className="text-base font-semibold">Last Donation Date</Label>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Set your last blood donation date (admins manage full history)
+                  {donationCount === 0 
+                    ? "Set your first blood donation date. No future dates allowed."
+                    : "You can only update to a newer date. Cannot clear or backdate once you have donation history."
+                  }
                 </p>
               </div>
               
@@ -430,8 +433,8 @@ const Profile = () => {
                     disabled={(date) => {
                       // Can't select future dates
                       if (date > new Date()) return true;
-                      // Can't select dates older than existing last_donation_date
-                      if (profile?.last_donation_date) {
+                      // Can't select dates older than existing last_donation_date if history exists
+                      if (profile?.last_donation_date && donationCount > 0) {
                         const existingDate = new Date(profile.last_donation_date);
                         if (date < existingDate) return true;
                       }
@@ -488,12 +491,22 @@ const Profile = () => {
                   Update Last Donation Date
                 </Button>
 
-                {(profile?.last_donation_date || lastDonationDate) && (
+                {(profile?.last_donation_date || lastDonationDate) && donationCount === 0 && (
                   <Button 
                     variant="outline"
                     onClick={async () => {
                       const { data: { user } } = await supabase.auth.getUser();
                       if (!user) return;
+
+                      // Only allow clearing if donation count is 0
+                      if (donationCount > 0) {
+                        toast({
+                          variant: "destructive",
+                          title: "Cannot clear",
+                          description: "You can only clear last donation date when you have no donation history",
+                        });
+                        return;
+                      }
 
                       // Clear last donation date
                       const { error } = await supabase
@@ -528,6 +541,12 @@ const Profile = () => {
                   </Button>
                 )}
               </div>
+              
+              {donationCount > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  ℹ️ Clear button is only available when you have 0 donations. Contact an admin to delete donation history if needed.
+                </p>
+              )}
             </div>
 
             <DonationHistory donorId={profile.id} />
