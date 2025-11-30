@@ -310,11 +310,15 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {isRequestor(selectedRequest!) ? "Responses" : "Respond to Request"}
+              {selectedRequest
+                ? isRequestor(selectedRequest)
+                  ? "Responses"
+                  : "Respond to Request"
+                : "Blood Request"}
             </DialogTitle>
           </DialogHeader>
           
-          {isRequestor(selectedRequest!) ? (
+          {selectedRequest && isRequestor(selectedRequest) ? (
             <div className="space-y-4">
               {responses.map((response) => (
                 <Card key={response.id}>
@@ -365,7 +369,7 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
                   rows={4}
                 />
               </div>
-              <Button onClick={submitResponse} className="w-full">
+              <Button onClick={submitResponse} className="w-full" disabled={!selectedRequest}>
                 Send Response
               </Button>
             </div>
