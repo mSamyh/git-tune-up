@@ -43,7 +43,7 @@ const Index = () => {
             <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary animate-pulse">
               <Droplet className="h-12 w-12 text-primary-foreground" />
             </div>
-            <h1 className="text-5xl font-bold mb-4 text-foreground">LeyHadhiiya</h1>
+            <h1 className="text-5xl font-bold mb-4 text-foreground">LeyHadhiya</h1>
             <p className="text-xl text-muted-foreground mb-8">Blood donors network - Save lives by donating blood</p>
             <div className="flex gap-4 justify-center">
               <Button size="lg" onClick={() => navigate("/auth")}>
@@ -87,7 +87,7 @@ const Index = () => {
               <Droplet className="h-6 w-6 text-primary-foreground" />
             </div>
             <div className="flex flex-col items-start">
-              <span className="text-xl font-bold">LeyHadhiiya</span>
+              <span className="text-xl font-bold">LeyHadhiya</span>
               <span className="text-xs text-muted-foreground">Blood donors network</span>
             </div>
           </button>
