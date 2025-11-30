@@ -52,15 +52,15 @@ serve(async (req) => {
 
     const message = `Your Blood Donor verification code is: ${otp}. Valid for 10 minutes.`;
 
-    const response = await fetch('https://api.textbee.dev/api/v1/gateway/send', {
+    const response = await fetch('https://api.textbee.dev/api/v2/sms/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': textbeeApiKey,
+        'Authorization': `Bearer ${textbeeApiKey}`,
       },
       body: JSON.stringify({
-        recipients: [phone],
-        message: message,
+        to: phone,
+        text: message,
       }),
     });
 

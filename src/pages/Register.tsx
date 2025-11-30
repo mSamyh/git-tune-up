@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Droplet } from "lucide-react";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-const DISTRICTS = ["Dhaka", "Chittagong", "Rajshahi", "Khulna", "Barisal", "Sylhet", "Rangpur", "Mymensingh"];
 
 const Register = () => {
   const [loading, setLoading] = useState(false);
@@ -19,8 +18,6 @@ const Register = () => {
     fullName: "",
     phone: "",
     bloodGroup: "",
-    district: "",
-    address: "",
     otp: "",
   });
   const navigate = useNavigate();
@@ -87,14 +84,14 @@ const Register = () => {
         throw new Error("User not authenticated");
       }
 
-      // Create profile
+      // Create profile with default district
       const { error: profileError } = await supabase.from("profiles").insert({
         id: user.id,
         full_name: formData.fullName,
         phone: formData.phone,
         blood_group: formData.bloodGroup,
-        district: formData.district,
-        address: formData.address,
+        district: "Dhaka", // Default district, can be updated in profile
+        address: null,
       });
 
       if (profileError) throw profileError;
@@ -176,54 +173,24 @@ const Register = () => {
               </div>
             )}
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="bloodGroup">Blood Group</Label>
-                <Select
-                  value={formData.bloodGroup}
-                  onValueChange={(value) => setFormData({ ...formData, bloodGroup: value })}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select blood group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BLOOD_GROUPS.map((group) => (
-                      <SelectItem key={group} value={group}>
-                        {group}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="district">District</Label>
-                <Select
-                  value={formData.district}
-                  onValueChange={(value) => setFormData({ ...formData, district: value })}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select district" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DISTRICTS.map((district) => (
-                      <SelectItem key={district} value={district}>
-                        {district}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
+              <Label htmlFor="bloodGroup">Blood Group</Label>
+              <Select
+                value={formData.bloodGroup}
+                onValueChange={(value) => setFormData({ ...formData, bloodGroup: value })}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select blood group" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BLOOD_GROUPS.map((group) => (
+                    <SelectItem key={group} value={group}>
+                      {group}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading || !otpSent}>
