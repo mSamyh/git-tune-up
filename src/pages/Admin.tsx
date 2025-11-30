@@ -14,6 +14,7 @@ import { DonationHistoryManager } from "@/components/DonationHistoryManager";
 import { CSVImporter } from "@/components/CSVImporter";
 import { UserRoleManager } from "@/components/UserRoleManager";
 import { Textarea } from "@/components/ui/textarea";
+import { AppHeader } from "@/components/AppHeader";
 
 const Admin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -209,14 +210,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">

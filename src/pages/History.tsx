@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, Building2 } from "lucide-react";
+import { Calendar, Building2 } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AppHeader } from "@/components/AppHeader";
 
 interface DonationRecord {
   id: string;
@@ -48,11 +49,7 @@ const History = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background pb-20">
-        <header className="border-b bg-card">
-          <div className="container mx-auto px-4 py-4">
-            <Skeleton className="h-10 w-24" />
-          </div>
-        </header>
+        <AppHeader />
         <main className="container mx-auto px-4 py-8 max-w-2xl">
           <Skeleton className="h-64 w-full" />
         </main>
@@ -63,14 +60,7 @@ const History = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <Card>
