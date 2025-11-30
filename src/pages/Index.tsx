@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Droplet, Search, Heart, LogOut } from "lucide-react";
-import DonorDirectory from "@/components/DonorDirectory";
-import BloodRequests from "@/components/BloodRequests";
+import { DonorTable } from "@/components/DonorTable";
+import { BottomNav } from "@/components/BottomNav";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -74,7 +74,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -83,14 +83,8 @@ const Index = () => {
             </div>
             <span className="text-xl font-bold">Blood Donor</span>
           </div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate("/profile")}>
-              Profile
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/request-blood")}>
-              Request Blood
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/admin")}>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/admin")}>
               Admin
             </Button>
             <Button variant="ghost" size="icon" onClick={handleLogout}>
@@ -102,17 +96,13 @@ const Index = () => {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Blood Requests</h2>
-          <p className="text-muted-foreground">Active blood donation requests</p>
-        </div>
-        <BloodRequests />
-
-        <div className="mt-12 mb-8">
           <h2 className="text-3xl font-bold mb-2">Donor Directory</h2>
-          <p className="text-muted-foreground">Find donors by blood group and district</p>
+          <p className="text-muted-foreground">Find donors by blood group and availability</p>
         </div>
-        <DonorDirectory />
+        <DonorTable />
       </main>
+
+      <BottomNav />
     </div>
   );
 };
