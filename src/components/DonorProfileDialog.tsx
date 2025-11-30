@@ -17,6 +17,8 @@ interface Donor {
   available_date: string | null;
   last_donation_date: string | null;
   donation_count?: number;
+  source?: string;
+  is_registered?: boolean;
 }
 
 interface DonorProfileDialogProps {
@@ -35,13 +37,21 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose }: DonorProfileDialo
   }, [isOpen, donor.id]);
 
   const fetchDonationHistory = async () => {
-    const { data } = await supabase
-      .from("donor_directory_history")
-      .select("*")
-      .eq("donor_id", donor.id)
-      .order("donation_date", { ascending: false });
-
-    setDonationHistory(data || []);
+    if (donor.source === 'profile') {
+      const { data } = await supabase
+        .from("donation_history")
+        .select("*")
+        .eq("donor_id", donor.id)
+        .order("donation_date", { ascending: false });
+      setDonationHistory(data || []);
+    } else {
+      const { data } = await supabase
+        .from("donor_directory_history")
+        .select("*")
+        .eq("donor_id", donor.id)
+        .order("donation_date", { ascending: false });
+      setDonationHistory(data || []);
+    }
   };
 
   const getAvailabilityText = () => {
@@ -73,7 +83,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose }: DonorProfileDialo
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <Avatar className="h-20 w-20">
+              <Avatar className={`h-20 w-20 ${donor.source === 'directory' ? 'ring-2 ring-yellow-500' : ''}`}>
                 <AvatarImage src={donor.avatar_url || undefined} />
                 <AvatarFallback className="text-2xl">{donor.full_name.charAt(0)}</AvatarFallback>
               </Avatar>
@@ -85,6 +95,11 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose }: DonorProfileDialo
             </div>
             <div>
               <h3 className="text-xl font-semibold">{donor.full_name}</h3>
+              {donor.source === 'directory' && (
+                <Badge variant="outline" className="mt-1 border-yellow-500 text-yellow-600">
+                  Not Registered
+                </Badge>
+              )}
               {isFirstTimeDonor && (
                 <Badge variant="secondary" className="mt-1">First Time Donor</Badge>
               )}

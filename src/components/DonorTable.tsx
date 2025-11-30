@@ -23,6 +23,8 @@ interface Donor {
   available_date: string | null;
   last_donation_date: string | null;
   donation_count?: number;
+  source?: string;
+  is_registered?: boolean;
 }
 
 export const DonorTable = () => {
@@ -44,21 +46,37 @@ export const DonorTable = () => {
   }, [donors, searchTerm, bloodGroupFilter]);
 
   const fetchDonors = async () => {
-    const { data, error } = await supabase
+    // Fetch registered donors (from profiles where user_type is 'donor' or 'both')
+    const { data: profileDonors } = await supabase
+      .from("profiles")
+      .select("*")
+      .in("user_type", ["donor", "both"]);
+
+    // Fetch unregistered donors (from donor_directory where is_registered is false)
+    const { data: directoryDonors } = await supabase
       .from("donor_directory")
       .select("*")
-      .order("full_name");
+      .eq("is_registered", false);
 
-    if (!error && data) {
-      // Fetch donation counts for each donor
-      const donorsWithCounts = await Promise.all(
-        data.map(async (donor) => {
+    // Combine and fetch donation counts
+    const allDonors = [
+      ...(profileDonors || []).map(d => ({ ...d, source: 'profile' })),
+      ...(directoryDonors || []).map(d => ({ ...d, source: 'directory' }))
+    ];
+
+    const donorsWithCounts = await Promise.all(
+      allDonors.map(async (donor) => {
+        if (donor.source === 'profile') {
+          const { data: countData } = await supabase.rpc('get_donation_count', { donor_uuid: donor.id });
+          return { ...donor, donation_count: countData || 0 };
+        } else {
           const { data: countData } = await supabase.rpc('get_directory_donation_count', { donor_uuid: donor.id });
           return { ...donor, donation_count: countData || 0 };
-        })
-      );
-      setDonors(donorsWithCounts);
-    }
+        }
+      })
+    );
+
+    setDonors(donorsWithCounts);
     setLoading(false);
   };
 
@@ -184,7 +202,7 @@ export const DonorTable = () => {
                 <TableRow key={donor.id}>
                   <TableCell className="flex items-center gap-3">
                     <div className="relative">
-                      <Avatar>
+                      <Avatar className={donor.source === 'directory' ? "ring-2 ring-yellow-500" : ""}>
                         <AvatarImage src={donor.avatar_url || undefined} />
                         <AvatarFallback>{donor.full_name.charAt(0)}</AvatarFallback>
                       </Avatar>
@@ -194,7 +212,12 @@ export const DonorTable = () => {
                         </div>
                       )}
                     </div>
-                    <span className="font-medium">{donor.full_name}</span>
+                    <div>
+                      <span className="font-medium">{donor.full_name}</span>
+                      {donor.source === 'directory' && (
+                        <p className="text-xs text-muted-foreground">Not registered</p>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">{donor.blood_group}</Badge>
