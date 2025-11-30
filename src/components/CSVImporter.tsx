@@ -45,6 +45,8 @@ export const CSVImporter = () => {
             case 'blood_group':
             case 'blood group':
             case 'bloodgroup':
+            case 'blood type':
+            case 'bloodtype':
               donor.blood_group = value;
               break;
             case 'district':
@@ -86,6 +88,7 @@ export const CSVImporter = () => {
       // Insert donors in batches
       const batchSize = 100;
       let imported = 0;
+      let failed = 0;
 
       for (let i = 0; i < donors.length; i += batchSize) {
         const batch = donors.slice(i, i + batchSize);
@@ -95,14 +98,18 @@ export const CSVImporter = () => {
 
         if (error) {
           console.error("Batch import error:", error);
+          failed += batch.length;
         } else {
           imported += batch.length;
         }
       }
 
+      const totalProcessed = donors.length;
+      const skipped = totalProcessed - imported - failed;
+      
       toast({
-        title: "Import successful",
-        description: `Imported ${imported} donors from CSV`,
+        title: "Import complete",
+        description: `Imported ${imported} donors. ${failed > 0 ? `${failed} failed (duplicates).` : ''} ${skipped > 0 ? `${skipped} skipped.` : ''}`,
       });
 
       // Refresh the page to show new donors
