@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DonationHistoryManager } from "@/components/DonationHistoryManager";
 import { CSVImporter } from "@/components/CSVImporter";
+import { UserRoleManager } from "@/components/UserRoleManager";
 import { Textarea } from "@/components/ui/textarea";
 
 const Admin = () => {
@@ -262,6 +263,7 @@ const Admin = () => {
             <TabsTrigger value="requests">Requests</TabsTrigger>
             <TabsTrigger value="donations">Donations</TabsTrigger>
             <TabsTrigger value="history">Manage History</TabsTrigger>
+            <TabsTrigger value="admins">Admins</TabsTrigger>
             <TabsTrigger value="locations">Locations</TabsTrigger>
             <TabsTrigger value="sms">SMS Settings</TabsTrigger>
           </TabsList>
@@ -416,6 +418,10 @@ const Admin = () => {
 
           <TabsContent value="history">
             <DonationHistoryManager />
+          </TabsContent>
+
+          <TabsContent value="admins">
+            <UserRoleManager />
           </TabsContent>
 
           <TabsContent value="locations">
