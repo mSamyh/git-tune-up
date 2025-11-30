@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DonationHistoryManager } from "@/components/DonationHistoryManager";
+import { CSVImporter } from "@/components/CSVImporter";
 import { Textarea } from "@/components/ui/textarea";
 
 const Admin = () => {
@@ -257,6 +258,7 @@ const Admin = () => {
         <Tabs defaultValue="donors" className="space-y-4">
           <TabsList>
             <TabsTrigger value="donors">Donors</TabsTrigger>
+            <TabsTrigger value="import">Import CSV</TabsTrigger>
             <TabsTrigger value="requests">Requests</TabsTrigger>
             <TabsTrigger value="donations">Donations</TabsTrigger>
             <TabsTrigger value="history">Manage History</TabsTrigger>
@@ -305,6 +307,10 @@ const Admin = () => {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="import">
+            <CSVImporter />
           </TabsContent>
 
           <TabsContent value="requests">
