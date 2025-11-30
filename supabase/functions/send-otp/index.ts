@@ -45,22 +45,23 @@ serve(async (req) => {
 
     // Send SMS via Textbee
     const textbeeApiKey = Deno.env.get('TEXTBEE_API_KEY');
+    const textbeeDeviceId = Deno.env.get('TEXTBEE_DEVICE_ID');
     
-    if (!textbeeApiKey) {
-      throw new Error('TEXTBEE_API_KEY not configured');
+    if (!textbeeApiKey || !textbeeDeviceId) {
+      throw new Error('TEXTBEE_API_KEY and TEXTBEE_DEVICE_ID must be configured');
     }
 
     const message = `Your Blood Donor verification code is: ${otp}. Valid for 10 minutes.`;
 
-    const response = await fetch('https://api.textbee.dev/api/v2/sms/send', {
+    const response = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${textbeeDeviceId}/send-sms`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${textbeeApiKey}`,
+        'x-api-key': textbeeApiKey,
       },
       body: JSON.stringify({
-        to: phone,
-        text: message,
+        recipients: [phone],
+        message: message,
       }),
     });
 
