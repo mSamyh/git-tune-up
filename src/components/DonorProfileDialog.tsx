@@ -11,6 +11,7 @@ import { Droplet, MapPin, Phone, Calendar, Medal, Edit, Save, X } from "lucide-r
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { LocationSelector } from "./LocationSelector";
+import { TopDonorBadge, getTopDonorRank } from "./TopDonorBadge";
 
 interface Donor {
   id: string;
@@ -32,9 +33,10 @@ interface DonorProfileDialogProps {
   donor: Donor;
   isOpen: boolean;
   onClose: () => void;
+  topDonors?: any[];
 }
 
-export const DonorProfileDialog = ({ donor, isOpen, onClose }: DonorProfileDialogProps) => {
+export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [] }: DonorProfileDialogProps) => {
   const [donationHistory, setDonationHistory] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -195,11 +197,10 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose }: DonorProfileDialo
                 <AvatarImage src={donor.avatar_url || undefined} />
                 <AvatarFallback className="text-2xl">{donor.full_name.charAt(0)}</AvatarFallback>
               </Avatar>
-              {donor.donation_count && donor.donation_count >= 3 && (
-                <div className="absolute -top-1 -right-1">
-                  <Medal className="h-6 w-6 text-yellow-500" />
-                </div>
-              )}
+              {(() => {
+                const rank = getTopDonorRank(donor.id, topDonors);
+                return rank > 0 && <TopDonorBadge rank={rank} className="absolute -top-1 -right-1" />;
+              })()}
             </div>
             <div className="flex-1">
               {isEditing ? (

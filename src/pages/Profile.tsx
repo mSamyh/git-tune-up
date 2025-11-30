@@ -18,6 +18,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { LocationSelector } from "@/components/LocationSelector";
 import { AppHeader } from "@/components/AppHeader";
+import { TopDonorBadge } from "@/components/TopDonorBadge";
 
 interface Profile {
   id: string;
@@ -244,7 +245,6 @@ const Profile = () => {
   }
 
   const isFirstTimeDonor = !profile?.last_donation_date && donationCount === 0;
-  const isTopDonor = donationCount >= 3;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -261,11 +261,6 @@ const Profile = () => {
                     userName={profile.full_name}
                     onUploadComplete={(url) => setProfile(prev => prev ? {...prev, avatar_url: url} : null)}
                   />
-                  {isTopDonor && (
-                    <div className="absolute -top-1 -right-1">
-                      <Medal className="h-6 w-6 text-yellow-500" />
-                    </div>
-                  )}
                 </div>
                 <div>
                   <CardTitle className="text-2xl">{profile.full_name}</CardTitle>
@@ -418,7 +413,16 @@ const Profile = () => {
                     mode="single"
                     selected={lastDonationDate}
                     onSelect={setLastDonationDate}
-                    disabled={(date) => date > new Date()}
+                    disabled={(date) => {
+                      // Can't select future dates
+                      if (date > new Date()) return true;
+                      // Can't select dates older than existing last_donation_date
+                      if (profile?.last_donation_date) {
+                        const existingDate = new Date(profile.last_donation_date);
+                        if (date < existingDate) return true;
+                      }
+                      return false;
+                    }}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
