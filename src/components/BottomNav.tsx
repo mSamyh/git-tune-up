@@ -16,14 +16,13 @@ export const BottomNav = () => {
             <span className="text-xs">Home</span>
           </NavLink>
 
-          <NavLink
-            to="/blood-requests"
+          <button
+            onClick={() => window.location.href = "/"}
             className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
-            activeClassName="text-primary font-semibold"
           >
             <Droplet className="h-5 w-5" />
-            <span className="text-xs">Requests</span>
-          </NavLink>
+            <span className="text-xs">Donors</span>
+          </button>
 
           <NavLink
             to="/history"

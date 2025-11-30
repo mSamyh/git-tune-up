@@ -38,6 +38,7 @@ export type Database = {
           contact_name: string
           contact_phone: string
           created_at: string | null
+          emergency_type: string | null
           hospital_address: string
           hospital_name: string
           id: string
@@ -54,6 +55,7 @@ export type Database = {
           contact_name: string
           contact_phone: string
           created_at?: string | null
+          emergency_type?: string | null
           hospital_address: string
           hospital_name: string
           id?: string
@@ -70,6 +72,7 @@ export type Database = {
           contact_name?: string
           contact_phone?: string
           created_at?: string | null
+          emergency_type?: string | null
           hospital_address?: string
           hospital_name?: string
           id?: string
@@ -260,6 +263,54 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          read: boolean | null
+          related_request_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          related_request_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          related_request_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_related_request_id_fkey"
+            columns: ["related_request_id"]
+            isOneToOne: false
+            referencedRelation: "blood_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       otp_verifications: {
         Row: {
           created_at: string | null
@@ -343,6 +394,51 @@ export type Database = {
           user_type?: string | null
         }
         Relationships: []
+      }
+      request_responses: {
+        Row: {
+          created_at: string | null
+          donor_id: string
+          id: string
+          message: string | null
+          request_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          donor_id: string
+          id?: string
+          message?: string | null
+          request_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          donor_id?: string
+          id?: string
+          message?: string | null
+          request_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_responses_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_responses_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "blood_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sms_templates: {
         Row: {

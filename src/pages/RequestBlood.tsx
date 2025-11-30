@@ -26,6 +26,8 @@ const RequestBlood = () => {
     contactName: "",
     contactPhone: "",
     urgency: "normal",
+    emergencyType: "",
+    customEmergency: "",
     notes: "",
   });
   const navigate = useNavigate();
@@ -42,6 +44,10 @@ const RequestBlood = () => {
         throw new Error("You must be logged in to create a request");
       }
 
+      const emergencyTypeValue = formData.emergencyType === "custom" 
+        ? formData.customEmergency 
+        : formData.emergencyType;
+
       const { data: request, error: requestError } = await supabase
         .from("blood_requests")
         .insert({
@@ -53,6 +59,7 @@ const RequestBlood = () => {
           contact_name: formData.contactName,
           contact_phone: formData.contactPhone,
           urgency: formData.urgency,
+          emergency_type: emergencyTypeValue,
           notes: formData.notes || null,
           requested_by: user.id,
         })
@@ -227,6 +234,39 @@ const RequestBlood = () => {
                   />
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <Label>Emergency Type</Label>
+                <Select
+                  value={formData.emergencyType}
+                  onValueChange={(value) => setFormData({ ...formData, emergencyType: value })}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select emergency type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="thalassaemia">Thalassaemia</SelectItem>
+                    <SelectItem value="pregnancy">Pregnancy</SelectItem>
+                    <SelectItem value="surgery">Surgery</SelectItem>
+                    <SelectItem value="emergency_surgery">Emergency Surgery</SelectItem>
+                    <SelectItem value="custom">Custom (Specify)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {formData.emergencyType === "custom" && (
+                <div className="space-y-2">
+                  <Label htmlFor="customEmergency">Specify Emergency Type</Label>
+                  <Input
+                    id="customEmergency"
+                    value={formData.customEmergency}
+                    onChange={(e) => setFormData({ ...formData, customEmergency: e.target.value })}
+                    placeholder="Enter custom emergency type"
+                    required
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label>Urgency Level</Label>
