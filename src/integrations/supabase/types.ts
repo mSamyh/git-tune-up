@@ -142,7 +142,7 @@ export type Database = {
           avatar_url: string | null
           blood_group: string
           created_at: string | null
-          district: string
+          district: string | null
           full_name: string
           id: string
           is_available: boolean | null
@@ -159,7 +159,7 @@ export type Database = {
           avatar_url?: string | null
           blood_group: string
           created_at?: string | null
-          district: string
+          district?: string | null
           full_name: string
           id?: string
           is_available?: boolean | null
@@ -176,7 +176,7 @@ export type Database = {
           avatar_url?: string | null
           blood_group?: string
           created_at?: string | null
-          district?: string
+          district?: string | null
           full_name?: string
           id?: string
           is_available?: boolean | null
@@ -347,7 +347,7 @@ export type Database = {
           avatar_url: string | null
           blood_group: string
           created_at: string | null
-          district: string
+          district: string | null
           full_name: string
           id: string
           is_available: boolean | null
@@ -365,7 +365,7 @@ export type Database = {
           avatar_url?: string | null
           blood_group: string
           created_at?: string | null
-          district: string
+          district?: string | null
           full_name: string
           id: string
           is_available?: boolean | null
@@ -383,7 +383,7 @@ export type Database = {
           avatar_url?: string | null
           blood_group?: string
           created_at?: string | null
-          district?: string
+          district?: string | null
           full_name?: string
           id?: string
           is_available?: boolean | null
