@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Droplet, MapPin, Phone, Calendar, Medal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -29,10 +31,13 @@ interface DonorProfileDialogProps {
 
 export const DonorProfileDialog = ({ donor, isOpen, onClose }: DonorProfileDialogProps) => {
   const [donationHistory, setDonationHistory] = useState<any[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isOpen) {
       fetchDonationHistory();
+      checkAdmin();
     }
   }, [isOpen, donor.id]);
 
@@ -54,6 +59,20 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose }: DonorProfileDialo
     }
   };
 
+  const checkAdmin = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .single();
+
+    setIsAdmin(!!data);
+  };
+
   const getAvailabilityText = () => {
     const status = donor.availability_status || 'available';
     
@@ -72,6 +91,11 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose }: DonorProfileDialo
   };
 
   const isFirstTimeDonor = !donor.last_donation_date && donationHistory.length === 0;
+
+  const handleEditProfile = () => {
+    onClose();
+    navigate(`/admin?donor=${donor.id}`);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -173,6 +197,14 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose }: DonorProfileDialo
             )}
           </div>
         </div>
+
+        {isAdmin && donor.source === 'profile' && (
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={handleEditProfile}>
+              Edit profile
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
