@@ -41,6 +41,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose }: DonorProfileDialo
   const [editedDonor, setEditedDonor] = useState(donor);
   const [selectedAtoll, setSelectedAtoll] = useState("");
   const [selectedIsland, setSelectedIsland] = useState("");
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -56,10 +57,20 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose }: DonorProfileDialo
         setSelectedIsland(island);
       }
       
+      checkOwnProfile();
       fetchDonationHistory();
       checkAdmin();
     }
   }, [isOpen, donor]);
+
+  const checkOwnProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setIsOwnProfile(false);
+      return;
+    }
+    setIsOwnProfile(user.id === donor.id);
+  };
 
   const fetchDonationHistory = async () => {
     if (donor.source === 'profile') {
@@ -326,7 +337,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose }: DonorProfileDialo
               <p className="text-2xl font-bold text-primary">{donor.donation_count || 0}</p>
             </div>
 
-            {donationHistory.length > 0 && (
+            {isOwnProfile && donationHistory.length > 0 && (
               <div className="space-y-2">
                 <h4 className="font-semibold">Recent Donations</h4>
                 <div className="space-y-2">

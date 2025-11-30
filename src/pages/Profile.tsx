@@ -398,17 +398,77 @@ const Profile = () => {
               </Select>
             </div>
 
-            {profile.last_donation_date && (
-              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-                <CalendarIcon className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Last Donation</p>
-                  <p className="font-semibold">
-                    {new Date(profile.last_donation_date).toLocaleDateString()}
-                  </p>
-                </div>
+            <div className="space-y-4 p-4 border rounded-lg">
+              <div>
+                <Label className="text-base font-semibold">Last Donation Date</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Set your last blood donation date (admins manage full history)
+                </p>
               </div>
-            )}
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !lastDonationDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {lastDonationDate ? format(lastDonationDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={lastDonationDate}
+                    onSelect={setLastDonationDate}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <Button 
+                onClick={async () => {
+                  if (!lastDonationDate) {
+                    toast({
+                      variant: "destructive",
+                      title: "No date selected",
+                      description: "Please select a date first",
+                    });
+                    return;
+                  }
+
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) return;
+
+                  const { error } = await supabase
+                    .from("profiles")
+                    .update({ last_donation_date: format(lastDonationDate, "yyyy-MM-dd") })
+                    .eq("id", user.id);
+
+                  if (error) {
+                    toast({
+                      variant: "destructive",
+                      title: "Update failed",
+                      description: error.message,
+                    });
+                  } else {
+                    toast({
+                      title: "Date updated",
+                      description: "Your last donation date has been updated",
+                    });
+                    fetchProfile();
+                  }
+                }} 
+                className="w-full"
+              >
+                Update Last Donation Date
+              </Button>
+            </div>
 
             <DonationHistory donorId={profile.id} />
           </CardContent>
