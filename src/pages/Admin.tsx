@@ -10,6 +10,7 @@ import { ArrowLeft, Users, Heart, History, Settings, MapPin } from "lucide-react
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DonationHistoryManager } from "@/components/DonationHistoryManager";
 import { CSVImporter } from "@/components/CSVImporter";
 import { UserRoleManager } from "@/components/UserRoleManager";
@@ -200,6 +201,24 @@ const Admin = () => {
     }
   };
 
+  const updateDonorBloodGroup = async (donorId: string, bloodGroup: string) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ blood_group: bloodGroup })
+      .eq("id", donorId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to update blood group",
+        description: error.message,
+      });
+    } else {
+      toast({ title: "Blood group updated successfully" });
+      fetchData();
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -285,7 +304,24 @@ const Admin = () => {
                       <TableRow key={donor.id}>
                         <TableCell className="font-medium">{donor.full_name}</TableCell>
                         <TableCell>
-                          <Badge>{donor.blood_group}</Badge>
+                          <Select
+                            value={donor.blood_group}
+                            onValueChange={(value) => updateDonorBloodGroup(donor.id, value)}
+                          >
+                            <SelectTrigger className="w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="A+">A+</SelectItem>
+                              <SelectItem value="A-">A-</SelectItem>
+                              <SelectItem value="B+">B+</SelectItem>
+                              <SelectItem value="B-">B-</SelectItem>
+                              <SelectItem value="AB+">AB+</SelectItem>
+                              <SelectItem value="AB-">AB-</SelectItem>
+                              <SelectItem value="O+">O+</SelectItem>
+                              <SelectItem value="O-">O-</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>{donor.district || donor.atoll || '-'}</TableCell>
                         <TableCell>{donor.phone}</TableCell>
