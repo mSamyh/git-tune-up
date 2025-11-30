@@ -109,6 +109,7 @@ const Profile = () => {
   };
 
   const canSetAvailable = () => {
+    // If no last donation date (0 donations), allow setting available
     if (!profile?.last_donation_date) return true;
     
     const daysSinceLastDonation = Math.floor(
@@ -116,6 +117,16 @@ const Profile = () => {
     );
     
     return daysSinceLastDonation >= 90;
+  };
+
+  const getDaysUntilAvailable = () => {
+    if (!profile?.last_donation_date) return 0;
+    
+    const daysSinceLastDonation = Math.floor(
+      (new Date().getTime() - new Date(profile.last_donation_date).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    
+    return Math.max(0, 90 - daysSinceLastDonation);
   };
 
   const saveDonation = async () => {
@@ -369,7 +380,10 @@ const Profile = () => {
               <div>
                 <Label className="text-base font-semibold">Availability Status</Label>
                 <p className="text-sm text-muted-foreground mb-3">
-                  {!canSetAvailable() && "You must wait 90 days from your last donation to set available"}
+                  {!canSetAvailable() 
+                    ? `You must wait ${getDaysUntilAvailable()} more days from your last donation to set available`
+                    : "Update your availability status"
+                  }
                 </p>
               </div>
               
@@ -443,24 +457,41 @@ const Profile = () => {
                   const { data: { user } } = await supabase.auth.getUser();
                   if (!user) return;
 
-                  const { error } = await supabase
+                  // Update profile with last donation date
+                  const { error: profileError } = await supabase
                     .from("profiles")
                     .update({ last_donation_date: format(lastDonationDate, "yyyy-MM-dd") })
                     .eq("id", user.id);
 
-                  if (error) {
+                  if (profileError) {
                     toast({
                       variant: "destructive",
                       title: "Update failed",
-                      description: error.message,
+                      description: profileError.message,
                     });
-                  } else {
-                    toast({
-                      title: "Date updated",
-                      description: "Your last donation date has been updated",
-                    });
-                    fetchProfile();
+                    return;
                   }
+
+                  // Add to donation history automatically
+                  const { error: historyError } = await supabase
+                    .from("donation_history")
+                    .insert({
+                      donor_id: user.id,
+                      donation_date: format(lastDonationDate, "yyyy-MM-dd"),
+                      hospital_name: "Added from profile",
+                      units_donated: 1
+                    });
+
+                  if (historyError) {
+                    console.error("Failed to add to history:", historyError);
+                  }
+
+                  toast({
+                    title: "Date updated",
+                    description: "Your last donation date has been updated and added to history",
+                  });
+                  fetchProfile();
+                  fetchDonationCount();
                 }} 
                 className="w-full"
               >
