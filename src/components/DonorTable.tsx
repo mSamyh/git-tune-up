@@ -45,7 +45,7 @@ export const DonorTable = () => {
 
   const fetchDonors = async () => {
     const { data, error } = await supabase
-      .from("profiles")
+      .from("donor_directory")
       .select("*")
       .order("full_name");
 
@@ -53,7 +53,7 @@ export const DonorTable = () => {
       // Fetch donation counts for each donor
       const donorsWithCounts = await Promise.all(
         data.map(async (donor) => {
-          const { data: countData } = await supabase.rpc('get_donation_count', { donor_uuid: donor.id });
+          const { data: countData } = await supabase.rpc('get_directory_donation_count', { donor_uuid: donor.id });
           return { ...donor, donation_count: countData || 0 };
         })
       );

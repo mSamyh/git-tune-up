@@ -36,7 +36,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose }: DonorProfileDialo
 
   const fetchDonationHistory = async () => {
     const { data } = await supabase
-      .from("donation_history")
+      .from("donor_directory_history")
       .select("*")
       .eq("donor_id", donor.id)
       .order("donation_date", { ascending: false });

@@ -161,6 +161,44 @@ export type Database = {
         }
         Relationships: []
       }
+      donor_directory_history: {
+        Row: {
+          created_at: string | null
+          donation_date: string
+          donor_id: string
+          hospital_name: string
+          id: string
+          notes: string | null
+          units_donated: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          donation_date: string
+          donor_id: string
+          hospital_name: string
+          id?: string
+          notes?: string | null
+          units_donated?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          donation_date?: string
+          donor_id?: string
+          hospital_name?: string
+          id?: string
+          notes?: string | null
+          units_donated?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donor_directory_history_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "donor_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       otp_verifications: {
         Row: {
           created_at: string | null
@@ -262,6 +300,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_directory_donation_count: {
+        Args: { donor_uuid: string }
+        Returns: number
+      }
       get_donation_count: { Args: { donor_uuid: string }; Returns: number }
       has_role: {
         Args: {
