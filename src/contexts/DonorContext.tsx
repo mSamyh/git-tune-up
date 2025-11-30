@@ -66,7 +66,7 @@ export const DonorProvider = ({ children }: { children: ReactNode }) => {
     const { data: profileDonors } = await supabase
       .from("profiles")
       .select("*")
-      .eq("user_type", "donor");
+      .in("user_type", ["donor", "both"]);
 
     const { data: directoryDonors } = await supabase
       .from("donor_directory")
