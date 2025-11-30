@@ -27,6 +27,12 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Delete any old OTP records for this phone to avoid conflicts
+    await supabase
+      .from('otp_verifications')
+      .delete()
+      .eq('phone', phone);
+
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
@@ -35,7 +41,8 @@ serve(async (req) => {
       .insert({
         phone,
         otp,
-        expires_at: expiresAt.toISOString()
+        expires_at: expiresAt.toISOString(),
+        verified: false
       });
 
     if (dbError) {
