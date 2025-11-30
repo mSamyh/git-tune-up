@@ -14,7 +14,7 @@ interface Donor {
   full_name: string;
   phone: string;
   blood_group: string;
-  district: string;
+  district: string | null;
   address: string | null;
   is_available: boolean;
   avatar_url: string | null;
