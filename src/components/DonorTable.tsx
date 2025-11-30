@@ -222,7 +222,13 @@ export const DonorTable = () => {
                   <TableCell>
                     <Badge variant="outline">{donor.blood_group}</Badge>
                   </TableCell>
-                  <TableCell>{getAvailabilityBadge(donor)}</TableCell>
+                  <TableCell>
+                    {donor.is_registered !== false ? (
+                      getAvailabilityBadge(donor)
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    )}
+                  </TableCell>
                   <TableCell>{donor.donation_count || 0}</TableCell>
                   <TableCell>
                     <Button

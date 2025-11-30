@@ -23,13 +23,25 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Fetch matching donors
+    // Fetch SMS template
+    const { data: templateData, error: templateError } = await supabase
+      .from('sms_templates')
+      .select('template_body')
+      .eq('template_name', 'blood_request_notification')
+      .single();
+
+    if (templateError) {
+      console.error('Template fetch error:', templateError);
+      throw new Error('Failed to fetch SMS template');
+    }
+
+    // Fetch matching donors with availability_status = 'available' only
     const { data: donors, error: fetchError } = await supabase
       .from('profiles')
       .select('phone, full_name')
       .eq('blood_group', bloodGroup)
       .eq('district', district)
-      .eq('is_available', true);
+      .eq('availability_status', 'available');
 
     if (fetchError) {
       console.error('Database error:', fetchError);
@@ -38,7 +50,7 @@ serve(async (req) => {
 
     if (!donors || donors.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, message: 'No matching donors found', notifiedCount: 0 }),
+        JSON.stringify({ success: true, message: 'No available donors found', notifiedCount: 0 }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
@@ -53,9 +65,15 @@ serve(async (req) => {
       throw new Error('TEXTBEE_API_KEY and TEXTBEE_DEVICE_ID must be configured');
     }
 
-    const message = `URGENT: Blood needed! ${bloodGroup} blood required at ${requestDetails.hospitalName}. Patient: ${requestDetails.patientName}. Contact: ${requestDetails.contactName} (${requestDetails.contactPhone})`;
+    // Replace template placeholders with actual data
+    let message = templateData.template_body;
+    message = message.replace('{blood_group}', bloodGroup);
+    message = message.replace('{hospital_name}', requestDetails.hospitalName);
+    message = message.replace('{patient_name}', requestDetails.patientName);
+    message = message.replace('{contact_name}', requestDetails.contactName);
+    message = message.replace('{contact_phone}', requestDetails.contactPhone);
 
-    // Send SMS to all matching donors
+    // Send SMS to all matching available donors
     const phoneNumbers = donors.map(d => d.phone);
 
     const response = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${textbeeDeviceId}/send-sms`, {

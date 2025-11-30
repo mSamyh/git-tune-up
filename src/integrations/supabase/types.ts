@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      atolls: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       blood_requests: {
         Row: {
           blood_group: string
@@ -213,6 +231,35 @@ export type Database = {
           },
         ]
       }
+      islands: {
+        Row: {
+          atoll_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          atoll_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          atoll_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "islands_atoll_id_fkey"
+            columns: ["atoll_id"]
+            isOneToOne: false
+            referencedRelation: "atolls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       otp_verifications: {
         Row: {
           created_at: string | null
@@ -243,6 +290,7 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          atoll: string | null
           availability_status: string | null
           available_date: string | null
           avatar_url: string | null
@@ -252,6 +300,7 @@ export type Database = {
           full_name: string
           id: string
           is_available: boolean | null
+          island: string | null
           last_donation_date: string | null
           phone: string
           updated_at: string | null
@@ -259,6 +308,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          atoll?: string | null
           availability_status?: string | null
           available_date?: string | null
           avatar_url?: string | null
@@ -268,6 +318,7 @@ export type Database = {
           full_name: string
           id: string
           is_available?: boolean | null
+          island?: string | null
           last_donation_date?: string | null
           phone: string
           updated_at?: string | null
@@ -275,6 +326,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          atoll?: string | null
           availability_status?: string | null
           available_date?: string | null
           avatar_url?: string | null
@@ -284,10 +336,35 @@ export type Database = {
           full_name?: string
           id?: string
           is_available?: boolean | null
+          island?: string | null
           last_donation_date?: string | null
           phone?: string
           updated_at?: string | null
           user_type?: string | null
+        }
+        Relationships: []
+      }
+      sms_templates: {
+        Row: {
+          created_at: string
+          id: string
+          template_body: string
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          template_body: string
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          template_body?: string
+          template_name?: string
+          updated_at?: string
         }
         Relationships: []
       }
