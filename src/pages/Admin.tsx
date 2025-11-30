@@ -10,6 +10,7 @@ import { ArrowLeft, Users, Heart, History, Settings, MapPin } from "lucide-react
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DonationHistoryManager } from "@/components/DonationHistoryManager";
 import { Textarea } from "@/components/ui/textarea";
 
 const Admin = () => {
@@ -258,6 +259,7 @@ const Admin = () => {
             <TabsTrigger value="donors">Donors</TabsTrigger>
             <TabsTrigger value="requests">Requests</TabsTrigger>
             <TabsTrigger value="donations">Donations</TabsTrigger>
+            <TabsTrigger value="history">Manage History</TabsTrigger>
             <TabsTrigger value="locations">Locations</TabsTrigger>
             <TabsTrigger value="sms">SMS Settings</TabsTrigger>
           </TabsList>
@@ -404,6 +406,10 @@ const Admin = () => {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <DonationHistoryManager />
           </TabsContent>
 
           <TabsContent value="locations">

@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Droplet, MapPin, Phone, Calendar as CalendarIcon, Edit, Save, Medal } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Droplet, MapPin, Phone, Calendar as CalendarIcon, Edit, Save, Medal, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { BottomNav } from "@/components/BottomNav";
@@ -18,6 +19,7 @@ import { AvatarUpload } from "@/components/AvatarUpload";
 import { LocationSelector } from "@/components/LocationSelector";
 
 interface Profile {
+  id: string;
   full_name: string;
   phone: string;
   blood_group: string;
@@ -115,73 +117,12 @@ const Profile = () => {
   };
 
   const saveDonation = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user || !lastDonationDate || !hospitalName) {
-      toast({
-        variant: "destructive",
-        title: "Missing information",
-        description: "Please provide both date and hospital name",
-      });
-      return;
-    }
-
-    // Check 90-day rule
-    if (!canSetAvailable() && availabilityStatus === 'available') {
-      toast({
-        variant: "destructive",
-        title: "Cannot set available",
-        description: "You must wait 90 days from your last donation",
-      });
-      return;
-    }
-
-    // Add to donation history
-    const { error: historyError } = await supabase
-      .from("donation_history")
-      .insert({
-        donor_id: user.id,
-        donation_date: lastDonationDate.toISOString().split('T')[0],
-        hospital_name: hospitalName,
-        units_donated: 1,
-      });
-
-    if (historyError) {
-      toast({
-        variant: "destructive",
-        title: "Failed to save donation",
-        description: historyError.message,
-      });
-      return;
-    }
-
-    // Update profile
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({
-        last_donation_date: lastDonationDate.toISOString().split('T')[0],
-        availability_status: availabilityStatus,
-      })
-      .eq("id", user.id);
-
-    if (profileError) {
-      toast({
-        variant: "destructive",
-        title: "Failed to update profile",
-        description: profileError.message,
-      });
-      return;
-    }
-
+    // This function is now removed - only admins can add donation history
     toast({
-      title: "Donation recorded",
-      description: "Your donation history has been updated",
+      variant: "destructive",
+      title: "Not allowed",
+      description: "Only admins can manage donation history",
     });
-
-    setIsEditing(false);
-    setHospitalName("");
-    fetchProfile();
-    fetchDonationCount();
   };
 
   const updateAvailability = async (status: string) => {
@@ -318,7 +259,6 @@ const Profile = () => {
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <AvatarUpload
@@ -340,14 +280,6 @@ const Profile = () => {
                   )}
                 </div>
               </div>
-              <Button
-                variant={isEditing ? "default" : "outline"}
-                size="sm"
-                onClick={() => isEditing ? saveDonation() : setIsEditing(true)}
-              >
-                {isEditing ? <><Save className="h-4 w-4 mr-2" /> Save</> : <><Edit className="h-4 w-4 mr-2" /> Edit</>}
-              </Button>
-            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
@@ -438,49 +370,6 @@ const Profile = () => {
               </p>
             </div>
 
-            {isEditing && (
-              <div className="space-y-4 p-4 border rounded-lg">
-                <h3 className="font-semibold">Add Donation Record</h3>
-                
-                <div className="space-y-2">
-                  <Label>Last Donation Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !lastDonationDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {lastDonationDate ? format(lastDonationDate, "PPP") : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={lastDonationDate}
-                        onSelect={setLastDonationDate}
-                        disabled={(date) => date > new Date()}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Hospital Name</Label>
-                  <Input
-                    value={hospitalName}
-                    onChange={(e) => setHospitalName(e.target.value)}
-                    placeholder="Enter hospital name"
-                  />
-                </div>
-              </div>
-            )}
-
             <div className="space-y-4 p-4 border rounded-lg">
               <div>
                 <Label className="text-base font-semibold">Availability Status</Label>
@@ -499,9 +388,6 @@ const Profile = () => {
                   </SelectItem>
                   <SelectItem value="unavailable">Unavailable</SelectItem>
                   <SelectItem value="reserved">Reserved</SelectItem>
-                  <SelectItem value="available_soon">
-                    Available Soon (90 day rule)
-                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -514,20 +400,102 @@ const Profile = () => {
                   <p className="font-semibold">
                     {new Date(profile.last_donation_date).toLocaleDateString()}
                   </p>
-                  {profile.available_date && availabilityStatus === 'available_soon' && (
-                    <p className="text-xs text-muted-foreground">
-                      Available after: {new Date(profile.available_date).toLocaleDateString()}
-                    </p>
-                  )}
                 </div>
               </div>
             )}
+
+            <DonationHistory donorId={profile.id} />
           </CardContent>
         </Card>
+
+        <CheckAdminButton />
       </main>
 
       <BottomNav />
     </div>
+  );
+};
+
+const DonationHistory = ({ donorId }: { donorId: string }) => {
+  const [history, setHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [donorId]);
+
+  const fetchHistory = async () => {
+    const { data } = await supabase
+      .from("donation_history")
+      .select("*")
+      .eq("donor_id", donorId)
+      .order("donation_date", { ascending: false });
+
+    if (data) setHistory(data);
+  };
+
+  if (history.length === 0) return null;
+
+  return (
+    <Card className="mt-4">
+      <CardHeader>
+        <CardTitle className="text-lg">Donation History</CardTitle>
+        <CardDescription>Your past donations</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {history.map((donation) => (
+            <div key={donation.id} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+              <div>
+                <p className="font-medium">{donation.hospital_name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(donation.donation_date).toLocaleDateString()}
+                </p>
+                {donation.notes && (
+                  <p className="text-xs text-muted-foreground">{donation.notes}</p>
+                )}
+              </div>
+              <Badge variant="outline">{donation.units_donated} unit(s)</Badge>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const CheckAdminButton = () => {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    checkAdmin();
+  }, []);
+
+  const checkAdmin = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .single();
+
+    setIsAdmin(!!data);
+  };
+
+  if (!isAdmin) return null;
+
+  return (
+    <Card className="mt-4">
+      <CardContent className="pt-6">
+        <Button onClick={() => navigate("/admin")} className="w-full">
+          <Settings className="h-4 w-4 mr-2" />
+          Admin Panel
+        </Button>
+      </CardContent>
+    </Card>
   );
 };
 

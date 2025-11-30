@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Droplet, Search, Heart, LogOut } from "lucide-react";
 import { DonorTable } from "@/components/DonorTable";
 import { BottomNav } from "@/components/BottomNav";
+import { BloodGroupFilter } from "@/components/BloodGroupFilter";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [selectedBloodGroup, setSelectedBloodGroup] = useState("all");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -77,16 +79,16 @@ const Index = () => {
     <div className="min-h-screen bg-background pb-20">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2"
+          >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
               <Droplet className="h-6 w-6 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold">Blood Donor</span>
-          </div>
+          </button>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/admin")}>
-              Admin
-            </Button>
             <Button variant="ghost" size="icon" onClick={handleLogout}>
               <LogOut className="h-5 w-5" />
             </Button>
@@ -97,9 +99,15 @@ const Index = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">Donor Directory</h2>
-          <p className="text-muted-foreground">Find donors by blood group and availability</p>
+          <p className="text-muted-foreground mb-6">Find donors by blood group and availability</p>
+          
+          <BloodGroupFilter 
+            selectedGroup={selectedBloodGroup}
+            onSelectGroup={setSelectedBloodGroup}
+          />
         </div>
-        <DonorTable />
+        
+        <DonorTable bloodGroupFilter={selectedBloodGroup} />
       </main>
 
       <BottomNav />

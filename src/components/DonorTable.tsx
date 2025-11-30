@@ -27,12 +27,15 @@ interface Donor {
   is_registered?: boolean;
 }
 
-export const DonorTable = () => {
+interface DonorTableProps {
+  bloodGroupFilter?: string;
+}
+
+export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
   const [donors, setDonors] = useState<Donor[]>([]);
   const [filteredDonors, setFilteredDonors] = useState<Donor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [bloodGroupFilter, setBloodGroupFilter] = useState("all");
   const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
 
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -44,6 +47,10 @@ export const DonorTable = () => {
   useEffect(() => {
     filterAndSortDonors();
   }, [donors, searchTerm, bloodGroupFilter]);
+
+  useEffect(() => {
+    filterAndSortDonors();
+  }, [bloodGroupFilter]);
 
   const fetchDonors = async () => {
     // Fetch registered donors (from profiles where user_type is 'donor' or 'both')
@@ -95,26 +102,37 @@ export const DonorTable = () => {
       filtered = filtered.filter(donor => donor.blood_group === bloodGroupFilter);
     }
 
-    // Sort by availability and available_date
+    // Sort by: available -> available_soon (fewer days first) -> reserved -> unavailable -> registered users -> blank (unregistered)
     filtered.sort((a, b) => {
-      const statusOrder = {
-        'available': 0,
-        'available_soon': 1,
-        'reserved': 2,
-        'unavailable': 3
-      };
-
-      const aStatus = a.availability_status || 'available';
-      const bStatus = b.availability_status || 'available';
+      // First priority: registration status
+      const aRegistered = a.is_registered !== false ? 1 : 0;
+      const bRegistered = b.is_registered !== false ? 1 : 0;
       
-      if (statusOrder[aStatus] !== statusOrder[bStatus]) {
-        return statusOrder[aStatus] - statusOrder[bStatus];
+      if (aRegistered !== bRegistered) {
+        return bRegistered - aRegistered; // Registered first
       }
 
-      // For available_soon, sort by available_date (earliest first)
-      if (aStatus === 'available_soon' && bStatus === 'available_soon') {
-        if (a.available_date && b.available_date) {
-          return new Date(a.available_date).getTime() - new Date(b.available_date).getTime();
+      // Only sort by availability for registered users
+      if (aRegistered) {
+        const statusOrder = {
+          'available': 0,
+          'available_soon': 1,
+          'reserved': 2,
+          'unavailable': 3
+        };
+
+        const aStatus = a.availability_status || 'available';
+        const bStatus = b.availability_status || 'available';
+        
+        if (statusOrder[aStatus] !== statusOrder[bStatus]) {
+          return statusOrder[aStatus] - statusOrder[bStatus];
+        }
+
+        // For available_soon, sort by available_date (earliest first)
+        if (aStatus === 'available_soon' && bStatus === 'available_soon') {
+          if (a.available_date && b.available_date) {
+            return new Date(a.available_date).getTime() - new Date(b.available_date).getTime();
+          }
         }
       }
 
@@ -169,17 +187,6 @@ export const DonorTable = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="flex-1"
         />
-        <Select value={bloodGroupFilter} onValueChange={setBloodGroupFilter}>
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="Blood Group" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Groups</SelectItem>
-            {bloodGroups.map(group => (
-              <SelectItem key={group} value={group}>{group}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="rounded-lg border overflow-hidden">
