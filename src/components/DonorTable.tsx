@@ -67,15 +67,14 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
       .select("*")
       .in("user_type", ["donor", "both"]);
 
-    // Fetch unregistered donors (from donor_directory where is_registered is false)
+    // Fetch ALL donors from donor_directory (registered and unregistered)
     const { data: directoryDonors } = await supabase
       .from("donor_directory")
-      .select("*")
-      .eq("is_registered", false);
+      .select("*");
 
     // Combine and fetch donation counts
     const allDonors = [
-      ...(profileDonors || []).map(d => ({ ...d, source: 'profile' })),
+      ...(profileDonors || []).map(d => ({ ...d, source: 'profile', is_registered: true })),
       ...(directoryDonors || []).map(d => ({ ...d, source: 'directory' }))
     ];
 

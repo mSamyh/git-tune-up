@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,16 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Heart } from "lucide-react";
+import { LocationSelector } from "@/components/LocationSelector";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-const DISTRICTS = ["Dhaka", "Chittagong", "Rajshahi", "Khulna", "Barisal", "Sylhet", "Rangpur", "Mymensingh"];
 
 const RequestBlood = () => {
   const [loading, setLoading] = useState(false);
+  const [selectedAtoll, setSelectedAtoll] = useState("");
+  const [selectedIsland, setSelectedIsland] = useState("");
   const [formData, setFormData] = useState({
     patientName: "",
     bloodGroup: "",
-    district: "",
     unitsNeeded: "",
     hospitalName: "",
     hospitalAddress: "",
@@ -44,9 +45,15 @@ const RequestBlood = () => {
         throw new Error("You must be logged in to create a request");
       }
 
+      if (!selectedAtoll || !selectedIsland) {
+        throw new Error("Please select both atoll and island");
+      }
+
       const emergencyTypeValue = formData.emergencyType === "custom" 
         ? formData.customEmergency 
         : formData.emergencyType;
+
+      const district = `${selectedAtoll} - ${selectedIsland}`;
 
       const { data: request, error: requestError } = await supabase
         .from("blood_requests")
@@ -72,7 +79,7 @@ const RequestBlood = () => {
       const { error: smsError } = await supabase.functions.invoke("send-blood-request-sms", {
         body: {
           bloodGroup: formData.bloodGroup,
-          district: formData.district,
+          district: district,
           requestDetails: {
             patientName: formData.patientName,
             hospitalName: formData.hospitalName,
@@ -161,37 +168,26 @@ const RequestBlood = () => {
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="unitsNeeded">Units Needed</Label>
-                  <Input
-                    id="unitsNeeded"
-                    type="number"
-                    min="1"
-                    value={formData.unitsNeeded}
-                    onChange={(e) => setFormData({ ...formData, unitsNeeded: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="district">District</Label>
-                  <Select
-                    value={formData.district}
-                    onValueChange={(value) => setFormData({ ...formData, district: value })}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select district" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DISTRICTS.map((district) => (
-                        <SelectItem key={district} value={district}>
-                          {district}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="unitsNeeded">Units Needed</Label>
+                <Input
+                  id="unitsNeeded"
+                  type="number"
+                  min="1"
+                  value={formData.unitsNeeded}
+                  onChange={(e) => setFormData({ ...formData, unitsNeeded: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Location (Atoll & Island)</Label>
+                <LocationSelector
+                  selectedAtoll={selectedAtoll}
+                  selectedIsland={selectedIsland}
+                  onAtollChange={setSelectedAtoll}
+                  onIslandChange={setSelectedIsland}
+                />
               </div>
 
               <div className="space-y-2">

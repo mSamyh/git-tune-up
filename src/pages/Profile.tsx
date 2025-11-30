@@ -259,6 +259,7 @@ const Profile = () => {
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <Card>
           <CardHeader>
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <AvatarUpload
@@ -280,6 +281,11 @@ const Profile = () => {
                   )}
                 </div>
               </div>
+              <Button variant="ghost" size="sm" onClick={() => setIsEditing(!isEditing)}>
+                {isEditing ? <Save className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
+                {isEditing ? "Save" : "Edit"}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">

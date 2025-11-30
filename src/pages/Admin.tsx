@@ -271,8 +271,8 @@ const Admin = () => {
           <TabsContent value="donors">
             <Card>
               <CardHeader>
-                <CardTitle>Registered Donors</CardTitle>
-                <CardDescription>View all registered blood donors</CardDescription>
+                <CardTitle>All Donors</CardTitle>
+                <CardDescription>View and manage all registered blood donors (from profiles and donor_directory)</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -283,6 +283,7 @@ const Admin = () => {
                       <TableHead>District</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -292,7 +293,7 @@ const Admin = () => {
                         <TableCell>
                           <Badge>{donor.blood_group}</Badge>
                         </TableCell>
-                        <TableCell>{donor.district}</TableCell>
+                        <TableCell>{donor.district || donor.atoll || '-'}</TableCell>
                         <TableCell>{donor.phone}</TableCell>
                         <TableCell>
                           {donor.is_available ? (
@@ -302,6 +303,25 @@ const Admin = () => {
                           ) : (
                             <Badge variant="outline">Unavailable</Badge>
                           )}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={async () => {
+                              if (confirm(`Delete ${donor.full_name}?`)) {
+                                const { error } = await supabase.from("profiles").delete().eq("id", donor.id);
+                                if (error) {
+                                  toast({ variant: "destructive", title: "Delete failed", description: error.message });
+                                } else {
+                                  toast({ title: "Donor deleted" });
+                                  fetchData();
+                                }
+                              }
+                            }}
+                          >
+                            Delete
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
