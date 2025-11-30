@@ -125,7 +125,9 @@ export type Database = {
           full_name: string
           id: string
           is_available: boolean | null
+          is_registered: boolean | null
           last_donation_date: string | null
+          linked_profile_id: string | null
           phone: string
           updated_at: string | null
         }
@@ -140,7 +142,9 @@ export type Database = {
           full_name: string
           id?: string
           is_available?: boolean | null
+          is_registered?: boolean | null
           last_donation_date?: string | null
+          linked_profile_id?: string | null
           phone: string
           updated_at?: string | null
         }
@@ -155,11 +159,21 @@ export type Database = {
           full_name?: string
           id?: string
           is_available?: boolean | null
+          is_registered?: boolean | null
           last_donation_date?: string | null
+          linked_profile_id?: string | null
           phone?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "donor_directory_linked_profile_id_fkey"
+            columns: ["linked_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       donor_directory_history: {
         Row: {
@@ -241,6 +255,7 @@ export type Database = {
           last_donation_date: string | null
           phone: string
           updated_at: string | null
+          user_type: string | null
         }
         Insert: {
           address?: string | null
@@ -256,6 +271,7 @@ export type Database = {
           last_donation_date?: string | null
           phone: string
           updated_at?: string | null
+          user_type?: string | null
         }
         Update: {
           address?: string | null
@@ -271,6 +287,7 @@ export type Database = {
           last_donation_date?: string | null
           phone?: string
           updated_at?: string | null
+          user_type?: string | null
         }
         Relationships: []
       }

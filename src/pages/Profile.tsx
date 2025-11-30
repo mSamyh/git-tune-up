@@ -14,6 +14,7 @@ import { ArrowLeft, Droplet, MapPin, Phone, Calendar as CalendarIcon, Edit, Save
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { BottomNav } from "@/components/BottomNav";
+import { AvatarUpload } from "@/components/AvatarUpload";
 
 interface Profile {
   full_name: string;
@@ -26,6 +27,7 @@ interface Profile {
   availability_status: string;
   available_date: string | null;
   last_donation_date: string | null;
+  user_type: string;
 }
 
 interface DonationHistory {
@@ -44,6 +46,7 @@ const Profile = () => {
   const [lastDonationDate, setLastDonationDate] = useState<Date>();
   const [hospitalName, setHospitalName] = useState("");
   const [availabilityStatus, setAvailabilityStatus] = useState("available");
+  const [userType, setUserType] = useState("donor");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -75,6 +78,7 @@ const Profile = () => {
     } else if (data) {
       setProfile(data);
       setAvailabilityStatus(data.availability_status || 'available');
+      setUserType(data.user_type || 'donor');
       if (data.last_donation_date) {
         setLastDonationDate(new Date(data.last_donation_date));
       }
@@ -208,6 +212,32 @@ const Profile = () => {
     }
   };
 
+  const updateUserType = async (type: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ user_type: type })
+      .eq("id", user.id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: error.message,
+      });
+    } else {
+      setProfile((prev) => prev ? { ...prev, user_type: type } : null);
+      setUserType(type);
+      toast({
+        title: "User type updated",
+        description: `You are now a ${type}`,
+      });
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -247,8 +277,12 @@ const Profile = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary">
-                  <Droplet className="h-8 w-8 text-primary-foreground" />
+                <div className="relative">
+                  <AvatarUpload
+                    currentAvatarUrl={profile.avatar_url}
+                    userName={profile.full_name}
+                    onUploadComplete={(url) => setProfile(prev => prev ? {...prev, avatar_url: url} : null)}
+                  />
                   {isTopDonor && (
                     <div className="absolute -top-1 -right-1">
                       <Medal className="h-6 w-6 text-yellow-500" />
@@ -257,7 +291,7 @@ const Profile = () => {
                 </div>
                 <div>
                   <CardTitle className="text-2xl">{profile.full_name}</CardTitle>
-                  <CardDescription>Donor Profile</CardDescription>
+                  <CardDescription>Your Profile</CardDescription>
                   {isFirstTimeDonor && (
                     <p className="text-sm text-primary mt-1">First Time Donor</p>
                   )}
@@ -310,6 +344,31 @@ const Profile = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-4 p-4 border rounded-lg">
+              <div>
+                <Label className="text-base font-semibold">Profile Type</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Choose whether you want to be a donor, receiver, or both
+                </p>
+              </div>
+              
+              <Select value={userType} onValueChange={updateUserType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="donor">Donor Only</SelectItem>
+                  <SelectItem value="receiver">Receiver Only</SelectItem>
+                  <SelectItem value="both">Both Donor & Receiver</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {userType === 'donor' && "You will be visible in the donor directory"}
+                {userType === 'receiver' && "You will NOT be visible in the donor directory"}
+                {userType === 'both' && "You will be visible in the donor directory"}
+              </p>
             </div>
 
             {isEditing && (
