@@ -66,6 +66,19 @@ const Index = () => {
               <p className="text-muted-foreground">Post urgent blood requests with SMS alerts</p>
             </div>
           </div>
+
+          <footer className="mt-16 text-center pb-8">
+            <p className="text-muted-foreground mb-2 flex items-center justify-center gap-1">
+              Built with <Heart className="h-4 w-4 text-red-500 fill-red-500 inline animate-pulse" /> to connect with donors
+            </p>
+            <Button 
+              variant="link" 
+              onClick={() => navigate("/faq")}
+              className="text-primary hover:underline"
+            >
+              FAQ
+            </Button>
+          </footer>
         </div>
       </div>
     );
@@ -84,6 +97,19 @@ const Index = () => {
         </div>
         
         <DonorTable bloodGroupFilter={selectedBloodGroup} />
+
+        <footer className="mt-16 text-center pb-8">
+          <p className="text-muted-foreground mb-2 flex items-center justify-center gap-1">
+            Built with <Heart className="h-4 w-4 text-red-500 fill-red-500 inline animate-pulse" /> to connect with donors
+          </p>
+          <Button 
+            variant="link" 
+            onClick={() => navigate("/faq")}
+            className="text-primary hover:underline"
+          >
+            FAQ
+          </Button>
+        </footer>
       </main>
 
       <BottomNav />
