@@ -443,60 +443,96 @@ const Profile = () => {
                 </PopoverContent>
               </Popover>
 
-              <Button 
-                onClick={async () => {
-                  if (!lastDonationDate) {
+              <div className="flex gap-2">
+                <Button 
+                  onClick={async () => {
+                    if (!lastDonationDate) {
+                      toast({
+                        variant: "destructive",
+                        title: "No date selected",
+                        description: "Please select a date first",
+                      });
+                      return;
+                    }
+
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
+
+                    // Update profile with last donation date
+                    const { error: profileError } = await supabase
+                      .from("profiles")
+                      .update({ last_donation_date: format(lastDonationDate, "yyyy-MM-dd") })
+                      .eq("id", user.id);
+
+                    if (profileError) {
+                      toast({
+                        variant: "destructive",
+                        title: "Update failed",
+                        description: profileError.message,
+                      });
+                      return;
+                    }
+
+                    // Add to donation history automatically
+                    const { error: historyError } = await supabase
+                      .from("donation_history")
+                      .insert({
+                        donor_id: user.id,
+                        donation_date: format(lastDonationDate, "yyyy-MM-dd"),
+                        hospital_name: "Added from profile",
+                        units_donated: 1
+                      });
+
+                    if (historyError) {
+                      console.error("Failed to add to history:", historyError);
+                    }
+
                     toast({
-                      variant: "destructive",
-                      title: "No date selected",
-                      description: "Please select a date first",
+                      title: "Date updated",
+                      description: "Your last donation date has been updated and added to history",
                     });
-                    return;
-                  }
+                    fetchProfile();
+                    fetchDonationCount();
+                  }} 
+                  className="flex-1"
+                >
+                  Update Last Donation Date
+                </Button>
 
-                  const { data: { user } } = await supabase.auth.getUser();
-                  if (!user) return;
+                {(profile?.last_donation_date || lastDonationDate) && (
+                  <Button 
+                    variant="outline"
+                    onClick={async () => {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) return;
 
-                  // Update profile with last donation date
-                  const { error: profileError } = await supabase
-                    .from("profiles")
-                    .update({ last_donation_date: format(lastDonationDate, "yyyy-MM-dd") })
-                    .eq("id", user.id);
+                      // Clear last donation date
+                      const { error } = await supabase
+                        .from("profiles")
+                        .update({ last_donation_date: null })
+                        .eq("id", user.id);
 
-                  if (profileError) {
-                    toast({
-                      variant: "destructive",
-                      title: "Update failed",
-                      description: profileError.message,
-                    });
-                    return;
-                  }
+                      if (error) {
+                        toast({
+                          variant: "destructive",
+                          title: "Clear failed",
+                          description: error.message,
+                        });
+                        return;
+                      }
 
-                  // Add to donation history automatically
-                  const { error: historyError } = await supabase
-                    .from("donation_history")
-                    .insert({
-                      donor_id: user.id,
-                      donation_date: format(lastDonationDate, "yyyy-MM-dd"),
-                      hospital_name: "Added from profile",
-                      units_donated: 1
-                    });
-
-                  if (historyError) {
-                    console.error("Failed to add to history:", historyError);
-                  }
-
-                  toast({
-                    title: "Date updated",
-                    description: "Your last donation date has been updated and added to history",
-                  });
-                  fetchProfile();
-                  fetchDonationCount();
-                }} 
-                className="w-full"
-              >
-                Update Last Donation Date
-              </Button>
+                      setLastDonationDate(undefined);
+                      toast({
+                        title: "Date cleared",
+                        description: "Your last donation date has been cleared",
+                      });
+                      fetchProfile();
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
             </div>
 
             <DonationHistory donorId={profile.id} />
