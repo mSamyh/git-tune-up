@@ -61,21 +61,23 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
   }, [filteredDonors, currentPage]);
 
   const fetchDonors = async () => {
-    // Fetch registered donors (from profiles where user_type is 'donor' or 'both')
+    // Fetch ALL registered profiles
     const { data: profileDonors } = await supabase
       .from("profiles")
-      .select("*")
-      .in("user_type", ["donor", "both"]);
+      .select("*");
 
     // Fetch ALL donors from donor_directory (registered and unregistered)
     const { data: directoryDonors } = await supabase
       .from("donor_directory")
       .select("*");
 
+    // Avoid duplicates: skip directory entries that are already linked to profiles
+    const unlinkedDirectoryDonors = (directoryDonors || []).filter(d => !d.linked_profile_id);
+
     // Combine and fetch donation counts
     const allDonors = [
       ...(profileDonors || []).map(d => ({ ...d, source: 'profile', is_registered: true })),
-      ...(directoryDonors || []).map(d => ({ ...d, source: 'directory' }))
+      ...unlinkedDirectoryDonors.map(d => ({ ...d, source: 'directory', is_registered: false }))
     ];
 
     const donorsWithCounts = await Promise.all(
@@ -183,8 +185,10 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
     return null;
   };
 
-  // Sort by donation count to get top donors
-  const topDonors = [...donors].sort((a, b) => (b.donation_count || 0) - (a.donation_count || 0)).slice(0, 3);
+  // Sort by donation count to get top donors (only from unique combined list)
+  const topDonors = [...donors]
+    .sort((a, b) => (b.donation_count || 0) - (a.donation_count || 0))
+    .slice(0, 3);
 
   if (loading) {
     return (
