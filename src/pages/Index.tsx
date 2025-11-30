@@ -101,8 +101,7 @@ const Index = () => {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Donor Directory</h2>
-          <p className="text-muted-foreground mb-6">Find donors by blood group and availability</p>
+          <h2 className="text-3xl font-bold mb-6">Find Donors by Blood Group and Availability</h2>
           
           <BloodGroupFilter 
             selectedGroup={selectedBloodGroup}

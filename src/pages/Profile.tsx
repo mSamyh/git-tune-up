@@ -364,9 +364,9 @@ const Profile = () => {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                {userType === 'donor' && "You will be visible in the donor directory"}
-                {userType === 'receiver' && "You will NOT be visible in the donor directory"}
-                {userType === 'both' && "You will be visible in the donor directory"}
+                {userType === 'donor' && "You will be visible in the donor list"}
+                {userType === 'receiver' && "You will NOT be visible in the donor list"}
+                {userType === 'both' && "You will be visible in the donor list"}
               </p>
             </div>
 
