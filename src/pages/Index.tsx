@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Droplet, Search, Heart, LogOut } from "lucide-react";
+import { Droplet, Search, Heart } from "lucide-react";
 import { DonorTable } from "@/components/DonorTable";
 import { BottomNav } from "@/components/BottomNav";
 import { BloodGroupFilter } from "@/components/BloodGroupFilter";
+import { AppHeader } from "@/components/AppHeader";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -29,11 +30,6 @@ const Index = () => {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  };
 
   if (!session) {
     return (
@@ -77,27 +73,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-              <Droplet className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div className="flex flex-col items-start">
-              <span className="text-xl font-bold">LeyHadhiya</span>
-              <span className="text-xs text-muted-foreground">Blood donors network</span>
-            </div>
-          </button>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={handleLogout}>
-              <LogOut className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">

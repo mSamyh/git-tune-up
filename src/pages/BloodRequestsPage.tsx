@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import BloodRequests from "@/components/BloodRequests";
 import { BottomNav } from "@/components/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AppHeader } from "@/components/AppHeader";
 
 const BloodRequestsPage = () => {
   const navigate = useNavigate();
@@ -12,18 +13,16 @@ const BloodRequestsPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
+      <AppHeader />
+
+      <div className="border-b bg-card">
+        <div className="container mx-auto px-4 py-4 flex justify-end">
           <Button onClick={() => navigate("/request-blood")}>
             <Plus className="h-4 w-4 mr-2" />
             Request Blood
           </Button>
         </div>
-      </header>
+      </div>
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6">
