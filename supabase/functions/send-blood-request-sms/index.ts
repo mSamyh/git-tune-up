@@ -57,22 +57,26 @@ serve(async (req) => {
     // Send SMS to all matching donors
     const phoneNumbers = donors.map(d => d.phone);
 
-    const response = await fetch('https://api.textbee.dev/api/v1/gateway/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': textbeeApiKey,
-      },
-      body: JSON.stringify({
-        recipients: phoneNumbers,
-        message: message,
-      }),
-    });
+    // Send individual SMS to each donor
+    const smsPromises = phoneNumbers.map(phone => 
+      fetch('https://api.textbee.dev/api/v2/sms/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${textbeeApiKey}`,
+        },
+        body: JSON.stringify({
+          to: phone,
+          text: message,
+        }),
+      })
+    );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Textbee error:', errorText);
-      throw new Error('Failed to send SMS notifications');
+    const responses = await Promise.all(smsPromises);
+    const failed = responses.filter(r => !r.ok);
+    
+    if (failed.length > 0) {
+      console.error(`Failed to send ${failed.length} SMS messages`);
     }
 
     console.log(`Blood request SMS sent to ${phoneNumbers.length} donors`);
