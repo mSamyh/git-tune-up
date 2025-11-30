@@ -36,12 +36,13 @@ serve(async (req) => {
     }
 
     // Fetch matching donors with availability_status = 'available' only
+    // Match on district (which is formatted as "Atoll - Island")
     const { data: donors, error: fetchError } = await supabase
       .from('profiles')
       .select('phone, full_name')
       .eq('blood_group', bloodGroup)
-      .eq('district', district)
-      .eq('availability_status', 'available');
+      .eq('availability_status', 'available')
+      .or(`district.eq.${district},district.ilike.%${district.split(' - ')[0]}%`);
 
     if (fetchError) {
       console.error('Database error:', fetchError);
