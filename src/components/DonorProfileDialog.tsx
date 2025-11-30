@@ -111,6 +111,18 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [] }: D
     
     if (status === 'available') {
       return <Badge variant="default" className="bg-green-600">Available</Badge>;
+    } else if (status === 'unavailable') {
+      // Check if unavailable due to 90-day rule
+      if (donor.last_donation_date) {
+        const daysSinceLastDonation = Math.floor(
+          (new Date().getTime() - new Date(donor.last_donation_date).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        if (daysSinceLastDonation < 90) {
+          const daysUntil = 90 - daysSinceLastDonation;
+          return <Badge variant="secondary">Available in {daysUntil} days</Badge>;
+        }
+      }
+      return <Badge variant="destructive">Unavailable</Badge>;
     } else if (status === 'available_soon') {
       const daysUntil = donor.available_date 
         ? Math.ceil((new Date(donor.available_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
