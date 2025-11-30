@@ -62,10 +62,11 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
   }, [filteredDonors, currentPage]);
 
   const fetchDonors = async () => {
-    // Fetch ALL registered profiles
+    // Fetch ALL registered profiles who are donors
     const { data: profileDonors } = await supabase
       .from("profiles")
-      .select("*");
+      .select("*")
+      .eq("user_type", "donor");
 
     // Fetch ALL donors from donor_directory (registered and unregistered)
     const { data: directoryDonors } = await supabase
