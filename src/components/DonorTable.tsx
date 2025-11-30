@@ -113,37 +113,29 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
       filtered = filtered.filter(donor => donor.blood_group === bloodGroupFilter);
     }
 
-    // Sort by: available -> available_soon (fewer days first) -> reserved -> unavailable -> registered users -> blank (unregistered)
+    // Sort by: available -> available_soon (earliest first) -> reserved -> registered users (unavailable) -> non-registered users
     filtered.sort((a, b) => {
-      // First priority: registration status
-      const aRegistered = a.is_registered !== false ? 1 : 0;
-      const bRegistered = b.is_registered !== false ? 1 : 0;
+      const statusOrder = {
+        'available': 0,
+        'available_soon': 1,
+        'reserved': 2,
+        'unavailable': 3,
+        'unregistered': 4
+      };
+
+      // Determine status for each donor
+      const aStatus = a.is_registered === false ? 'unregistered' : (a.availability_status || 'available');
+      const bStatus = b.is_registered === false ? 'unregistered' : (b.availability_status || 'available');
       
-      if (aRegistered !== bRegistered) {
-        return bRegistered - aRegistered; // Registered first
+      // First priority: availability status
+      if (statusOrder[aStatus] !== statusOrder[bStatus]) {
+        return statusOrder[aStatus] - statusOrder[bStatus];
       }
 
-      // Only sort by availability for registered users
-      if (aRegistered) {
-        const statusOrder = {
-          'available': 0,
-          'available_soon': 1,
-          'reserved': 2,
-          'unavailable': 3
-        };
-
-        const aStatus = a.availability_status || 'available';
-        const bStatus = b.availability_status || 'available';
-        
-        if (statusOrder[aStatus] !== statusOrder[bStatus]) {
-          return statusOrder[aStatus] - statusOrder[bStatus];
-        }
-
-        // For available_soon, sort by available_date (earliest first)
-        if (aStatus === 'available_soon' && bStatus === 'available_soon') {
-          if (a.available_date && b.available_date) {
-            return new Date(a.available_date).getTime() - new Date(b.available_date).getTime();
-          }
+      // For available_soon with same status, sort by available_date (earliest first)
+      if (aStatus === 'available_soon' && bStatus === 'available_soon') {
+        if (a.available_date && b.available_date) {
+          return new Date(a.available_date).getTime() - new Date(b.available_date).getTime();
         }
       }
 
