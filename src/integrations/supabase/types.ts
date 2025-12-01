@@ -231,6 +231,33 @@ export type Database = {
           },
         ]
       }
+      donor_points: {
+        Row: {
+          created_at: string
+          donor_id: string
+          id: string
+          lifetime_points: number
+          total_points: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          donor_id: string
+          id?: string
+          lifetime_points?: number
+          total_points?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          donor_id?: string
+          id?: string
+          lifetime_points?: number
+          total_points?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       islands: {
         Row: {
           atoll_id: string
@@ -335,6 +362,47 @@ export type Database = {
         }
         Relationships: []
       }
+      points_transactions: {
+        Row: {
+          created_at: string
+          description: string
+          donor_id: string
+          id: string
+          points: number
+          related_donation_id: string | null
+          related_redemption_id: string | null
+          transaction_type: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          donor_id: string
+          id?: string
+          points: number
+          related_donation_id?: string | null
+          related_redemption_id?: string | null
+          transaction_type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          donor_id?: string
+          id?: string
+          points?: number
+          related_donation_id?: string | null
+          related_redemption_id?: string | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_transactions_related_donation_id_fkey"
+            columns: ["related_donation_id"]
+            isOneToOne: false
+            referencedRelation: "donation_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -392,6 +460,53 @@ export type Database = {
         }
         Relationships: []
       }
+      redemption_history: {
+        Row: {
+          created_at: string
+          donor_id: string
+          expires_at: string
+          id: string
+          points_spent: number
+          qr_code_data: string
+          reward_id: string
+          status: string
+          verified_at: string | null
+          voucher_code: string
+        }
+        Insert: {
+          created_at?: string
+          donor_id: string
+          expires_at: string
+          id?: string
+          points_spent: number
+          qr_code_data: string
+          reward_id: string
+          status?: string
+          verified_at?: string | null
+          voucher_code: string
+        }
+        Update: {
+          created_at?: string
+          donor_id?: string
+          expires_at?: string
+          id?: string
+          points_spent?: number
+          qr_code_data?: string
+          reward_id?: string
+          status?: string
+          verified_at?: string | null
+          voucher_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "redemption_history_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "reward_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       request_responses: {
         Row: {
           created_at: string | null
@@ -436,6 +551,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reward_catalog: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          partner_logo_url: string | null
+          partner_name: string
+          points_required: number
+          terms_conditions: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          partner_logo_url?: string | null
+          partner_name: string
+          points_required: number
+          terms_conditions?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          partner_logo_url?: string | null
+          partner_name?: string
+          points_required?: number
+          terms_conditions?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reward_settings: {
+        Row: {
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       sms_logs: {
         Row: {
