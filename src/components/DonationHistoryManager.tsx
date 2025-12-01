@@ -123,13 +123,13 @@ export const DonationHistoryManager = () => {
         })
         .eq("donor_id", donorId);
 
-      // Record the transaction
+      // Record the transaction with negative points and 'adjusted' type
       await supabase
         .from("points_transactions")
         .insert({
           donor_id: donorId,
-          points: pointsPerDonation,
-          transaction_type: "earned", // Use "earned" since "deducted" is not allowed
+          points: -pointsPerDonation,
+          transaction_type: "adjusted",
           description: `Points deducted for deleted donation at ${hospitalName}`,
           related_donation_id: donationId,
         });

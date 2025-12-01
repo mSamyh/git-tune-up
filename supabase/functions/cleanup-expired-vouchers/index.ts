@@ -63,13 +63,13 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Log transaction
+        // Log transaction with 'expired' type
         await supabase
           .from('points_transactions')
           .insert({
             donor_id: voucher.donor_id,
             points: voucher.points_spent,
-            transaction_type: 'refunded',
+            transaction_type: 'expired',
             description: `Voucher expired - points auto-refunded (${voucher.voucher_code})`,
             related_redemption_id: voucher.id,
           });
