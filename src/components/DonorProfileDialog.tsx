@@ -34,9 +34,10 @@ interface DonorProfileDialogProps {
   isOpen: boolean;
   onClose: () => void;
   topDonors?: any[];
+  onUpdate?: () => void;
 }
 
-export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [] }: DonorProfileDialogProps) => {
+export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onUpdate }: DonorProfileDialogProps) => {
   const [donationHistory, setDonationHistory] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -177,8 +178,8 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [] }: D
         description: "Donor profile has been updated successfully",
       });
       setIsEditing(false);
-      // Refresh the donor data
-      window.location.reload();
+      onUpdate?.();
+      onClose();
     }
   };
 
