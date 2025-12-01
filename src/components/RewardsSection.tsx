@@ -235,6 +235,22 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
     return <div className="text-center p-4">Loading rewards...</div>;
   }
 
+  // Show empty state if user has no points record
+  if (!points) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
+        <Gift className="h-16 w-16 text-muted-foreground/50" />
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">No Rewards Yet</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            Start donating blood to earn points and unlock exclusive rewards from our partners. 
+            You'll earn 100 points for every donation!
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const currentPoints = points?.total_points || 0;
   const lifetimePoints = points?.lifetime_points || 0;
 
