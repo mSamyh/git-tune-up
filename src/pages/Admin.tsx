@@ -55,8 +55,10 @@ const Admin = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [editDonationDialogOpen, setEditDonationDialogOpen] = useState(false);
+  const [editRequestDialogOpen, setEditRequestDialogOpen] = useState(false);
   const [selectedDonor, setSelectedDonor] = useState<DonorProfile | null>(null);
   const [selectedDonation, setSelectedDonation] = useState<any | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
   
   // Edit form states
   const [editForm, setEditForm] = useState({
@@ -80,6 +82,18 @@ const Admin = () => {
     donation_date: new Date(),
     hospital_name: "",
     units_donated: 1,
+    notes: "",
+  });
+
+  // Edit request form states
+  const [editRequestForm, setEditRequestForm] = useState({
+    patient_name: "",
+    blood_group: "",
+    hospital_name: "",
+    contact_name: "",
+    contact_phone: "",
+    units_needed: 1,
+    urgency: "",
     notes: "",
   });
 
@@ -122,7 +136,7 @@ const Admin = () => {
   const fetchData = async () => {
     const [donorsData, requestsData, donationsData, atollsData, islandsData, templateData, pointsData] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-      supabase.from("blood_requests").select("*").order("created_at", { ascending: false }),
+      supabase.from("blood_requests").select("*, profiles!blood_requests_requested_by_fkey(full_name)").order("created_at", { ascending: false }),
       supabase.from("donation_history").select("*, profiles(full_name)").order("created_at", { ascending: false }),
       supabase.from("atolls").select("*").order("name"),
       supabase.from("islands").select("*, atolls(name)").order("name"),
@@ -423,6 +437,97 @@ const Admin = () => {
     }
   };
 
+  const openEditRequestDialog = (request: any) => {
+    setSelectedRequest(request);
+    setEditRequestForm({
+      patient_name: request.patient_name,
+      blood_group: request.blood_group,
+      hospital_name: request.hospital_name,
+      contact_name: request.contact_name,
+      contact_phone: request.contact_phone,
+      units_needed: request.units_needed,
+      urgency: request.urgency,
+      notes: request.notes || "",
+    });
+    setEditRequestDialogOpen(true);
+  };
+
+  const handleEditRequestSave = async () => {
+    if (!selectedRequest) return;
+
+    const { error } = await supabase
+      .from("blood_requests")
+      .update({
+        patient_name: editRequestForm.patient_name,
+        blood_group: editRequestForm.blood_group,
+        hospital_name: editRequestForm.hospital_name,
+        contact_name: editRequestForm.contact_name,
+        contact_phone: editRequestForm.contact_phone,
+        units_needed: editRequestForm.units_needed,
+        urgency: editRequestForm.urgency,
+        notes: editRequestForm.notes,
+      })
+      .eq("id", selectedRequest.id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: "Request updated",
+        description: "Blood request has been updated successfully",
+      });
+      setEditRequestDialogOpen(false);
+      fetchData();
+    }
+  };
+
+  const handleDeleteRequest = async (request: any) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the blood request for ${request.patient_name}?`
+    );
+
+    if (!confirmed) return;
+
+    const { error } = await supabase
+      .from("blood_requests")
+      .delete()
+      .eq("id", request.id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: error.message,
+      });
+    } else {
+      // Get current user's profile for notification
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user?.id)
+        .single();
+
+      const { notifyBloodRequestDeleted } = await import("@/lib/telegramNotifications");
+      await notifyBloodRequestDeleted({
+        patient_name: request.patient_name,
+        blood_group: request.blood_group,
+        hospital_name: request.hospital_name,
+        deleted_by: profile?.full_name || "Admin",
+      });
+
+      toast({
+        title: "Request deleted",
+        description: "Blood request has been deleted successfully",
+      });
+      fetchData();
+    }
+  };
+
   const addAtoll = async () => {
     if (!newAtoll) return;
 
@@ -667,6 +772,7 @@ const Admin = () => {
                       <TableHead>Blood Group</TableHead>
                       <TableHead>Hospital</TableHead>
                       <TableHead>Contact</TableHead>
+                      <TableHead>Requested By</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -681,6 +787,9 @@ const Admin = () => {
                         <TableCell>{request.hospital_name}</TableCell>
                         <TableCell>{request.contact_phone}</TableCell>
                         <TableCell>
+                          {request.profiles?.full_name || 'Unknown'}
+                        </TableCell>
+                        <TableCell>
                           <Badge
                             variant={
                               request.status === "active"
@@ -694,24 +803,22 @@ const Admin = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {request.status === "active" && (
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => updateRequestStatus(request.id, "fulfilled")}
-                              >
-                                Fulfill
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => updateRequestStatus(request.id, "cancelled")}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          )}
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditRequestDialog(request)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteRequest(request)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1133,6 +1240,126 @@ const Admin = () => {
               Cancel
             </Button>
             <Button onClick={handleEditDonationSave}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Blood Request Dialog */}
+      <Dialog open={editRequestDialogOpen} onOpenChange={setEditRequestDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Blood Request</DialogTitle>
+            <DialogDescription>
+              Update blood request details
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Patient Name</Label>
+              <Input
+                value={editRequestForm.patient_name}
+                onChange={(e) =>
+                  setEditRequestForm({ ...editRequestForm, patient_name: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Label>Blood Group</Label>
+              <Select
+                value={editRequestForm.blood_group}
+                onValueChange={(value) =>
+                  setEditRequestForm({ ...editRequestForm, blood_group: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="A+">A+</SelectItem>
+                  <SelectItem value="A-">A-</SelectItem>
+                  <SelectItem value="B+">B+</SelectItem>
+                  <SelectItem value="B-">B-</SelectItem>
+                  <SelectItem value="AB+">AB+</SelectItem>
+                  <SelectItem value="AB-">AB-</SelectItem>
+                  <SelectItem value="O+">O+</SelectItem>
+                  <SelectItem value="O-">O-</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Hospital Name</Label>
+              <Input
+                value={editRequestForm.hospital_name}
+                onChange={(e) =>
+                  setEditRequestForm({ ...editRequestForm, hospital_name: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Label>Contact Name</Label>
+              <Input
+                value={editRequestForm.contact_name}
+                onChange={(e) =>
+                  setEditRequestForm({ ...editRequestForm, contact_name: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Label>Contact Phone</Label>
+              <Input
+                value={editRequestForm.contact_phone}
+                onChange={(e) =>
+                  setEditRequestForm({ ...editRequestForm, contact_phone: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Label>Units Needed</Label>
+              <Input
+                type="number"
+                min="1"
+                value={editRequestForm.units_needed}
+                onChange={(e) =>
+                  setEditRequestForm({
+                    ...editRequestForm,
+                    units_needed: parseInt(e.target.value),
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label>Urgency</Label>
+              <Select
+                value={editRequestForm.urgency}
+                onValueChange={(value) =>
+                  setEditRequestForm({ ...editRequestForm, urgency: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="critical">Critical</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                  <SelectItem value="routine">Routine</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea
+                value={editRequestForm.notes}
+                onChange={(e) =>
+                  setEditRequestForm({ ...editRequestForm, notes: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditRequestDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditRequestSave}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
