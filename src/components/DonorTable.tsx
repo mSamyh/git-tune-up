@@ -296,6 +296,7 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
           isOpen={!!selectedDonor}
           onClose={() => setSelectedDonor(null)}
           topDonors={topDonors}
+          onUpdate={fetchDonors}
         />
       )}
     </div>
