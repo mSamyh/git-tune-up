@@ -78,37 +78,12 @@ serve(async (req) => {
       throw new Error("Failed to mark OTP as verified");
     }
 
-    // Create anonymous user session
-    const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
-
-    if (authError || !authData.user) {
-      console.error("Auth error:", authError);
-      throw new Error("Failed to create user session");
-    }
-
-    // If userData is provided, create profile
-    if (userData) {
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: authData.user.id,
-        full_name: userData.fullName,
-        phone: phone,
-        blood_group: userData.bloodGroup,
-        atoll: userData.atoll,
-        island: userData.island,
-        district: userData.atoll && userData.island ? `${userData.atoll} - ${userData.island}` : null,
-        address: null,
-      });
-
-      if (profileError) {
-        console.error("Profile creation error:", profileError);
-        throw new Error("Failed to create profile");
-      }
-    }
-
+    // Only verify OTP, don't create user yet
+    // User will be created after email/password setup
     return new Response(
       JSON.stringify({ 
         success: true,
-        session: authData.session
+        message: "OTP verified successfully"
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
