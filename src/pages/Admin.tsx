@@ -49,6 +49,7 @@ const Admin = () => {
   const [newAtoll, setNewAtoll] = useState("");
   const [newIsland, setNewIsland] = useState("");
   const [selectedAtollForIsland, setSelectedAtollForIsland] = useState("");
+  const [pointsPerDonation, setPointsPerDonation] = useState(100); // default value
   
   // Dialog states
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -119,13 +120,14 @@ const Admin = () => {
   };
 
   const fetchData = async () => {
-    const [donorsData, requestsData, donationsData, atollsData, islandsData, templateData] = await Promise.all([
+    const [donorsData, requestsData, donationsData, atollsData, islandsData, templateData, pointsData] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("blood_requests").select("*").order("created_at", { ascending: false }),
       supabase.from("donation_history").select("*, profiles(full_name)").order("created_at", { ascending: false }),
       supabase.from("atolls").select("*").order("name"),
       supabase.from("islands").select("*, atolls(name)").order("name"),
       supabase.from("sms_templates").select("*").eq("template_name", "blood_request_notification").maybeSingle(),
+      supabase.from("reward_settings").select("setting_value").eq("setting_key", "points_per_donation").single(),
     ]);
 
     if (donorsData.data) setDonors(donorsData.data);
@@ -134,7 +136,78 @@ const Admin = () => {
     if (atollsData.data) setAtolls(atollsData.data);
     if (islandsData.data) setIslands(islandsData.data);
     if (templateData.data) setSmsTemplate(templateData.data.template_body);
+    if (pointsData.data) setPointsPerDonation(parseInt(pointsData.data.setting_value));
     setLoading(false);
+  };
+
+  const awardPoints = async (donorId: string, donationId: string, hospitalName: string) => {
+    // Create or update donor_points record
+    const { data: existingPoints } = await supabase
+      .from("donor_points")
+      .select("*")
+      .eq("donor_id", donorId)
+      .single();
+
+    if (existingPoints) {
+      await supabase
+        .from("donor_points")
+        .update({
+          total_points: existingPoints.total_points + pointsPerDonation,
+          lifetime_points: existingPoints.lifetime_points + pointsPerDonation,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("donor_id", donorId);
+    } else {
+      await supabase
+        .from("donor_points")
+        .insert({
+          donor_id: donorId,
+          total_points: pointsPerDonation,
+          lifetime_points: pointsPerDonation,
+        });
+    }
+
+    // Record the transaction
+    await supabase
+      .from("points_transactions")
+      .insert({
+        donor_id: donorId,
+        points: pointsPerDonation,
+        transaction_type: "earned",
+        description: `Points earned from blood donation at ${hospitalName}`,
+        related_donation_id: donationId,
+      });
+  };
+
+  const deductPoints = async (donorId: string, donationId: string, hospitalName: string) => {
+    // Deduct points from donor_points record
+    const { data: existingPoints } = await supabase
+      .from("donor_points")
+      .select("*")
+      .eq("donor_id", donorId)
+      .single();
+
+    if (existingPoints) {
+      await supabase
+        .from("donor_points")
+        .update({
+          total_points: Math.max(0, existingPoints.total_points - pointsPerDonation),
+          lifetime_points: Math.max(0, existingPoints.lifetime_points - pointsPerDonation),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("donor_id", donorId);
+
+      // Record the transaction (use "earned" type since "deducted" is not allowed)
+      await supabase
+        .from("points_transactions")
+        .insert({
+          donor_id: donorId,
+          points: pointsPerDonation,
+          transaction_type: "earned",
+          description: `Points deducted for deleted donation at ${hospitalName}`,
+          related_donation_id: donationId,
+        });
+    }
   };
 
   const openEditDialog = (donor: DonorProfile) => {
@@ -184,7 +257,7 @@ const Admin = () => {
   const handleHistoryAdd = async () => {
     if (!selectedDonor) return;
 
-    const { error } = await supabase
+    const { data: newDonation, error } = await supabase
       .from("donation_history")
       .insert({
         donor_id: selectedDonor.id,
@@ -192,7 +265,9 @@ const Admin = () => {
         hospital_name: historyForm.hospital_name,
         units_donated: historyForm.units_donated,
         notes: historyForm.notes,
-      });
+      })
+      .select()
+      .single();
 
     if (error) {
       toast({
@@ -201,6 +276,11 @@ const Admin = () => {
         description: error.message,
       });
     } else {
+      // Award points for the donation
+      if (newDonation) {
+        await awardPoints(selectedDonor.id, newDonation.id, historyForm.hospital_name);
+      }
+
       // Update last_donation_date in profiles
       await supabase
         .from("profiles")
@@ -269,6 +349,18 @@ const Admin = () => {
 
   const handleDeleteDonation = async (donationId: string, donorName: string) => {
     if (!confirm(`Delete this donation record for ${donorName}?`)) return;
+
+    // Get donation details before deletion
+    const { data: donation } = await supabase
+      .from("donation_history")
+      .select("donor_id, hospital_name")
+      .eq("id", donationId)
+      .single();
+
+    if (donation) {
+      // Deduct points before deleting
+      await deductPoints(donation.donor_id, donationId, donation.hospital_name);
+    }
 
     const { error } = await supabase
       .from("donation_history")
