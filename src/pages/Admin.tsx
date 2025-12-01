@@ -136,7 +136,7 @@ const Admin = () => {
   const fetchData = async () => {
     const [donorsData, requestsData, donationsData, atollsData, islandsData, templateData, pointsData] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-      supabase.from("blood_requests").select("*, profiles!blood_requests_requested_by_fkey(full_name)").order("created_at", { ascending: false }),
+      supabase.from("blood_requests").select("*").order("created_at", { ascending: false }),
       supabase.from("donation_history").select("*, profiles(full_name)").order("created_at", { ascending: false }),
       supabase.from("atolls").select("*").order("name"),
       supabase.from("islands").select("*, atolls(name)").order("name"),
@@ -145,7 +145,25 @@ const Admin = () => {
     ]);
 
     if (donorsData.data) setDonors(donorsData.data);
-    if (requestsData.data) setRequests(requestsData.data);
+    
+    // Fetch requests and enrich with profile data
+    if (requestsData.data) {
+      const requestsWithProfiles = await Promise.all(
+        requestsData.data.map(async (request) => {
+          if (request.requested_by) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("id", request.requested_by)
+              .single();
+            return { ...request, requester_name: profile?.full_name || "Unknown" };
+          }
+          return { ...request, requester_name: "Unknown" };
+        })
+      );
+      setRequests(requestsWithProfiles);
+    }
+    
     if (donationsData.data) setDonations(donationsData.data);
     if (atollsData.data) setAtolls(atollsData.data);
     if (islandsData.data) setIslands(islandsData.data);
@@ -787,7 +805,7 @@ const Admin = () => {
                         <TableCell>{request.hospital_name}</TableCell>
                         <TableCell>{request.contact_phone}</TableCell>
                         <TableCell>
-                          {request.profiles?.full_name || 'Unknown'}
+                          {request.requester_name || 'Unknown'}
                         </TableCell>
                         <TableCell>
                           <Badge
