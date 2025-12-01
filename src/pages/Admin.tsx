@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Users, Heart, History, Edit, Trash2, Plus } from "lucide-react";
+import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -51,7 +52,9 @@ const Admin = () => {
   // Dialog states
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [editDonationDialogOpen, setEditDonationDialogOpen] = useState(false);
   const [selectedDonor, setSelectedDonor] = useState<DonorProfile | null>(null);
+  const [selectedDonation, setSelectedDonation] = useState<any | null>(null);
   
   // Edit form states
   const [editForm, setEditForm] = useState({
@@ -64,6 +67,14 @@ const Admin = () => {
   
   // History form states
   const [historyForm, setHistoryForm] = useState({
+    donation_date: new Date(),
+    hospital_name: "",
+    units_donated: 1,
+    notes: "",
+  });
+
+  // Edit donation form states
+  const [editDonationForm, setEditDonationForm] = useState({
     donation_date: new Date(),
     hospital_name: "",
     units_donated: 1,
@@ -217,6 +228,76 @@ const Admin = () => {
       fetchData();
     }
   };
+
+  const openEditDonationDialog = (donation: any) => {
+    setSelectedDonation(donation);
+    setEditDonationForm({
+      donation_date: new Date(donation.donation_date),
+      hospital_name: donation.hospital_name,
+      units_donated: donation.units_donated || 1,
+      notes: donation.notes || "",
+    });
+    setEditDonationDialogOpen(true);
+  };
+
+  const handleEditDonationSave = async () => {
+    if (!selectedDonation) return;
+
+    const { error } = await supabase
+      .from("donation_history")
+      .update({
+        donation_date: format(editDonationForm.donation_date, "yyyy-MM-dd"),
+        hospital_name: editDonationForm.hospital_name,
+        units_donated: editDonationForm.units_donated,
+        notes: editDonationForm.notes,
+      })
+      .eq("id", selectedDonation.id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: error.message,
+      });
+    } else {
+      toast({ title: "Donation updated successfully" });
+      setEditDonationDialogOpen(false);
+      fetchData();
+    }
+  };
+
+  const handleDeleteDonation = async (donationId: string, donorName: string) => {
+    if (!confirm(`Delete this donation record for ${donorName}?`)) return;
+
+    const { error } = await supabase
+      .from("donation_history")
+      .delete()
+      .eq("id", donationId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: error.message,
+      });
+    } else {
+      toast({ title: "Donation deleted successfully" });
+      fetchData();
+    }
+  };
+
+  // Group donations by donor
+  const donationsByDonor = donations.reduce((acc: any, donation: any) => {
+    const donorId = donation.donor_id;
+    if (!acc[donorId]) {
+      acc[donorId] = {
+        donor: donation.profiles,
+        donations: [],
+      };
+    }
+    acc[donorId].donations.push(donation);
+    return acc;
+  }, {});
 
   const updateRequestStatus = async (id: string, status: string) => {
     const request = requests.find(r => r.id === id);
@@ -551,33 +632,81 @@ const Admin = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Donation History</CardTitle>
-                <CardDescription>View all completed donations</CardDescription>
+                <CardDescription>View all completed donations grouped by donor</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Donor</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Hospital</TableHead>
-                      <TableHead>Units</TableHead>
-                      <TableHead>Notes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {donations.map((donation) => (
-                      <TableRow key={donation.id}>
-                        <TableCell className="font-medium">
-                          {donation.profiles?.full_name || 'Unknown'}
-                        </TableCell>
-                        <TableCell>{new Date(donation.donation_date).toLocaleDateString()}</TableCell>
-                        <TableCell>{donation.hospital_name}</TableCell>
-                        <TableCell>{donation.units_donated || 1}</TableCell>
-                        <TableCell>{donation.notes || '-'}</TableCell>
-                      </TableRow>
+                {Object.keys(donationsByDonor).length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No donation records found</p>
+                ) : (
+                  <Accordion type="single" collapsible className="w-full">
+                    {Object.entries(donationsByDonor).map(([donorId, data]: [string, any]) => (
+                      <AccordionItem key={donorId} value={donorId}>
+                        <AccordionTrigger className="hover:no-underline">
+                          <div className="flex items-center gap-4 text-left">
+                            <div className="font-medium">{data.donor?.full_name || 'Unknown Donor'}</div>
+                            <Badge variant="outline" className="ml-2">
+                              {data.donations.length} {data.donations.length === 1 ? 'donation' : 'donations'}
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Hospital</TableHead>
+                                <TableHead>Units</TableHead>
+                                <TableHead>Notes</TableHead>
+                                <TableHead>Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {data.donations.map((donation: any) => (
+                                <TableRow key={donation.id}>
+                                  <TableCell>
+                                    {new Date(donation.donation_date).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                    })}
+                                  </TableCell>
+                                  <TableCell>{donation.hospital_name}</TableCell>
+                                  <TableCell>{donation.units_donated || 1}</TableCell>
+                                  <TableCell className="max-w-xs truncate">
+                                    {donation.notes || '-'}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => openEditDonationDialog(donation)}
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() =>
+                                          handleDeleteDonation(
+                                            donation.id,
+                                            data.donor?.full_name || 'Unknown'
+                                          )
+                                        }
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </AccordionContent>
+                      </AccordionItem>
                     ))}
-                  </TableBody>
-                </Table>
+                  </Accordion>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -795,6 +924,7 @@ const Admin = () => {
                       date && setHistoryForm({ ...historyForm, donation_date: date })
                     }
                     initialFocus
+                    className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
@@ -832,6 +962,80 @@ const Admin = () => {
               Cancel
             </Button>
             <Button onClick={handleHistoryAdd}>Add Donation</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Donation Dialog */}
+      <Dialog open={editDonationDialogOpen} onOpenChange={setEditDonationDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Donation Record</DialogTitle>
+            <DialogDescription>
+              Update donation details
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Donation Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(editDonationForm.donation_date, "PPP")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={editDonationForm.donation_date}
+                    onSelect={(date) =>
+                      date && setEditDonationForm({ ...editDonationForm, donation_date: date })
+                    }
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <Label>Hospital Name</Label>
+              <Input
+                value={editDonationForm.hospital_name}
+                onChange={(e) =>
+                  setEditDonationForm({ ...editDonationForm, hospital_name: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Label>Units Donated</Label>
+              <Input
+                type="number"
+                min="1"
+                value={editDonationForm.units_donated}
+                onChange={(e) =>
+                  setEditDonationForm({
+                    ...editDonationForm,
+                    units_donated: parseInt(e.target.value),
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea
+                value={editDonationForm.notes}
+                onChange={(e) =>
+                  setEditDonationForm({ ...editDonationForm, notes: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDonationDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditDonationSave}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
