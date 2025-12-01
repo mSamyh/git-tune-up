@@ -30,10 +30,23 @@ export const DonationHistoryManager = () => {
   const [editUnits, setEditUnits] = useState("1");
   const { toast } = useToast();
 
+  const [pointsPerDonation, setPointsPerDonation] = useState(100); // default value
+
   useEffect(() => {
     fetchDonors();
     fetchDonations();
+    fetchPointsSettings();
   }, []);
+
+  const fetchPointsSettings = async () => {
+    const { data } = await supabase
+      .from("reward_settings")
+      .select("setting_value")
+      .eq("setting_key", "points_per_donation")
+      .single();
+
+    if (data) setPointsPerDonation(parseInt(data.setting_value));
+  };
 
   const fetchDonors = async () => {
     const { data } = await supabase
@@ -51,6 +64,76 @@ export const DonationHistoryManager = () => {
       .order("donation_date", { ascending: false });
 
     if (data) setDonations(data);
+  };
+
+  const awardPoints = async (donorId: string, donationId: string, hospitalName: string) => {
+    // Create or update donor_points record
+    const { data: existingPoints } = await supabase
+      .from("donor_points")
+      .select("*")
+      .eq("donor_id", donorId)
+      .single();
+
+    if (existingPoints) {
+      await supabase
+        .from("donor_points")
+        .update({
+          total_points: existingPoints.total_points + pointsPerDonation,
+          lifetime_points: existingPoints.lifetime_points + pointsPerDonation,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("donor_id", donorId);
+    } else {
+      await supabase
+        .from("donor_points")
+        .insert({
+          donor_id: donorId,
+          total_points: pointsPerDonation,
+          lifetime_points: pointsPerDonation,
+        });
+    }
+
+    // Record the transaction
+    await supabase
+      .from("points_transactions")
+      .insert({
+        donor_id: donorId,
+        points: pointsPerDonation,
+        transaction_type: "earned",
+        description: `Points earned from blood donation at ${hospitalName}`,
+        related_donation_id: donationId,
+      });
+  };
+
+  const deductPoints = async (donorId: string, donationId: string, hospitalName: string) => {
+    // Deduct points from donor_points record
+    const { data: existingPoints } = await supabase
+      .from("donor_points")
+      .select("*")
+      .eq("donor_id", donorId)
+      .single();
+
+    if (existingPoints) {
+      await supabase
+        .from("donor_points")
+        .update({
+          total_points: Math.max(0, existingPoints.total_points - pointsPerDonation),
+          lifetime_points: Math.max(0, existingPoints.lifetime_points - pointsPerDonation),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("donor_id", donorId);
+
+      // Record the transaction
+      await supabase
+        .from("points_transactions")
+        .insert({
+          donor_id: donorId,
+          points: pointsPerDonation,
+          transaction_type: "earned", // Use "earned" since "deducted" is not allowed
+          description: `Points deducted for deleted donation at ${hospitalName}`,
+          related_donation_id: donationId,
+        });
+    }
   };
 
   const addDonation = async () => {
@@ -76,7 +159,7 @@ export const DonationHistoryManager = () => {
     }
 
 
-    const { error } = await supabase
+    const { data: newDonation, error } = await supabase
       .from("donation_history")
       .insert({
         donor_id: selectedDonor,
@@ -84,7 +167,9 @@ export const DonationHistoryManager = () => {
         hospital_name: hospitalName,
         notes: notes || null,
         units_donated: parseInt(units),
-      });
+      })
+      .select()
+      .single();
 
     if (error) {
       toast({
@@ -93,6 +178,10 @@ export const DonationHistoryManager = () => {
         description: error.message,
       });
     } else {
+      // Award points for the donation
+      if (newDonation) {
+        await awardPoints(selectedDonor, newDonation.id, hospitalName);
+      }
       // Update last_donation_date in profile only if the new date is more recent
       const donor = donors.find(d => d.id === selectedDonor);
       if (!donor?.last_donation_date || donationDate > new Date(donor.last_donation_date)) {
@@ -129,6 +218,9 @@ export const DonationHistoryManager = () => {
   };
 
   const deleteDonation = async (donation: any) => {
+    // Deduct points before deleting the donation
+    await deductPoints(donation.donor_id, donation.id, donation.hospital_name);
+
     const { error } = await supabase
       .from("donation_history")
       .delete()
