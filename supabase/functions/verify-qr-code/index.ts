@@ -39,12 +39,20 @@ Deno.serve(async (req) => {
         )
       `)
       .eq('voucher_code', voucher_code)
-      .single();
+      .maybeSingle();
 
-    if (fetchError || !redemption) {
-      console.error('Error fetching redemption:', fetchError);
+    if (fetchError) {
+      console.error('Database error fetching redemption:', fetchError);
       return new Response(
-        JSON.stringify({ error: 'Invalid QR code' }),
+        JSON.stringify({ error: 'Database error occurred' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!redemption) {
+      console.error('No redemption found for voucher code:', voucher_code);
+      return new Response(
+        JSON.stringify({ error: 'Invalid voucher code. This QR code does not exist in our system.' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
