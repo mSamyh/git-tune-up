@@ -79,6 +79,15 @@ const DonorDirectory = () => {
           return priorityA - priorityB;
         }
 
+        // Within Priority 2 (Available in X days), sort by soonest date
+        if (priorityA === 2 && priorityB === 2) {
+          const daysA = getDaysUntilAvailable(a.available_date);
+          const daysB = getDaysUntilAvailable(b.available_date);
+          if (daysA !== daysB) {
+            return daysA - daysB;
+          }
+        }
+
         // Within same priority, sort by name
         return a.full_name.localeCompare(b.full_name);
       });
