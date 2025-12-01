@@ -43,17 +43,32 @@ const DonorDirectory = () => {
 
     if (!error && data) {
       const sortedData = data.sort((a, b) => {
-        const priorityMap: Record<string, number> = {
-          available: 1,           // 1. Available
-          available_soon: 2,      // 2. Available in X days
-          reserved: 3,            // 3. Reserved
-          unavailable: 4,         // 4. Unavailable
+        const getDaysSinceLastDonation = (lastDonationDate: string | null) => {
+          if (!lastDonationDate) return Infinity; // treat as fully available
+          return Math.floor(
+            (new Date().getTime() - new Date(lastDonationDate).getTime()) /
+            (1000 * 60 * 60 * 24)
+          );
         };
 
         const getPriority = (donor: any) => {
+          const daysSince = getDaysSinceLastDonation(donor.last_donation_date);
           const status = donor.availability_status as string | null;
-          if (!status) return 5;
-          return priorityMap[status] ?? 5;
+
+          // 3. Reserved explicitly
+          if (status === "reserved") return 3;
+
+          // 4. Unavailable explicitly
+          if (status === "unavailable") return 4;
+
+          // 1. Available now (90+ days or never donated)
+          if (daysSince >= 90) return 1;
+
+          // 2. Available in X days (< 90 days since donation)
+          if (daysSince < 90) return 2;
+
+          // Fallback
+          return 5;
         };
 
         const priorityA = getPriority(a);
