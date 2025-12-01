@@ -68,15 +68,6 @@ export const DonationHistoryManager = () => {
       return;
     }
 
-    // Validate date is not older than last donation date
-    if (donor?.last_donation_date && donationDate < new Date(donor.last_donation_date)) {
-      toast({
-        variant: "destructive",
-        title: "Invalid date",
-        description: "Cannot add dates older than the last donation date",
-      });
-      return;
-    }
 
     const { error } = await supabase
       .from("donation_history")
@@ -95,11 +86,14 @@ export const DonationHistoryManager = () => {
         description: error.message,
       });
     } else {
-      // Update last_donation_date in profile
-      await supabase
-        .from("profiles")
-        .update({ last_donation_date: format(donationDate, "yyyy-MM-dd") })
-        .eq("id", selectedDonor);
+      // Update last_donation_date in profile only if the new date is more recent
+      const donor = donors.find(d => d.id === selectedDonor);
+      if (!donor?.last_donation_date || donationDate > new Date(donor.last_donation_date)) {
+        await supabase
+          .from("profiles")
+          .update({ last_donation_date: format(donationDate, "yyyy-MM-dd") })
+          .eq("id", selectedDonor);
+      }
 
       toast({
         title: "Donation added",
@@ -177,17 +171,7 @@ export const DonationHistoryManager = () => {
                   mode="single"
                   selected={donationDate}
                   onSelect={setDonationDate}
-                  disabled={(date) => {
-                    // Can't select future dates
-                    if (date > new Date()) return true;
-                    // Can't select dates older than existing last_donation_date
-                    const donor = donors.find(d => d.id === selectedDonor);
-                    if (donor?.last_donation_date) {
-                      const existingDate = new Date(donor.last_donation_date);
-                      if (date < existingDate) return true;
-                    }
-                    return false;
-                  }}
+                  disabled={(date) => date > new Date()}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}
                 />
