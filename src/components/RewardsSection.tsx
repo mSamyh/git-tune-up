@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, QrCode, Trophy, Clock, CheckCircle } from "lucide-react";
+import { Gift, QrCode, Trophy, Clock, CheckCircle, Award, Star, Crown } from "lucide-react";
 import QRCode from "qrcode";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { getUserTier, calculateDiscountedPoints } from "@/lib/tierSystem";
 
 interface RewardsSectionProps {
   userId: string;
@@ -48,6 +49,7 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedRedemption, setSelectedRedemption] = useState<Redemption | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const [userTier, setUserTier] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -65,6 +67,12 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
       .maybeSingle();
     
     setPoints(pointsData);
+
+    // Get user tier
+    if (pointsData) {
+      const tier = await getUserTier(pointsData.lifetime_points);
+      setUserTier(tier);
+    }
 
     // Fetch available rewards
     const { data: rewardsData } = await supabase
@@ -94,11 +102,16 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
   };
 
   const handleRedeem = async (reward: Reward) => {
-    if (!points || points.total_points < reward.points_required) {
+    // Calculate discounted points based on user tier
+    const discountedPoints = userTier 
+      ? calculateDiscountedPoints(reward.points_required, userTier.discount)
+      : reward.points_required;
+
+    if (!points || points.total_points < discountedPoints) {
       toast({
         variant: "destructive",
         title: "Insufficient points",
-        description: `You need ${reward.points_required} points to redeem this reward.`,
+        description: `You need ${discountedPoints} points to redeem this reward.`,
       });
       return;
     }
@@ -121,13 +134,13 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
       // Generate QR code data (verification URL)
       const verifyUrl = `${window.location.origin}/verify-qr/${voucherCode}`;
       
-      // Create redemption record
+      // Create redemption record with discounted points
       const { data: redemption, error: redemptionError } = await supabase
         .from("redemption_history")
         .insert({
           donor_id: userId,
           reward_id: reward.id,
-          points_spent: reward.points_required,
+          points_spent: discountedPoints,
           voucher_code: voucherCode,
           qr_code_data: verifyUrl,
           expires_at: expiresAt.toISOString(),
@@ -144,24 +157,28 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
 
       if (redemptionError) throw redemptionError;
 
-      // Deduct points
+      // Deduct discounted points
       const { error: pointsError } = await supabase
         .from("donor_points")
         .update({ 
-          total_points: points.total_points - reward.points_required 
+          total_points: points.total_points - discountedPoints 
         })
         .eq("donor_id", userId);
 
       if (pointsError) throw pointsError;
 
-      // Record transaction
+      // Record transaction with tier discount info
+      const discountInfo = userTier 
+        ? ` (${userTier.name} ${userTier.discount}% discount: ${reward.points_required} → ${discountedPoints} pts)`
+        : "";
+      
       await supabase
         .from("points_transactions")
         .insert({
           donor_id: userId,
-          points: -reward.points_required,
+          points: -discountedPoints,
           transaction_type: "redeemed",
-          description: `Redeemed reward: ${reward.title}`,
+          description: `Redeemed reward: ${reward.title}${discountInfo}`,
           related_redemption_id: redemption.id,
         });
 
@@ -221,25 +238,54 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
   const currentPoints = points?.total_points || 0;
   const lifetimePoints = points?.lifetime_points || 0;
 
+  const getTierIcon = () => {
+    if (!userTier) return Trophy;
+    switch (userTier.icon) {
+      case "crown": return Crown;
+      case "star": return Star;
+      case "trophy": return Trophy;
+      default: return Award;
+    }
+  };
+
+  const TierIcon = getTierIcon();
+
   return (
     <div className="space-y-6">
-      {/* Points Summary */}
+      {/* Points Summary with Tier */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Trophy className="h-8 w-8 text-primary" />
+              <TierIcon className={`h-8 w-8 ${userTier?.color || "text-primary"}`} />
               <div>
-                <CardTitle className="text-2xl">{currentPoints} Points</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-2xl">{currentPoints} Points</CardTitle>
+                  {userTier && (
+                    <Badge className={userTier.color} variant="outline">
+                      {userTier.name}
+                    </Badge>
+                  )}
+                </div>
                 <CardDescription>Lifetime earned: {lifetimePoints} points</CardDescription>
               </div>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
             Earn 100 points for every blood donation. Use your points to redeem rewards from our partners.
           </p>
+          {userTier && (
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm font-semibold mb-1">
+                🎉 {userTier.name} Member Benefits:
+              </p>
+              <p className="text-sm text-muted-foreground">
+                You save {userTier.discount}% on all reward redemptions!
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -257,31 +303,48 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
             <p className="text-center text-muted-foreground py-8">No rewards available at the moment</p>
           ) : (
             <div className="space-y-4">
-              {rewards.map((reward) => (
-                <div key={reward.id} className="p-4 border rounded-lg">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold">{reward.title}</h3>
-                        <Badge variant="outline">{reward.category}</Badge>
+              {rewards.map((reward) => {
+                const discountedPoints = userTier 
+                  ? calculateDiscountedPoints(reward.points_required, userTier.discount)
+                  : reward.points_required;
+                const hasSavings = discountedPoints < reward.points_required;
+                
+                return (
+                  <div key={reward.id} className="p-4 border rounded-lg">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold">{reward.title}</h3>
+                          <Badge variant="outline">{reward.category}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">{reward.description}</p>
+                        <p className="text-xs text-muted-foreground">Partner: {reward.partner_name}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">{reward.description}</p>
-                      <p className="text-xs text-muted-foreground">Partner: {reward.partner_name}</p>
-                    </div>
-                    <div className="text-right ml-4">
-                      <p className="text-lg font-bold text-primary">{reward.points_required} pts</p>
-                      <Button
-                        size="sm"
-                        onClick={() => handleRedeem(reward)}
-                        disabled={currentPoints < reward.points_required}
-                        className="mt-2"
-                      >
-                        Redeem
-                      </Button>
+                      <div className="text-right ml-4">
+                        {hasSavings ? (
+                          <div>
+                            <p className="text-sm text-muted-foreground line-through">{reward.points_required} pts</p>
+                            <p className="text-lg font-bold text-primary">{discountedPoints} pts</p>
+                            <Badge variant="secondary" className="text-xs mb-2">
+                              Save {reward.points_required - discountedPoints} pts
+                            </Badge>
+                          </div>
+                        ) : (
+                          <p className="text-lg font-bold text-primary">{reward.points_required} pts</p>
+                        )}
+                        <Button
+                          size="sm"
+                          onClick={() => handleRedeem(reward)}
+                          disabled={currentPoints < discountedPoints}
+                          className="mt-2"
+                        >
+                          Redeem
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
