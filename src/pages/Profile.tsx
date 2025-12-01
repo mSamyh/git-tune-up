@@ -12,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Droplet, MapPin, Phone, Calendar as CalendarIcon, Edit, Save, Medal, Settings } from "lucide-react";
+import { ArrowLeft, Droplet, MapPin, Phone, Calendar as CalendarIcon, Edit, Save, Medal, Settings, Gift } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { BottomNav } from "@/components/BottomNav";
@@ -60,6 +60,7 @@ const Profile = () => {
   const [userType, setUserType] = useState("donor");
   const [selectedAtoll, setSelectedAtoll] = useState("");
   const [selectedIsland, setSelectedIsland] = useState("");
+  const [showRewardsDialog, setShowRewardsDialog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -308,6 +309,14 @@ const Profile = () => {
                     userName={profile.full_name}
                     onUploadComplete={(url) => setProfile(prev => prev ? {...prev, avatar_url: url} : null)}
                   />
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full shadow-md"
+                    onClick={() => setShowRewardsDialog(true)}
+                  >
+                    <Gift className="h-4 w-4" />
+                  </Button>
                 </div>
                 <div>
                   <CardTitle className="text-2xl">{profile.full_name}</CardTitle>
@@ -655,11 +664,20 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Rewards Section */}
-        <RewardsSection userId={profile.id} />
-
         <CheckAdminButton />
       </main>
+
+      <Dialog open={showRewardsDialog} onOpenChange={setShowRewardsDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Rewards & Benefits</DialogTitle>
+            <DialogDescription>
+              Earn points with every donation and redeem rewards
+            </DialogDescription>
+          </DialogHeader>
+          <RewardsSection userId={profile.id} />
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>
