@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch the redemption record
+    // Fetch the redemption record with reward details
     const { data: redemption, error: fetchError } = await supabase
       .from('redemption_history')
       .select(`
@@ -36,10 +36,6 @@ Deno.serve(async (req) => {
           partner_name,
           points_required,
           is_active
-        ),
-        profiles (
-          full_name,
-          phone
         )
       `)
       .eq('voucher_code', voucher_code)
@@ -56,12 +52,20 @@ Deno.serve(async (req) => {
     // Check if reward program is still active
     const rewardProgramActive = redemption.reward_catalog?.is_active ?? false;
 
+    // Load donor profile details separately (no FK relationship on table)
+    const { data: donorProfile } = await supabase
+      .from('profiles')
+      .select('full_name, phone')
+      .eq('id', redemption.donor_id)
+      .maybeSingle();
+
     // Check if already verified
     if (redemption.status === 'verified') {
       return new Response(
         JSON.stringify({
           error: 'This voucher has already been used',
           redemption,
+          profiles: donorProfile,
           reward_program_active: rewardProgramActive
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -83,6 +87,7 @@ Deno.serve(async (req) => {
         JSON.stringify({
           error: 'This QR code has expired',
           redemption,
+          profiles: donorProfile,
           reward_program_active: rewardProgramActive
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -123,8 +128,9 @@ Deno.serve(async (req) => {
         redemption: {
           ...redemption,
           status: 'verified',
-          verified_at: now.toISOString()
-        }
+          verified_at: now.toISOString(),
+        },
+        profiles: donorProfile,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
