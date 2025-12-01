@@ -108,7 +108,39 @@ const Profile = () => {
 
     const { data } = await supabase.rpc('get_donation_count', { donor_uuid: user.id });
     
-    setDonationCount(data || 0);
+    const count = data || 0;
+    setDonationCount(count);
+
+    // If donation count is 0, automatically clear last_donation_date
+    if (count === 0 && profile?.last_donation_date) {
+      await supabase
+        .from("profiles")
+        .update({ 
+          last_donation_date: null,
+          availability_status: 'available'
+        })
+        .eq("id", user.id);
+      
+      await fetchProfile();
+    } else if (count > 0) {
+      // If donations exist, fetch the most recent donation date from history
+      const { data: historyData } = await supabase
+        .from("donation_history")
+        .select("donation_date")
+        .eq("donor_id", user.id)
+        .order("donation_date", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (historyData && historyData.donation_date !== profile?.last_donation_date) {
+        await supabase
+          .from("profiles")
+          .update({ last_donation_date: historyData.donation_date })
+          .eq("id", user.id);
+        
+        await fetchProfile();
+      }
+    }
   };
 
   const canSetAvailable = () => {
@@ -647,6 +679,25 @@ const DonationHistory = ({ donorId }: { donorId: string }) => {
     if (data) setHistory(data);
   };
 
+  const getTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffMonths = Math.floor(diffDays / 30);
+    const diffYears = Math.floor(diffDays / 365);
+
+    if (diffYears > 0) {
+      return `${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
+    } else if (diffMonths > 0) {
+      return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
+    } else if (diffDays > 0) {
+      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    } else {
+      return 'Today';
+    }
+  };
+
   if (history.length === 0) return null;
 
   return (
@@ -663,6 +714,9 @@ const DonationHistory = ({ donorId }: { donorId: string }) => {
                 <p className="font-medium">{donation.hospital_name}</p>
                 <p className="text-sm text-muted-foreground">
                   {new Date(donation.donation_date).toLocaleDateString()}
+                </p>
+                <p className="text-xs text-muted-foreground italic">
+                  {getTimeAgo(donation.donation_date)}
                 </p>
                 {donation.notes && (
                   <p className="text-xs text-muted-foreground">{donation.notes}</p>
