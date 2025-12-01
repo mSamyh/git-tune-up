@@ -42,52 +42,27 @@ const DonorDirectory = () => {
       .in("user_type", ["donor", "both"]);
 
     if (!error && data) {
-      // Custom sorting logic
       const sortedData = data.sort((a, b) => {
-        // Helper function to get days until available
-        const getDaysUntilAvailable = (lastDonationDate: string | null) => {
-          if (!lastDonationDate) return -1; // Available now
-          const daysSince = Math.floor(
-            (new Date().getTime() - new Date(lastDonationDate).getTime()) / (1000 * 60 * 60 * 24)
-          );
-          return Math.max(0, 90 - daysSince);
+        const priorityMap: Record<string, number> = {
+          available: 1,           // 1. Available
+          available_soon: 2,      // 2. Available in X days
+          reserved: 3,            // 3. Reserved
+          unavailable: 4,         // 4. Unavailable
         };
 
-        // Determine priority for each donor
         const getPriority = (donor: any) => {
-          const daysUntil = getDaysUntilAvailable(donor.last_donation_date);
-          
-          // 1. Available (registered users first)
-          if (donor.availability_status === 'available' && daysUntil <= 0) {
-            return donor.id ? 1 : 5; // id exists = registered, else = not registered
-          }
-          
-          // 2. Available in X days
-          if (daysUntil > 0 && daysUntil < 90) {
-            return 2;
-          }
-          
-          // 3. Reserved
-          if (donor.availability_status === 'reserved') {
-            return 3;
-          }
-          
-          // 4. Unavailable
-          if (donor.availability_status === 'unavailable') {
-            return 4;
-          }
-          
-          // 5. Not registered (fallback)
-          return 6;
+          const status = donor.availability_status as string | null;
+          if (!status) return 5;
+          return priorityMap[status] ?? 5;
         };
 
         const priorityA = getPriority(a);
         const priorityB = getPriority(b);
-        
+
         if (priorityA !== priorityB) {
           return priorityA - priorityB;
         }
-        
+
         // Within same priority, sort by name
         return a.full_name.localeCompare(b.full_name);
       });
@@ -96,7 +71,6 @@ const DonorDirectory = () => {
     }
     setLoading(false);
   };
-
   const filterDonors = () => {
     let filtered = donors;
 
