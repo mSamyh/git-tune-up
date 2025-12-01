@@ -91,21 +91,22 @@ export function RewardsAdminPanel() {
     // Fetch all donor points
     const { data: donorPointsData } = await supabase
       .from("donor_points")
-      .select(`
-        *,
-        profiles:donor_id (
-          full_name,
-          phone,
-          blood_group
-        )
-      `)
+      .select("*")
       .order("lifetime_points", { ascending: false });
     
-    // Fetch tier info for each donor
-    if (donorPointsData) {
+    // Fetch all profiles
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, full_name, phone, blood_group");
+    
+    // Fetch tier info for each donor and match with profiles
+    if (donorPointsData && profilesData) {
+      const profilesMap = new Map(profilesData.map(p => [p.id, p]));
+      
       const donorsWithTiers = await Promise.all(
         donorPointsData.map(async (donor) => ({
           ...donor,
+          profiles: profilesMap.get(donor.donor_id),
           tier: await getUserTier(donor.lifetime_points)
         }))
       );
