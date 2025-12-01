@@ -16,7 +16,6 @@ interface BloodRequest {
   blood_group: string;
   units_needed: number;
   hospital_name: string;
-  hospital_address: string;
   contact_name: string;
   contact_phone: string;
   urgency: string;
@@ -244,7 +243,6 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
                     <p className="font-medium">{request.hospital_name}</p>
-                    <p className="text-muted-foreground">{request.hospital_address}</p>
                   </div>
                 </div>
 

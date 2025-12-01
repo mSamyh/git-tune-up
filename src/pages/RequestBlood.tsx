@@ -24,7 +24,6 @@ const RequestBlood = () => {
     bloodGroup: "",
     unitsNeeded: "",
     hospitalName: "",
-    hospitalAddress: "",
     contactName: "",
     contactPhone: "",
     urgency: "normal",
@@ -63,7 +62,6 @@ const RequestBlood = () => {
           blood_group: formData.bloodGroup,
           units_needed: parseInt(formData.unitsNeeded),
           hospital_name: formData.hospitalName,
-          hospital_address: formData.hospitalAddress,
           contact_name: formData.contactName,
           contact_phone: formData.contactPhone,
           urgency: formData.urgency,
@@ -190,16 +188,6 @@ const RequestBlood = () => {
                   id="hospitalName"
                   value={formData.hospitalName}
                   onChange={(e) => setFormData({ ...formData, hospitalName: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="hospitalAddress">Hospital Address</Label>
-                <Input
-                  id="hospitalAddress"
-                  value={formData.hospitalAddress}
-                  onChange={(e) => setFormData({ ...formData, hospitalAddress: e.target.value })}
                   required
                 />
               </div>

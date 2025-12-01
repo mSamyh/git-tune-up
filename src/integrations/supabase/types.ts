@@ -39,7 +39,6 @@ export type Database = {
           contact_phone: string
           created_at: string | null
           emergency_type: string | null
-          hospital_address: string
           hospital_name: string
           id: string
           notes: string | null
@@ -56,7 +55,6 @@ export type Database = {
           contact_phone: string
           created_at?: string | null
           emergency_type?: string | null
-          hospital_address: string
           hospital_name: string
           id?: string
           notes?: string | null
@@ -73,7 +71,6 @@ export type Database = {
           contact_phone?: string
           created_at?: string | null
           emergency_type?: string | null
-          hospital_address?: string
           hospital_name?: string
           id?: string
           notes?: string | null
