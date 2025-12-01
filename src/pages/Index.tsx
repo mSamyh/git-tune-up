@@ -69,7 +69,7 @@ const Index = () => {
 
           <footer className="mt-16 text-center pb-8">
             <p className="text-muted-foreground mb-2 flex items-center justify-center gap-1">
-              Built with <Heart className="h-4 w-4 text-red-500 fill-red-500 inline animate-pulse border rounded-none shadow-none opacity-85" /> to connect with donors
+              Built with <Heart className="h-4 w-4 text-red-500 fill-red-500 inline animate-pulse rounded-none shadow-none opacity-85 border-0" /> to connect with donors
             </p>
             <Button variant="link" onClick={() => navigate("/faq")} className="text-primary hover:underline p-0 h-auto">
               FAQ
