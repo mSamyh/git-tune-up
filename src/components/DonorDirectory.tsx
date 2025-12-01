@@ -43,29 +43,30 @@ const DonorDirectory = () => {
 
     if (!error && data) {
       const sortedData = data.sort((a, b) => {
-        const getDaysSinceLastDonation = (lastDonationDate: string | null) => {
-          if (!lastDonationDate) return Infinity; // treat as fully available
-          return Math.floor(
-            (new Date().getTime() - new Date(lastDonationDate).getTime()) /
+        const getDaysUntilAvailable = (availableDate: string | null) => {
+          if (!availableDate) return 0; // treat as available now
+          const diff = Math.floor(
+            (new Date(availableDate).getTime() - new Date().getTime()) /
             (1000 * 60 * 60 * 24)
           );
+          return Math.max(0, diff);
         };
 
         const getPriority = (donor: any) => {
-          const daysSince = getDaysSinceLastDonation(donor.last_donation_date);
           const status = donor.availability_status as string | null;
+          const daysUntil = getDaysUntilAvailable(donor.available_date);
 
-          // 3. Reserved explicitly
+          // 1. Available
+          if (status === "available") return 1;
+
+          // 2. Available in X days (unavailable but has future available_date)
+          if (status === "unavailable" && daysUntil > 0) return 2;
+
+          // 3. Reserved
           if (status === "reserved") return 3;
 
-          // 4. Unavailable explicitly
+          // 4. Unavailable (no upcoming available_date)
           if (status === "unavailable") return 4;
-
-          // 1. Available now (90+ days or never donated)
-          if (daysSince >= 90) return 1;
-
-          // 2. Available in X days (< 90 days since donation)
-          if (daysSince < 90) return 2;
 
           // Fallback
           return 5;
