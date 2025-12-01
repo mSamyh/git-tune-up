@@ -34,7 +34,8 @@ Deno.serve(async (req) => {
           title,
           description,
           partner_name,
-          points_required
+          points_required,
+          is_active
         ),
         profiles (
           full_name,
@@ -52,12 +53,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check if reward program is still active
+    const rewardProgramActive = redemption.reward_catalog?.is_active ?? false;
+
     // Check if already verified
     if (redemption.status === 'verified') {
       return new Response(
         JSON.stringify({
           error: 'This voucher has already been used',
-          redemption
+          redemption,
+          reward_program_active: rewardProgramActive
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -77,10 +82,17 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           error: 'This QR code has expired',
-          redemption
+          redemption,
+          reward_program_active: rewardProgramActive
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Warn if reward program is inactive but still allow verification
+    let warningMessage = '';
+    if (!rewardProgramActive) {
+      warningMessage = 'Note: This reward program is currently inactive, but this voucher is still valid.';
     }
 
     // Verify the QR code
@@ -106,6 +118,8 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         message: 'QR code verified successfully',
+        warning: warningMessage,
+        reward_program_active: rewardProgramActive,
         redemption: {
           ...redemption,
           status: 'verified',

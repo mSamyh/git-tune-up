@@ -35,6 +35,7 @@ interface Redemption {
   expires_at: string;
   status: string;
   verified_at: string | null;
+  points_spent: number;
   reward_catalog: {
     title: string;
     partner_name: string;
@@ -218,6 +219,53 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
     setQrDialogOpen(true);
   };
 
+  const handleDeleteVoucher = async (redemptionId: string, pointsSpent: number) => {
+    try {
+      // Delete the redemption
+      const { error: deleteError } = await supabase
+        .from("redemption_history")
+        .delete()
+        .eq("id", redemptionId);
+
+      if (deleteError) throw deleteError;
+
+      // Refund the points
+      if (points) {
+        await supabase
+          .from("donor_points")
+          .update({ 
+            total_points: points.total_points + pointsSpent 
+          })
+          .eq("donor_id", userId);
+
+        // Record refund transaction
+        await supabase
+          .from("points_transactions")
+          .insert({
+            donor_id: userId,
+            points: pointsSpent,
+            transaction_type: "refunded",
+            description: "Voucher deleted - points refunded",
+            related_redemption_id: redemptionId,
+          });
+      }
+
+      await fetchRewardsData();
+      
+      toast({
+        title: "Voucher deleted",
+        description: `${pointsSpent} points have been refunded to your account.`,
+      });
+    } catch (error: any) {
+      console.error("Error deleting voucher:", error);
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: error.message,
+      });
+    }
+  };
+
   const getStatusBadge = (status: string, expiresAt: string) => {
     if (status === "verified") {
       return <Badge className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Verified</Badge>;
@@ -378,28 +426,44 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {redemptions.map((redemption) => (
-                <div key={redemption.id} className="p-3 border rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{redemption.reward_catalog.title}</h4>
-                      <p className="text-xs text-muted-foreground">{redemption.reward_catalog.partner_name}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Expires: {new Date(redemption.expires_at).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(redemption.status, redemption.expires_at)}
-                      {redemption.status === "pending" && new Date(redemption.expires_at) > new Date() && (
-                        <Button size="sm" variant="outline" onClick={() => showQRCode(redemption)}>
-                          <QrCode className="h-4 w-4 mr-1" />
-                          Show QR
-                        </Button>
-                      )}
+              {redemptions.map((redemption) => {
+                const isExpired = new Date(redemption.expires_at) < new Date() || redemption.status === "expired";
+                const isUsed = redemption.status === "verified";
+                const canDelete = redemption.status !== "verified";
+                
+                return (
+                  <div key={redemption.id} className="p-3 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{redemption.reward_catalog.title}</h4>
+                        <p className="text-xs text-muted-foreground">{redemption.reward_catalog.partner_name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Expires: {new Date(redemption.expires_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(redemption.status, redemption.expires_at)}
+                        {redemption.status === "pending" && !isExpired && (
+                          <Button size="sm" variant="outline" onClick={() => showQRCode(redemption)}>
+                            <QrCode className="h-4 w-4 mr-1" />
+                            Show QR
+                          </Button>
+                        )}
+                        {canDelete && (
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => handleDeleteVoucher(redemption.id, redemption.points_spent)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            Delete
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

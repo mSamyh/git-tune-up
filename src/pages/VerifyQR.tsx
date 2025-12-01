@@ -11,6 +11,8 @@ export default function VerifyQR() {
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [rewardProgramActive, setRewardProgramActive] = useState<boolean>(true);
 
   useEffect(() => {
     verifyVoucher();
@@ -33,8 +35,11 @@ export default function VerifyQR() {
       if (data.error) {
         setError(data.error);
         setResult(data.redemption);
+        setRewardProgramActive(data.reward_program_active ?? true);
       } else {
         setResult(data.redemption);
+        setWarning(data.warning);
+        setRewardProgramActive(data.reward_program_active ?? true);
       }
     } catch (err: any) {
       console.error("Verification error:", err);
@@ -81,6 +86,11 @@ export default function VerifyQR() {
             <CardDescription className="text-center">
               {error || "This voucher has been successfully verified and redeemed"}
             </CardDescription>
+            {warning && (
+              <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-sm text-yellow-800 dark:text-yellow-200 text-center">
+                {warning}
+              </div>
+            )}
           </CardHeader>
           {result && (
             <CardContent className="space-y-4">
@@ -98,6 +108,18 @@ export default function VerifyQR() {
                     <p className="text-sm text-muted-foreground">Donor</p>
                     <p className="font-semibold">{result.profiles?.full_name}</p>
                     <p className="text-xs text-muted-foreground">{result.profiles?.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Reward Program Status</p>
+                    {rewardProgramActive ? (
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                        Active
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                        Inactive
+                      </Badge>
+                    )}
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Voucher Code</p>
