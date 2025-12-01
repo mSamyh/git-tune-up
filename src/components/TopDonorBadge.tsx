@@ -18,7 +18,7 @@ export const TopDonorBadge = ({ rank, className = "" }: TopDonorBadgeProps) => {
 
   return (
     <Badge 
-      className={`${styles[rank as keyof typeof styles]} font-bold px-2 py-1 text-sm ${className}`}
+      className={`${styles[rank as keyof typeof styles]} font-bold px-1.5 py-0.5 text-xs ${className}`}
     >
       {rank}
     </Badge>
