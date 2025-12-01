@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Calendar as CalendarIcon, Plus, Trash, User } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Trash, User, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,11 @@ export const DonationHistoryManager = () => {
   const [hospitalName, setHospitalName] = useState("");
   const [notes, setNotes] = useState("");
   const [units, setUnits] = useState("1");
+  const [editingDonation, setEditingDonation] = useState<any>(null);
+  const [editDate, setEditDate] = useState<Date>();
+  const [editHospital, setEditHospital] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editUnits, setEditUnits] = useState("1");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -122,6 +128,84 @@ export const DonationHistoryManager = () => {
         title: "Donation deleted",
       });
       fetchDonations();
+      fetchDonors();
+    }
+  };
+
+  const openEditDialog = (donation: any) => {
+    setEditingDonation(donation);
+    setEditDate(new Date(donation.donation_date));
+    setEditHospital(donation.hospital_name);
+    setEditNotes(donation.notes || "");
+    setEditUnits(donation.units_donated.toString());
+  };
+
+  const closeEditDialog = () => {
+    setEditingDonation(null);
+    setEditDate(undefined);
+    setEditHospital("");
+    setEditNotes("");
+    setEditUnits("1");
+  };
+
+  const updateDonation = async () => {
+    if (!editDate || !editHospital.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Missing information",
+        description: "Please provide date and hospital name",
+      });
+      return;
+    }
+
+    // Validate date is not in the future
+    if (editDate > new Date()) {
+      toast({
+        variant: "destructive",
+        title: "Invalid date",
+        description: "Cannot set future dates as donation date",
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from("donation_history")
+      .update({
+        donation_date: format(editDate, "yyyy-MM-dd"),
+        hospital_name: editHospital.trim(),
+        notes: editNotes.trim() || null,
+        units_donated: parseInt(editUnits),
+      })
+      .eq("id", editingDonation.id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to update donation",
+        description: error.message,
+      });
+    } else {
+      // Update last_donation_date in profile if this was the most recent donation
+      const donorDonations = donations.filter(d => d.donor_id === editingDonation.donor_id);
+      const isNewest = !donorDonations.some(d => 
+        d.id !== editingDonation.id && new Date(d.donation_date) > editDate
+      );
+
+      if (isNewest) {
+        await supabase
+          .from("profiles")
+          .update({ last_donation_date: format(editDate, "yyyy-MM-dd") })
+          .eq("id", editingDonation.donor_id);
+      }
+
+      toast({
+        title: "Donation updated",
+        description: "Donation history updated successfully",
+      });
+
+      closeEditDialog();
+      fetchDonations();
+      fetchDonors();
     }
   };
 
@@ -259,13 +343,22 @@ export const DonationHistoryManager = () => {
                             <TableCell>{donation.units_donated}</TableCell>
                             <TableCell className="text-muted-foreground">{donation.notes || "—"}</TableCell>
                             <TableCell>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => deleteDonation(donation.id)}
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEditDialog(donation)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => deleteDonation(donation.id)}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -282,6 +375,86 @@ export const DonationHistoryManager = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!editingDonation} onOpenChange={(open) => !open && closeEditDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Donation Record</DialogTitle>
+            <DialogDescription>
+              Update the donation details for {editingDonation?.profiles?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Donation Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !editDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {editDate ? format(editDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={editDate}
+                    onSelect={setEditDate}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Hospital Name</Label>
+              <Input
+                value={editHospital}
+                onChange={(e) => setEditHospital(e.target.value)}
+                placeholder="Enter hospital name"
+                maxLength={200}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Units Donated</Label>
+              <Input
+                type="number"
+                min="1"
+                max="10"
+                value={editUnits}
+                onChange={(e) => setEditUnits(e.target.value)}
+                placeholder="1"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Notes (Optional)</Label>
+              <Input
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="Additional notes"
+                maxLength={500}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeEditDialog}>
+              Cancel
+            </Button>
+            <Button onClick={updateDonation}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
