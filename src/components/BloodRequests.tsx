@@ -142,6 +142,24 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
           });
       }
 
+      // Send Telegram notification for donor response
+      const { data: donorProfile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", currentUser)
+        .single();
+
+      if (donorProfile) {
+        const { notifyDonorResponse } = await import("@/lib/telegramNotifications");
+        await notifyDonorResponse({
+          donor_name: donorProfile.full_name,
+          patient_name: selectedRequest.patient_name,
+          blood_group: selectedRequest.blood_group,
+          status: "pending",
+          message: responseMessage
+        });
+      }
+
       toast({
         title: "Response sent",
         description: "The requestor will see your response",
@@ -175,12 +193,32 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
   };
 
   const deleteRequest = async (requestId: string) => {
+    const request = requests.find(r => r.id === requestId);
+    
     const { error } = await supabase
       .from("blood_requests")
       .delete()
       .eq("id", requestId);
 
     if (!error) {
+      // Send Telegram notification for deletion
+      if (request) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user?.id || "")
+          .single();
+
+        const { notifyBloodRequestDeleted } = await import("@/lib/telegramNotifications");
+        await notifyBloodRequestDeleted({
+          patient_name: request.patient_name,
+          blood_group: request.blood_group,
+          hospital_name: request.hospital_name,
+          deleted_by: profile?.full_name || "Unknown"
+        });
+      }
+
       toast({
         title: "Request deleted",
       });
@@ -189,12 +227,25 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
   };
 
   const markAsFulfilled = async (requestId: string) => {
+    const request = requests.find(r => r.id === requestId);
+    
     const { error } = await supabase
       .from("blood_requests")
       .update({ status: "fulfilled" })
       .eq("id", requestId);
 
     if (!error) {
+      // Send Telegram notification for fulfilled request
+      if (request) {
+        const { notifyBloodRequestFulfilled } = await import("@/lib/telegramNotifications");
+        await notifyBloodRequestFulfilled({
+          patient_name: request.patient_name,
+          blood_group: request.blood_group,
+          hospital_name: request.hospital_name,
+          units_needed: request.units_needed
+        });
+      }
+
       toast({
         title: "Request marked as fulfilled",
       });
