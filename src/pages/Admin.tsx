@@ -6,22 +6,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Users, Heart, History, Settings, MapPin } from "lucide-react";
+import { Users, Heart, History, Edit, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DonationHistoryManager } from "@/components/DonationHistoryManager";
 import { CSVImporter } from "@/components/CSVImporter";
 import { UserRoleManager } from "@/components/UserRoleManager";
 import { TelegramConfigManager } from "@/components/TelegramConfigManager";
 import { Textarea } from "@/components/ui/textarea";
 import { AppHeader } from "@/components/AppHeader";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+
+interface DonorProfile {
+  id: string;
+  full_name: string;
+  blood_group: string;
+  phone: string;
+  district?: string;
+  atoll?: string;
+  is_available: boolean;
+  last_donation_date?: string;
+  address?: string;
+  availability_status?: string;
+}
 
 const Admin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [donors, setDonors] = useState<any[]>([]);
+  const [donors, setDonors] = useState<DonorProfile[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [donations, setDonations] = useState<any[]>([]);
   const [atolls, setAtolls] = useState<any[]>([]);
@@ -30,6 +47,29 @@ const Admin = () => {
   const [newAtoll, setNewAtoll] = useState("");
   const [newIsland, setNewIsland] = useState("");
   const [selectedAtollForIsland, setSelectedAtollForIsland] = useState("");
+  
+  // Dialog states
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [selectedDonor, setSelectedDonor] = useState<DonorProfile | null>(null);
+  
+  // Edit form states
+  const [editForm, setEditForm] = useState({
+    full_name: "",
+    blood_group: "",
+    phone: "",
+    district: "",
+    address: "",
+  });
+  
+  // History form states
+  const [historyForm, setHistoryForm] = useState({
+    donation_date: new Date(),
+    hospital_name: "",
+    units_donated: 1,
+    notes: "",
+  });
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -73,7 +113,7 @@ const Admin = () => {
       supabase.from("donation_history").select("*, profiles(full_name)").order("created_at", { ascending: false }),
       supabase.from("atolls").select("*").order("name"),
       supabase.from("islands").select("*, atolls(name)").order("name"),
-      supabase.from("sms_templates").select("*").eq("template_name", "blood_request_notification").single(),
+      supabase.from("sms_templates").select("*").eq("template_name", "blood_request_notification").maybeSingle(),
     ]);
 
     if (donorsData.data) setDonors(donorsData.data);
@@ -85,8 +125,100 @@ const Admin = () => {
     setLoading(false);
   };
 
+  const openEditDialog = (donor: DonorProfile) => {
+    setSelectedDonor(donor);
+    setEditForm({
+      full_name: donor.full_name,
+      blood_group: donor.blood_group,
+      phone: donor.phone,
+      district: donor.district || "",
+      address: donor.address || "",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const openHistoryDialog = (donor: DonorProfile) => {
+    setSelectedDonor(donor);
+    setHistoryForm({
+      donation_date: new Date(),
+      hospital_name: "",
+      units_donated: 1,
+      notes: "",
+    });
+    setHistoryDialogOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!selectedDonor) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update(editForm)
+      .eq("id", selectedDonor.id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: error.message,
+      });
+    } else {
+      toast({ title: "Donor updated successfully" });
+      setEditDialogOpen(false);
+      fetchData();
+    }
+  };
+
+  const handleHistoryAdd = async () => {
+    if (!selectedDonor) return;
+
+    const { error } = await supabase
+      .from("donation_history")
+      .insert({
+        donor_id: selectedDonor.id,
+        donation_date: format(historyForm.donation_date, "yyyy-MM-dd"),
+        hospital_name: historyForm.hospital_name,
+        units_donated: historyForm.units_donated,
+        notes: historyForm.notes,
+      });
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to add donation history",
+        description: error.message,
+      });
+    } else {
+      // Update last_donation_date in profiles
+      await supabase
+        .from("profiles")
+        .update({ last_donation_date: format(historyForm.donation_date, "yyyy-MM-dd") })
+        .eq("id", selectedDonor.id);
+
+      toast({ title: "Donation history added successfully" });
+      setHistoryDialogOpen(false);
+      fetchData();
+    }
+  };
+
+  const handleDeleteDonor = async (donor: DonorProfile) => {
+    if (!confirm(`Delete ${donor.full_name}? This will also delete their donation history.`)) return;
+
+    const { error } = await supabase.from("profiles").delete().eq("id", donor.id);
+    
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: error.message,
+      });
+    } else {
+      toast({ title: "Donor deleted successfully" });
+      fetchData();
+    }
+  };
+
   const updateRequestStatus = async (id: string, status: string) => {
-    // Get request details before updating
     const request = requests.find(r => r.id === id);
     
     const { error } = await supabase
@@ -101,7 +233,6 @@ const Admin = () => {
         description: error.message,
       });
     } else {
-      // Send Telegram notification for blood request update
       if (request) {
         const { notifyBloodRequestUpdate } = await import("@/lib/telegramNotifications");
         await notifyBloodRequestUpdate({
@@ -215,37 +346,6 @@ const Admin = () => {
     }
   };
 
-  const updateDonorBloodGroup = async (donorId: string, bloodGroup: string) => {
-    // Get donor details before updating
-    const donor = donors.find(d => d.id === donorId);
-    
-    const { error } = await supabase
-      .from("profiles")
-      .update({ blood_group: bloodGroup })
-      .eq("id", donorId);
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Failed to update blood group",
-        description: error.message,
-      });
-    } else {
-      // Send Telegram notification for profile update
-      if (donor) {
-        const { notifyProfileUpdate } = await import("@/lib/telegramNotifications");
-        await notifyProfileUpdate({
-          full_name: donor.full_name,
-          field_changed: "Blood Group",
-          new_value: bloodGroup
-        });
-      }
-      
-      toast({ title: "Blood group updated successfully" });
-      fetchData();
-    }
-  };
-
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -261,7 +361,7 @@ const Admin = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage donors, requests, and donations</p>
+          <p className="text-muted-foreground">Manage donors, requests, and system settings</p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3 mb-8">
@@ -297,32 +397,31 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="donors" className="space-y-4">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="donors">Donors</TabsTrigger>
-            <TabsTrigger value="import">Import CSV</TabsTrigger>
             <TabsTrigger value="requests">Requests</TabsTrigger>
             <TabsTrigger value="donations">Donations</TabsTrigger>
-            <TabsTrigger value="history">Manage History</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="admins">Admins</TabsTrigger>
-            <TabsTrigger value="locations">Locations</TabsTrigger>
-            <TabsTrigger value="sms">SMS Settings</TabsTrigger>
-            <TabsTrigger value="telegram">Telegram</TabsTrigger>
           </TabsList>
 
           <TabsContent value="donors">
             <Card>
               <CardHeader>
-                <CardTitle>All Donors</CardTitle>
-                <CardDescription>View and manage all registered blood donors (from profiles and donor_directory)</CardDescription>
+                <CardTitle>Donor Management</CardTitle>
+                <CardDescription>Quick actions for each donor</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="mb-4">
+                  <CSVImporter />
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Blood Group</TableHead>
-                      <TableHead>District</TableHead>
                       <TableHead>Phone</TableHead>
+                      <TableHead>Location</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -332,27 +431,10 @@ const Admin = () => {
                       <TableRow key={donor.id}>
                         <TableCell className="font-medium">{donor.full_name}</TableCell>
                         <TableCell>
-                          <Select
-                            value={donor.blood_group}
-                            onValueChange={(value) => updateDonorBloodGroup(donor.id, value)}
-                          >
-                            <SelectTrigger className="w-[100px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="A+">A+</SelectItem>
-                              <SelectItem value="A-">A-</SelectItem>
-                              <SelectItem value="B+">B+</SelectItem>
-                              <SelectItem value="B-">B-</SelectItem>
-                              <SelectItem value="AB+">AB+</SelectItem>
-                              <SelectItem value="AB-">AB-</SelectItem>
-                              <SelectItem value="O+">O+</SelectItem>
-                              <SelectItem value="O-">O-</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Badge variant="outline">{donor.blood_group}</Badge>
                         </TableCell>
-                        <TableCell>{donor.district || donor.atoll || '-'}</TableCell>
                         <TableCell>{donor.phone}</TableCell>
+                        <TableCell>{donor.district || donor.atoll || '-'}</TableCell>
                         <TableCell>
                           {donor.is_available ? (
                             <Badge variant="outline" className="text-green-600 border-green-600">
@@ -363,23 +445,31 @@ const Admin = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={async () => {
-                              if (confirm(`Delete ${donor.full_name}?`)) {
-                                const { error } = await supabase.from("profiles").delete().eq("id", donor.id);
-                                if (error) {
-                                  toast({ variant: "destructive", title: "Delete failed", description: error.message });
-                                } else {
-                                  toast({ title: "Donor deleted" });
-                                  fetchData();
-                                }
-                              }
-                            }}
-                          >
-                            Delete
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditDialog(donor)}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openHistoryDialog(donor)}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              History
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteDonor(donor)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -387,10 +477,6 @@ const Admin = () => {
                 </Table>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="import">
-            <CSVImporter />
           </TabsContent>
 
           <TabsContent value="requests">
@@ -474,6 +560,7 @@ const Admin = () => {
                       <TableHead>Donor</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Hospital</TableHead>
+                      <TableHead>Units</TableHead>
                       <TableHead>Notes</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -481,11 +568,12 @@ const Admin = () => {
                     {donations.map((donation) => (
                       <TableRow key={donation.id}>
                         <TableCell className="font-medium">
-                          {donation.profiles?.full_name || "Unknown"}
+                          {donation.profiles?.full_name || 'Unknown'}
                         </TableCell>
                         <TableCell>{new Date(donation.donation_date).toLocaleDateString()}</TableCell>
                         <TableCell>{donation.hospital_name}</TableCell>
-                        <TableCell>{donation.notes || "-"}</TableCell>
+                        <TableCell>{donation.units_donated || 1}</TableCell>
+                        <TableCell>{donation.notes || '-'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -494,25 +582,15 @@ const Admin = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="history">
-            <DonationHistoryManager />
-          </TabsContent>
-
-          <TabsContent value="admins">
-            <UserRoleManager />
-          </TabsContent>
-
-          <TabsContent value="locations">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5" />
-                    Manage Atolls
-                  </CardTitle>
-                  <CardDescription>Add or remove atolls</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+          <TabsContent value="settings" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Locations</CardTitle>
+                <CardDescription>Manage atolls and islands</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <Label>Add New Atoll</Label>
                   <div className="flex gap-2">
                     <Input
                       placeholder="Atoll name"
@@ -521,111 +599,242 @@ const Admin = () => {
                     />
                     <Button onClick={addAtoll}>Add</Button>
                   </div>
-                  <div className="space-y-2">
-                    {atolls.map((atoll) => (
-                      <div key={atoll.id} className="flex items-center justify-between p-2 border rounded">
-                        <span>{atoll.name}</span>
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => deleteAtoll(atoll.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5" />
-                    Manage Islands
-                  </CardTitle>
-                  <CardDescription>Add or remove islands</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Select Atoll</Label>
-                    <select
-                      className="w-full p-2 border rounded"
-                      value={selectedAtollForIsland}
-                      onChange={(e) => setSelectedAtollForIsland(e.target.value)}
-                    >
-                      <option value="">Select atoll</option>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Atoll Name</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {atolls.map((atoll) => (
-                        <option key={atoll.id} value={atoll.id}>
-                          {atoll.name}
-                        </option>
+                        <TableRow key={atoll.id}>
+                          <TableCell>{atoll.name}</TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => deleteAtoll(atoll.id)}
+                            >
+                              Delete
+                            </Button>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </select>
-                  </div>
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <div className="space-y-4">
+                  <Label>Add New Island</Label>
                   <div className="flex gap-2">
+                    <Select value={selectedAtollForIsland} onValueChange={setSelectedAtollForIsland}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select atoll" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {atolls.map((atoll) => (
+                          <SelectItem key={atoll.id} value={atoll.id}>
+                            {atoll.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Input
                       placeholder="Island name"
                       value={newIsland}
                       onChange={(e) => setNewIsland(e.target.value)}
                     />
-                    <Button onClick={addIsland} disabled={!selectedAtollForIsland}>
-                      Add
-                    </Button>
+                    <Button onClick={addIsland}>Add</Button>
                   </div>
-                  <div className="space-y-2">
-                    {islands.map((island: any) => (
-                      <div key={island.id} className="flex items-center justify-between p-2 border rounded">
-                        <span>
-                          {island.name} ({island.atolls?.name})
-                        </span>
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => deleteIsland(island.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="sms">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  SMS Template Settings
-                </CardTitle>
-                <CardDescription>
-                  Customize the SMS notification sent to donors. Use placeholders: {"{blood_group}"}, {"{hospital_name}"}, {"{patient_name}"}, {"{contact_name}"}, {"{contact_phone}"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>SMS Template</Label>
-                  <Textarea
-                    value={smsTemplate}
-                    onChange={(e) => setSmsTemplate(e.target.value)}
-                    rows={5}
-                    placeholder="Enter SMS template with placeholders"
-                  />
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Island Name</TableHead>
+                        <TableHead>Atoll</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {islands.map((island) => (
+                        <TableRow key={island.id}>
+                          <TableCell>{island.name}</TableCell>
+                          <TableCell>{island.atolls?.name}</TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => deleteIsland(island.id)}
+                            >
+                              Delete
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
-                <Button onClick={updateSmsTemplate}>
-                  Save Template
-                </Button>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>SMS Template</CardTitle>
+                <CardDescription>Customize blood request SMS notification</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea
+                  value={smsTemplate}
+                  onChange={(e) => setSmsTemplate(e.target.value)}
+                  rows={6}
+                />
+                <Button onClick={updateSmsTemplate}>Update Template</Button>
+              </CardContent>
+            </Card>
+
+            <TelegramConfigManager />
           </TabsContent>
 
-          <TabsContent value="telegram">
-            <TelegramConfigManager />
+          <TabsContent value="admins">
+            <UserRoleManager />
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Edit Donor Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Donor</DialogTitle>
+            <DialogDescription>Update donor information</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Full Name</Label>
+              <Input
+                value={editForm.full_name}
+                onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Blood Group</Label>
+              <Select
+                value={editForm.blood_group}
+                onValueChange={(value) => setEditForm({ ...editForm, blood_group: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="A+">A+</SelectItem>
+                  <SelectItem value="A-">A-</SelectItem>
+                  <SelectItem value="B+">B+</SelectItem>
+                  <SelectItem value="B-">B-</SelectItem>
+                  <SelectItem value="AB+">AB+</SelectItem>
+                  <SelectItem value="AB-">AB-</SelectItem>
+                  <SelectItem value="O+">O+</SelectItem>
+                  <SelectItem value="O-">O-</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Phone</Label>
+              <Input
+                value={editForm.phone}
+                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>District</Label>
+              <Input
+                value={editForm.district}
+                onChange={(e) => setEditForm({ ...editForm, district: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Address</Label>
+              <Textarea
+                value={editForm.address}
+                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSave}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Donation History Dialog */}
+      <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Donation History</DialogTitle>
+            <DialogDescription>
+              Record a new donation for {selectedDonor?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Donation Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(historyForm.donation_date, "PPP")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={historyForm.donation_date}
+                    onSelect={(date) =>
+                      date && setHistoryForm({ ...historyForm, donation_date: date })
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <Label>Hospital Name</Label>
+              <Input
+                value={historyForm.hospital_name}
+                onChange={(e) =>
+                  setHistoryForm({ ...historyForm, hospital_name: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Label>Units Donated</Label>
+              <Input
+                type="number"
+                min="1"
+                value={historyForm.units_donated}
+                onChange={(e) =>
+                  setHistoryForm({ ...historyForm, units_donated: parseInt(e.target.value) })
+                }
+              />
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea
+                value={historyForm.notes}
+                onChange={(e) => setHistoryForm({ ...historyForm, notes: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setHistoryDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleHistoryAdd}>Add Donation</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
