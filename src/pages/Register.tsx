@@ -102,6 +102,10 @@ const Register = () => {
     setLoading(true);
 
     try {
+      if (!otpVerified) {
+        throw new Error("Please verify your phone number with OTP before registering");
+      }
+
       if (!formData.email || !formData.password) {
         throw new Error("Please enter email and password");
       }
@@ -126,7 +130,20 @@ const Register = () => {
         },
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        // If the user already exists, guide them to login instead of blocking them
+        const message = authError.message?.toLowerCase() ?? "";
+        if (message.includes("user already registered") || message.includes("user already exists") || message.includes("email rate limit")) {
+          toast({
+            title: "Account already exists",
+            description: "Please log in with your email and password instead.",
+          });
+          navigate("/auth");
+          setLoading(false);
+          return;
+        }
+        throw authError;
+      }
 
       if (authData.user) {
         // Create profile after signup
@@ -145,8 +162,10 @@ const Register = () => {
           toast({
             variant: "destructive",
             title: "Registration partially complete",
-            description: "Account created but profile setup failed. Please contact support.",
+            description: profileError.message ?? "Account created but profile setup failed. Please contact support.",
           });
+          // Even if profile creation fails, the auth account exists, so send user to login
+          navigate("/auth");
           setLoading(false);
           return;
         }
