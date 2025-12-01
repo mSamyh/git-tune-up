@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown } from "lucide-react";
+import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown, Gift, Settings as SettingsIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CSVImporter } from "@/components/CSVImporter";
 import { UserRoleManager } from "@/components/UserRoleManager";
 import { TelegramConfigManager } from "@/components/TelegramConfigManager";
+import { RewardsAdminPanel } from "@/components/RewardsAdminPanel";
 import { Textarea } from "@/components/ui/textarea";
 import { AppHeader } from "@/components/AppHeader";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -478,10 +479,11 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="donors" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="donors">Donors</TabsTrigger>
             <TabsTrigger value="requests">Requests</TabsTrigger>
             <TabsTrigger value="donations">Donations</TabsTrigger>
+            <TabsTrigger value="rewards">Rewards</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="admins">Admins</TabsTrigger>
           </TabsList>
@@ -822,6 +824,10 @@ const Admin = () => {
             </Card>
 
             <TelegramConfigManager />
+          </TabsContent>
+
+          <TabsContent value="rewards">
+            <RewardsAdminPanel />
           </TabsContent>
 
           <TabsContent value="admins">

@@ -20,6 +20,7 @@ import { AvatarUpload } from "@/components/AvatarUpload";
 import { LocationSelector } from "@/components/LocationSelector";
 import { AppHeader } from "@/components/AppHeader";
 import { TopDonorBadge } from "@/components/TopDonorBadge";
+import { RewardsSection } from "@/components/RewardsSection";
 
 interface Profile {
   id: string;
@@ -653,6 +654,9 @@ const Profile = () => {
 
           </CardContent>
         </Card>
+
+        {/* Rewards Section */}
+        <RewardsSection userId={profile.id} />
 
         <CheckAdminButton />
       </main>

@@ -14,6 +14,7 @@ import History from "./pages/History";
 import BloodRequestsPage from "./pages/BloodRequestsPage";
 import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
+import VerifyQR from "./pages/VerifyQR";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/history" element={<History />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/verify-qr/:voucherCode" element={<VerifyQR />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
