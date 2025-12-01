@@ -133,10 +133,11 @@ export function RewardsAdminPanel() {
       const pointsMap = new Map(donorPointsData?.map(p => [p.donor_id, p]) || []);
       const profilesMap = new Map(profilesData.map(p => [p.id, p]));
       
-      // Get all donors who have either points or donations
+      // Get all donors who have either points, donations, or simply exist as profiles
       const allDonorIds = new Set([
         ...(donorPointsData?.map(d => d.donor_id) || []),
-        ...Array.from(donorIdsWithDonations)
+        ...Array.from(donorIdsWithDonations),
+        ...profilesData.map(p => p.id),
       ]);
       
       const donorsWithTiers = await Promise.all(
