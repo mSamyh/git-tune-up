@@ -309,14 +309,16 @@ const Profile = () => {
                     userName={profile.full_name}
                     onUploadComplete={(url) => setProfile(prev => prev ? {...prev, avatar_url: url} : null)}
                   />
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full shadow-md"
-                    onClick={() => setShowRewardsDialog(true)}
-                  >
-                    <Gift className="h-4 w-4" />
-                  </Button>
+                  {(userType === 'donor' || userType === 'both') && (
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full shadow-md"
+                      onClick={() => setShowRewardsDialog(true)}
+                    >
+                      <Gift className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
                 <div>
                   <CardTitle className="text-2xl">{profile.full_name}</CardTitle>
