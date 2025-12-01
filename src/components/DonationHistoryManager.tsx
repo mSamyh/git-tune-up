@@ -117,21 +117,45 @@ export const DonationHistoryManager = () => {
     }
   };
 
-  const deleteDonation = async (id: string) => {
+  const deleteDonation = async (donation: any) => {
     const { error } = await supabase
       .from("donation_history")
       .delete()
-      .eq("id", id);
+      .eq("id", donation.id);
 
     if (!error) {
+      // After deletion, recalculate last_donation_date for this donor
+      const { data: remaining } = await supabase
+        .from("donation_history")
+        .select("donation_date")
+        .eq("donor_id", donation.donor_id)
+        .order("donation_date", { ascending: false })
+        .limit(1);
+
+      if (!remaining || remaining.length === 0) {
+        // No more donations: clear last_donation_date and set available
+        await supabase
+          .from("profiles")
+          .update({ 
+            last_donation_date: null,
+            availability_status: 'available'
+          })
+          .eq("id", donation.donor_id);
+      } else {
+        // Still has donations: set last_donation_date to most recent
+        await supabase
+          .from("profiles")
+          .update({ last_donation_date: remaining[0].donation_date })
+          .eq("id", donation.donor_id);
+      }
+
       toast({
         title: "Donation deleted",
       });
-      fetchDonations();
-      fetchDonors();
+      await fetchDonations();
+      await fetchDonors();
     }
   };
-
   const openEditDialog = (donation: any) => {
     setEditingDonation(donation);
     setEditDate(new Date(donation.donation_date));
@@ -354,7 +378,7 @@ export const DonationHistoryManager = () => {
                                 <Button
                                   variant="destructive"
                                   size="sm"
-                                  onClick={() => deleteDonation(donation.id)}
+                                  onClick={() => deleteDonation(donation)}
                                 >
                                   <Trash className="h-4 w-4" />
                                 </Button>
