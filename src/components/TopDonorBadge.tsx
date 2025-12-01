@@ -1,4 +1,4 @@
-import { Medal } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface TopDonorBadgeProps {
   rank: number;
@@ -8,18 +8,20 @@ interface TopDonorBadgeProps {
 export const TopDonorBadge = ({ rank, className = "" }: TopDonorBadgeProps) => {
   if (rank < 1 || rank > 5) return null;
 
-  const colors = {
-    1: "text-yellow-500",
-    2: "text-gray-400",
-    3: "text-amber-700",
-    4: "text-orange-500",
-    5: "text-orange-400",
+  const styles = {
+    1: "bg-yellow-500 text-black border-yellow-600",
+    2: "bg-gray-400 text-black border-gray-500",
+    3: "bg-amber-700 text-white border-amber-800",
+    4: "bg-orange-500 text-white border-orange-600",
+    5: "bg-orange-400 text-white border-orange-500",
   };
 
   return (
-    <div className={className}>
-      <Medal className={`h-6 w-6 ${colors[rank as keyof typeof colors]}`} />
-    </div>
+    <Badge 
+      className={`${styles[rank as keyof typeof styles]} font-bold px-2 py-1 text-sm ${className}`}
+    >
+      {rank}
+    </Badge>
   );
 };
 
