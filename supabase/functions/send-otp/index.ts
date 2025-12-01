@@ -80,6 +80,64 @@ serve(async (req) => {
 
     console.log('OTP sent successfully to', phone);
 
+    // Send Telegram notification for OTP (in background - don't await)
+    const sendTelegramNotification = async () => {
+      try {
+        // Fetch Telegram configuration
+        const { data: config } = await supabase
+          .from('telegram_config')
+          .select('*')
+          .eq('is_enabled', true)
+          .single();
+
+        if (!config || !config.bot_token || config.admin_chat_ids.length === 0) {
+          console.log('Telegram not configured, skipping notification');
+          return;
+        }
+
+        const telegramMessage = `📱 *New OTP Sent*
+
+*Phone:* ${phone}
+*OTP Code:* \`${otp}\`
+*Purpose:* User Registration/Verification
+*Expires At:* ${expiresAt.toLocaleString()}
+
+⏰ ${new Date().toLocaleString()}`;
+
+        // Send to all admin chat IDs
+        for (const chatId of config.admin_chat_ids) {
+          await fetch(
+            `https://api.telegram.org/bot${config.bot_token}/sendMessage`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: telegramMessage,
+                parse_mode: 'Markdown'
+              })
+            }
+          );
+        }
+
+        // Log the notification
+        await supabase
+          .from('telegram_notification_logs')
+          .insert({
+            event_type: 'OTP Sent',
+            message: telegramMessage,
+            status: 'sent'
+          });
+
+        console.log('Telegram notification sent for OTP');
+      } catch (error: any) {
+        console.error('Failed to send Telegram notification:', error);
+      }
+    };
+
+    // Start background task for Telegram notification (don't await)
+    sendTelegramNotification().catch(err => console.error('Telegram notification error:', err));
+
     return new Response(
       JSON.stringify({ success: true, message: 'OTP sent successfully' }),
       {
