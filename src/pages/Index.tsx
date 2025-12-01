@@ -8,32 +8,32 @@ import { DonorTable } from "@/components/DonorTable";
 import { BottomNav } from "@/components/BottomNav";
 import { BloodGroupFilter } from "@/components/BloodGroupFilter";
 import { AppHeader } from "@/components/AppHeader";
-
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [selectedBloodGroup, setSelectedBloodGroup] = useState("all");
   const navigate = useNavigate();
-
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    const {
+      data: {
+        subscription
       }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
     });
-
+    supabase.auth.getSession().then(({
+      data: {
+        session
+      }
+    }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
     return () => subscription.unsubscribe();
   }, []);
-
   if (!session) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
         <div className="container mx-auto px-4 py-16">
           <div className="text-center mb-16">
             <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary animate-pulse">
@@ -53,7 +53,7 @@ const Index = () => {
             <div className="bg-card p-6 rounded-lg shadow-md text-center">
               <Droplet className="h-12 w-12 mx-auto mb-4 text-primary" />
               <h3 className="font-semibold text-lg mb-2">Easy Registration</h3>
-              <p className="text-muted-foreground">Register as a donor with OTP verification</p>
+              <p className="text-muted-foreground">Register with OTP verification</p>
             </div>
             <div className="bg-card p-6 rounded-lg shadow-md text-center">
               <Search className="h-12 w-12 mx-auto mb-4 text-primary" />
@@ -71,29 +71,19 @@ const Index = () => {
             <p className="text-muted-foreground mb-2 flex items-center justify-center gap-1">
               Built with <Heart className="h-4 w-4 text-red-500 fill-red-500 inline animate-pulse" /> to connect with donors
             </p>
-            <Button 
-              variant="link" 
-              onClick={() => navigate("/faq")}
-              className="text-primary hover:underline p-0 h-auto"
-            >
+            <Button variant="link" onClick={() => navigate("/faq")} className="text-primary hover:underline p-0 h-auto">
               FAQ
             </Button>
           </footer>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background pb-20">
+  return <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <BloodGroupFilter 
-            selectedGroup={selectedBloodGroup}
-            onSelectGroup={setSelectedBloodGroup}
-          />
+          <BloodGroupFilter selectedGroup={selectedBloodGroup} onSelectGroup={setSelectedBloodGroup} />
         </div>
         
         <DonorTable bloodGroupFilter={selectedBloodGroup} />
@@ -102,19 +92,13 @@ const Index = () => {
           <p className="text-muted-foreground mb-2 flex items-center justify-center gap-1">
             Built with <Heart className="h-4 w-4 text-red-500 fill-red-500 inline animate-pulse" /> to connect with donors
           </p>
-          <Button 
-            variant="link" 
-            onClick={() => navigate("/faq")}
-            className="text-primary hover:underline p-0 h-auto"
-          >
+          <Button variant="link" onClick={() => navigate("/faq")} className="text-primary hover:underline p-0 h-auto">
             FAQ
           </Button>
         </footer>
       </main>
 
       <BottomNav />
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
