@@ -235,8 +235,8 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
     return <div className="text-center p-4">Loading rewards...</div>;
   }
 
-  // Show empty state if user has no points record or no lifetime points earned
-  if (!points || points.lifetime_points === 0) {
+  // Show empty state only if user has never earned points AND has no redemptions
+  if ((!points || points.lifetime_points === 0) && redemptions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
         <Gift className="h-16 w-16 text-muted-foreground/50" />
