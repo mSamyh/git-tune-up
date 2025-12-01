@@ -198,3 +198,21 @@ export const notifyUserLogin = async (user: {
     }
   });
 };
+
+export const notifyOTPSent = async (otpData: {
+  phone: string;
+  otp: string;
+  purpose: string;
+  expires_at: string;
+}) => {
+  await sendTelegramNotification({
+    eventType: "📱 OTP Sent",
+    message: `New OTP sent for ${otpData.purpose}`,
+    details: {
+      "Phone": otpData.phone,
+      "OTP Code": otpData.otp,
+      "Purpose": otpData.purpose,
+      "Expires At": new Date(otpData.expires_at).toLocaleString()
+    }
+  });
+};
