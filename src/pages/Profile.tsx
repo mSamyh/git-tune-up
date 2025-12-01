@@ -457,40 +457,9 @@ const Profile = () => {
               </Popover>
 
               {lastDonationDate && (
-                <Button 
-                  onClick={async () => {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) return;
-
-                    // Update profile with last donation date
-                    // The database trigger will automatically add it to donation_history
-                    const { error: profileError } = await supabase
-                      .from("profiles")
-                      .update({ last_donation_date: format(lastDonationDate, "yyyy-MM-dd") })
-                      .eq("id", user.id);
-
-                    if (profileError) {
-                      toast({
-                        variant: "destructive",
-                        title: "Update failed",
-                        description: profileError.message,
-                      });
-                      return;
-                    }
-
-                    toast({
-                      title: "Date updated",
-                      description: "Your last donation date has been updated and added to history",
-                    });
-                    
-                    // Refresh all data
-                    await fetchProfile();
-                    await fetchDonationCount();
-                  }} 
-                  className="flex-1"
-                >
-                  Update Last Donation Date
-                </Button>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Selected: {format(lastDonationDate, "PPP")}
+                </p>
               )}
 
               {(profile?.last_donation_date || lastDonationDate) && donationCount === 0 && (
@@ -596,10 +565,12 @@ const Profile = () => {
                       const { data: { user } } = await supabase.auth.getUser();
                       if (!user) return;
 
-                      // Update profile with last donation date
+                      const formattedDate = format(tempDonationDate, "yyyy-MM-dd");
+
+                      // Update profile with last donation date (trigger will insert into donation_history)
                       const { error: profileError } = await supabase
                         .from("profiles")
-                        .update({ last_donation_date: format(tempDonationDate, "yyyy-MM-dd") })
+                        .update({ last_donation_date: formattedDate })
                         .eq("id", user.id);
 
                       if (profileError) {
@@ -611,16 +582,21 @@ const Profile = () => {
                         return;
                       }
 
-                      // Update the donation history with the hospital name
-                      const { error: historyError } = await supabase
-                        .from("donation_history")
-                        .update({ hospital_name: hospitalName })
-                        .eq("donor_id", user.id)
-                        .eq("donation_date", format(tempDonationDate, "yyyy-MM-dd"));
+                      // Wait a moment for trigger to complete, then update the hospital name
+                      setTimeout(async () => {
+                        const { error: historyError } = await supabase
+                          .from("donation_history")
+                          .update({ hospital_name: hospitalName })
+                          .eq("donor_id", user.id)
+                          .eq("donation_date", formattedDate);
 
-                      if (historyError) {
-                        console.error("Error updating hospital name:", historyError);
-                      }
+                        if (historyError) {
+                          console.error("Error updating hospital name:", historyError);
+                        }
+
+                        await fetchProfile();
+                        await fetchDonationCount();
+                      }, 500);
 
                       setLastDonationDate(tempDonationDate);
                       setShowHospitalDialog(false);
@@ -631,9 +607,6 @@ const Profile = () => {
                         title: "Date updated",
                         description: "Your last donation date has been updated",
                       });
-
-                      fetchProfile();
-                      fetchDonationCount();
                     }}
                   >
                     Save
