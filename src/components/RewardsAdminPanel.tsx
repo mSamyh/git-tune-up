@@ -99,16 +99,34 @@ export function RewardsAdminPanel() {
       .from("profiles")
       .select("id, full_name, phone, blood_group");
     
-    // Fetch all donors with donation history
+    // Fetch all donors with donation history from profiles
     const { data: donorsWithDonations } = await supabase
       .from("donation_history")
-      .select("donor_id")
-      .order("donor_id");
+      .select("donor_id");
+    
+    // Fetch directory donors with linked profiles
+    const { data: directoryDonors } = await supabase
+      .from("donor_directory")
+      .select("id, linked_profile_id")
+      .not("linked_profile_id", "is", null);
+    
+    // Fetch directory donation history
+    const { data: directoryDonations } = await supabase
+      .from("donor_directory_history")
+      .select("donor_id");
     
     // Create a set of unique donor IDs who have donations
     const donorIdsWithDonations = new Set(
       donorsWithDonations?.map(d => d.donor_id) || []
     );
+    
+    // Add linked profile IDs from directory donors who have donation history
+    const directoryDonorIds = new Set(directoryDonations?.map(d => d.donor_id) || []);
+    directoryDonors?.forEach(dd => {
+      if (dd.linked_profile_id && directoryDonorIds.has(dd.id)) {
+        donorIdsWithDonations.add(dd.linked_profile_id);
+      }
+    });
     
     // Fetch tier info for each donor and match with profiles
     if (profilesData) {
