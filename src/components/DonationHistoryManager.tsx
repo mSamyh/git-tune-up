@@ -9,7 +9,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar as CalendarIcon, Plus, Trash } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Calendar as CalendarIcon, Plus, Trash, User } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -217,42 +218,68 @@ export const DonationHistoryManager = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Donations</CardTitle>
-          <CardDescription>All donation records</CardDescription>
+          <CardTitle>Donation History by Donor</CardTitle>
+          <CardDescription>View and manage donation records for each donor</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Donor</TableHead>
-                <TableHead>Blood Group</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Hospital</TableHead>
-                <TableHead>Units</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {donations.map((donation) => (
-                <TableRow key={donation.id}>
-                  <TableCell>{donation.profiles?.full_name || "Unknown"}</TableCell>
-                  <TableCell>{donation.profiles?.blood_group}</TableCell>
-                  <TableCell>{format(new Date(donation.donation_date), "PPP")}</TableCell>
-                  <TableCell>{donation.hospital_name}</TableCell>
-                  <TableCell>{donation.units_donated}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteDonation(donation.id)}
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <Accordion type="single" collapsible className="w-full">
+            {donors.map((donor) => {
+              const donorDonations = donations.filter(d => d.donor_id === donor.id);
+              if (donorDonations.length === 0) return null;
+              
+              return (
+                <AccordionItem key={donor.id} value={donor.id}>
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center gap-3 text-left">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{donor.full_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {donor.blood_group} • {donorDonations.length} donation{donorDonations.length !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Hospital</TableHead>
+                          <TableHead>Units</TableHead>
+                          <TableHead>Notes</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {donorDonations.map((donation) => (
+                          <TableRow key={donation.id}>
+                            <TableCell>{format(new Date(donation.donation_date), "PPP")}</TableCell>
+                            <TableCell>{donation.hospital_name}</TableCell>
+                            <TableCell>{donation.units_donated}</TableCell>
+                            <TableCell className="text-muted-foreground">{donation.notes || "—"}</TableCell>
+                            <TableCell>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => deleteDonation(donation.id)}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+          
+          {donations.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">No donation records yet</p>
+          )}
         </CardContent>
       </Card>
     </div>
