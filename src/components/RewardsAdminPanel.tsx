@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, Trash2, Plus, Gift, Settings, Trophy } from "lucide-react";
+import { Edit, Trash2, Plus, Gift, Settings, Trophy, Award } from "lucide-react";
+import { TierManagement } from "./TierManagement";
 
 interface Reward {
   id: string;
@@ -262,6 +263,9 @@ export function RewardsAdminPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Tier Management */}
+      <TierManagement />
+
       {/* Settings Card */}
       <Card>
         <CardHeader>
