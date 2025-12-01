@@ -289,6 +289,31 @@ export function RewardsAdminPanel() {
     fetchRewardsData();
   };
 
+  const runCleanup = async () => {
+    if (!confirm("Run expired voucher cleanup? This will:\n- Refund points for expired vouchers\n- Delete vouchers older than 7 days")) return;
+
+    toast({ title: "Running cleanup...", description: "This may take a few moments" });
+
+    try {
+      const { data, error } = await supabase.functions.invoke("cleanup-expired-vouchers");
+
+      if (error) throw error;
+
+      toast({
+        title: "Cleanup completed",
+        description: `Expired: ${data.expired_and_refunded || 0}, Deleted: ${data.deleted_old_vouchers || 0}`,
+      });
+
+      fetchRewardsData();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Cleanup failed",
+        description: error.message || "Failed to run cleanup",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Tier Management */}
@@ -341,6 +366,20 @@ export function RewardsAdminPanel() {
                 }}
               />
               <Label>Enable Rewards System</Label>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base font-semibold">Voucher Cleanup</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Manually run cleanup to refund expired vouchers and delete old ones
+                </p>
+              </div>
+              <Button onClick={runCleanup} variant="outline">
+                Run Cleanup
+              </Button>
             </div>
           </div>
         </CardContent>
