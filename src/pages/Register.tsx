@@ -76,11 +76,11 @@ const Register = () => {
         throw new Error(message);
       }
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      // Create anonymous user session after OTP verification
+      const { data: { user }, error: signInError } = await supabase.auth.signInAnonymously();
       
-      if (!user) {
-        throw new Error("User not authenticated");
+      if (signInError || !user) {
+        throw new Error("Failed to create user session");
       }
 
       // Create profile with location
@@ -96,7 +96,6 @@ const Register = () => {
       });
 
       if (profileError) throw profileError;
-
 
       toast({
         title: "Registration complete!",
