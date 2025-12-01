@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
@@ -51,7 +52,9 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [donationCount, setDonationCount] = useState(0);
   const [lastDonationDate, setLastDonationDate] = useState<Date>();
+  const [tempDonationDate, setTempDonationDate] = useState<Date>();
   const [hospitalName, setHospitalName] = useState("");
+  const [showHospitalDialog, setShowHospitalDialog] = useState(false);
   const [availabilityStatus, setAvailabilityStatus] = useState("available");
   const [userType, setUserType] = useState("donor");
   const [selectedAtoll, setSelectedAtoll] = useState("");
@@ -376,32 +379,34 @@ const Profile = () => {
               </p>
             </div>
 
-            <div className="space-y-4 p-4 border rounded-lg">
-              <div>
-                <Label className="text-base font-semibold">Availability Status</Label>
-                <p className="text-sm text-muted-foreground mb-3">
-                  {!canSetAvailable() 
-                    ? `You must wait ${getDaysUntilAvailable()} more days from your last donation to set available`
-                    : "Update your availability status"
-                  }
-                </p>
-              </div>
-              
-              <Select value={availabilityStatus} onValueChange={updateAvailability}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="available" disabled={!canSetAvailable()}>
-                    Available
-                  </SelectItem>
-                  <SelectItem value="unavailable">Unavailable</SelectItem>
-                  <SelectItem value="reserved">Reserved</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {(userType === 'donor' || userType === 'both') && (
+              <>
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <div>
+                    <Label className="text-base font-semibold">Availability Status</Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {!canSetAvailable() 
+                        ? `You must wait ${getDaysUntilAvailable()} more days from your last donation to set available`
+                        : "Update your availability status"
+                      }
+                    </p>
+                  </div>
+                  
+                  <Select value={availabilityStatus} onValueChange={updateAvailability}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="available" disabled={!canSetAvailable()}>
+                        Available
+                      </SelectItem>
+                      <SelectItem value="unavailable">Unavailable</SelectItem>
+                      <SelectItem value="reserved">Reserved</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="space-y-4 p-4 border rounded-lg">
+                <div className="space-y-4 p-4 border rounded-lg">
               <div>
                 <Label className="text-base font-semibold">Last Donation Date</Label>
                 <p className="text-sm text-muted-foreground mb-3">
@@ -429,7 +434,12 @@ const Profile = () => {
                   <Calendar
                     mode="single"
                     selected={lastDonationDate}
-                    onSelect={setLastDonationDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setTempDonationDate(date);
+                        setShowHospitalDialog(true);
+                      }
+                    }}
                     disabled={(date) => {
                       // Can't select future dates
                       if (date > new Date()) return true;
@@ -446,18 +456,9 @@ const Profile = () => {
                 </PopoverContent>
               </Popover>
 
-              <div className="flex gap-2">
+              {lastDonationDate && (
                 <Button 
                   onClick={async () => {
-                    if (!lastDonationDate) {
-                      toast({
-                        variant: "destructive",
-                        title: "No date selected",
-                        description: "Please select a date first",
-                      });
-                      return;
-                    }
-
                     const { data: { user } } = await supabase.auth.getUser();
                     if (!user) return;
 
@@ -490,66 +491,161 @@ const Profile = () => {
                 >
                   Update Last Donation Date
                 </Button>
+              )}
 
-                {(profile?.last_donation_date || lastDonationDate) && donationCount === 0 && (
-                  <Button 
-                    variant="outline"
-                    onClick={async () => {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) return;
+              {(profile?.last_donation_date || lastDonationDate) && donationCount === 0 && (
+                <Button 
+                  variant="outline"
+                  onClick={async () => {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
 
-                      // Only allow clearing if donation count is 0
-                      if (donationCount > 0) {
-                        toast({
-                          variant: "destructive",
-                          title: "Cannot clear",
-                          description: "You can only clear last donation date when you have no donation history",
-                        });
-                        return;
-                      }
-
-                      // Clear last donation date
-                      const { error } = await supabase
-                        .from("profiles")
-                        .update({ 
-                          last_donation_date: null,
-                          availability_status: 'available'
-                        })
-                        .eq("id", user.id);
-
-                      if (error) {
-                        toast({
-                          variant: "destructive",
-                          title: "Clear failed",
-                          description: error.message,
-                        });
-                        return;
-                      }
-
-                      setLastDonationDate(undefined);
+                    // Only allow clearing if donation count is 0
+                    if (donationCount > 0) {
                       toast({
-                        title: "Date cleared",
-                        description: "Your last donation date has been cleared",
+                        variant: "destructive",
+                        title: "Cannot clear",
+                        description: "You can only clear last donation date when you have no donation history",
                       });
-                      
-                      // Refresh all data
-                      await fetchProfile();
-                      await fetchDonationCount();
-                    }}
-                  >
-                    Clear
-                  </Button>
-                )}
-              </div>
+                      return;
+                    }
+
+                    // Clear last donation date
+                    const { error } = await supabase
+                      .from("profiles")
+                      .update({ 
+                        last_donation_date: null,
+                        availability_status: 'available'
+                      })
+                      .eq("id", user.id);
+
+                    if (error) {
+                      toast({
+                        variant: "destructive",
+                        title: "Clear failed",
+                        description: error.message,
+                      });
+                      return;
+                    }
+
+                    setLastDonationDate(undefined);
+                    toast({
+                      title: "Date cleared",
+                      description: "Your last donation date has been cleared",
+                    });
+                    
+                    // Refresh all data
+                    await fetchProfile();
+                    await fetchDonationCount();
+                  }}
+                >
+                  Clear
+                </Button>
+              )}
               
               {donationCount > 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground mt-2">
                   ℹ️ Clear button is only available when you have 0 donations. Contact an admin to delete donation history if needed.
                 </p>
               )}
             </div>
 
+            <Dialog open={showHospitalDialog} onOpenChange={setShowHospitalDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Enter Hospital Name</DialogTitle>
+                  <DialogDescription>
+                    Please enter the name of the hospital where you donated blood on {tempDonationDate && format(tempDonationDate, "PPP")}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="hospital">Hospital Name</Label>
+                    <Input
+                      id="hospital"
+                      placeholder="Enter hospital name"
+                      value={hospitalName}
+                      onChange={(e) => setHospitalName(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowHospitalDialog(false);
+                      setHospitalName("");
+                      setTempDonationDate(undefined);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      if (!hospitalName.trim()) {
+                        toast({
+                          variant: "destructive",
+                          title: "Hospital name required",
+                          description: "Please enter the hospital name",
+                        });
+                        return;
+                      }
+
+                      if (!tempDonationDate) return;
+
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) return;
+
+                      // Update profile with last donation date
+                      const { error: profileError } = await supabase
+                        .from("profiles")
+                        .update({ last_donation_date: format(tempDonationDate, "yyyy-MM-dd") })
+                        .eq("id", user.id);
+
+                      if (profileError) {
+                        toast({
+                          variant: "destructive",
+                          title: "Update failed",
+                          description: profileError.message,
+                        });
+                        return;
+                      }
+
+                      // Update the donation history with the hospital name
+                      const { error: historyError } = await supabase
+                        .from("donation_history")
+                        .update({ hospital_name: hospitalName })
+                        .eq("donor_id", user.id)
+                        .eq("donation_date", format(tempDonationDate, "yyyy-MM-dd"));
+
+                      if (historyError) {
+                        console.error("Error updating hospital name:", historyError);
+                      }
+
+                      setLastDonationDate(tempDonationDate);
+                      setShowHospitalDialog(false);
+                      setHospitalName("");
+                      setTempDonationDate(undefined);
+
+                      toast({
+                        title: "Date updated",
+                        description: "Your last donation date has been updated",
+                      });
+
+                      fetchProfile();
+                      fetchDonationCount();
+                    }}
+                  >
+                    Save
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <DonationHistory donorId={profile.id} />
+              </>
+            )}
+
           </CardContent>
         </Card>
 
