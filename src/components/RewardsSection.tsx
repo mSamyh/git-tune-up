@@ -227,24 +227,26 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
       });
 
       if (error) throw error;
-      if (data.error) throw new Error(data.error);
+      if (data?.error) throw new Error(data.error);
+
+      // Optimistically remove from local list so it disappears immediately
+      setRedemptions((prev) => prev.filter((r) => r.id === redemptionId ? false : true));
 
       await fetchRewardsData();
       
       toast({
         title: "Voucher deleted",
-        description: `${data.points_refunded || pointsSpent} points have been refunded to your account.`,
+        description: `${data?.points_refunded || pointsSpent} points have been refunded to your account.`,
       });
     } catch (error: any) {
       console.error("Error deleting voucher:", error);
       toast({
         variant: "destructive",
         title: "Delete failed",
-        description: error.message,
+        description: error.message ?? "Unable to delete voucher. Please try again.",
       });
     }
   };
-
   const getStatusBadge = (status: string, expiresAt: string) => {
     if (status === "verified") {
       return <Badge className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Verified</Badge>;
