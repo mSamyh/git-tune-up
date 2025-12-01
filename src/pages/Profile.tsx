@@ -61,13 +61,64 @@ const Profile = () => {
   const [selectedAtoll, setSelectedAtoll] = useState("");
   const [selectedIsland, setSelectedIsland] = useState("");
   const [showRewardsDialog, setShowRewardsDialog] = useState(false);
+  const [pointsPerDonation, setPointsPerDonation] = useState(100); // default value
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchProfile();
     fetchDonationCount();
+    fetchPointsSettings();
   }, []);
+
+  const fetchPointsSettings = async () => {
+    const { data } = await supabase
+      .from("reward_settings")
+      .select("setting_value")
+      .eq("setting_key", "points_per_donation")
+      .maybeSingle();
+
+    if (data) setPointsPerDonation(parseInt(data.setting_value));
+  };
+
+  const awardPoints = async (donorId: string, donationId: string, hospitalName: string) => {
+    // Create or update donor_points record
+    const { data: existingPoints } = await supabase
+      .from("donor_points")
+      .select("*")
+      .eq("donor_id", donorId)
+      .maybeSingle();
+
+    if (existingPoints) {
+      await supabase
+        .from("donor_points")
+        .update({
+          total_points: existingPoints.total_points + pointsPerDonation,
+          lifetime_points: existingPoints.lifetime_points + pointsPerDonation,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("donor_id", donorId);
+    } else {
+      await supabase
+        .from("donor_points")
+        .insert({
+          donor_id: donorId,
+          total_points: pointsPerDonation,
+          lifetime_points: pointsPerDonation,
+        });
+    }
+
+    // Record the transaction
+    await supabase
+      .from("points_transactions")
+      .insert({
+        donor_id: donorId,
+        points: pointsPerDonation,
+        transaction_type: "earned",
+        description: `Points earned from blood donation at ${hospitalName}`,
+        related_donation_id: donationId,
+      });
+  };
 
   const fetchProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -611,45 +662,79 @@ const Profile = () => {
 
                       const formattedDate = format(tempDonationDate, "yyyy-MM-dd");
 
-                      // Update profile with last donation date (trigger will insert into donation_history)
+                      // Check if this donation date already exists
+                      const { data: existingDonation } = await supabase
+                        .from("donation_history")
+                        .select("id")
+                        .eq("donor_id", user.id)
+                        .eq("donation_date", formattedDate)
+                        .maybeSingle();
+
+                      if (existingDonation) {
+                        toast({
+                          variant: "destructive",
+                          title: "Duplicate donation",
+                          description: "You already have a donation recorded for this date",
+                        });
+                        return;
+                      }
+
+                      // Insert directly into donation_history
+                      const { data: newDonation, error: historyError } = await supabase
+                        .from("donation_history")
+                        .insert({
+                          donor_id: user.id,
+                          donation_date: formattedDate,
+                          hospital_name: hospitalName.trim(),
+                          units_donated: 1,
+                        })
+                        .select()
+                        .single();
+
+                      if (historyError) {
+                        toast({
+                          variant: "destructive",
+                          title: "Failed to add donation",
+                          description: historyError.message,
+                        });
+                        return;
+                      }
+
+                      // Award points for the donation
+                      if (newDonation) {
+                        await awardPoints(user.id, newDonation.id, hospitalName.trim());
+                      }
+
+                      // Update profile with last donation date
                       const { error: profileError } = await supabase
                         .from("profiles")
                         .update({ last_donation_date: formattedDate })
                         .eq("id", user.id);
 
                       if (profileError) {
-                        toast({
-                          variant: "destructive",
-                          title: "Update failed",
-                          description: profileError.message,
-                        });
-                        return;
+                        console.error("Error updating profile:", profileError);
                       }
 
-                      // Wait a moment for trigger to complete, then update the hospital name
-                      setTimeout(async () => {
-                        const { error: historyError } = await supabase
-                          .from("donation_history")
-                          .update({ hospital_name: hospitalName })
-                          .eq("donor_id", user.id)
-                          .eq("donation_date", formattedDate);
-
-                        if (historyError) {
-                          console.error("Error updating hospital name:", historyError);
-                        }
-
-                        await fetchProfile();
-                        await fetchDonationCount();
-                      }, 500);
+                      // Send Telegram notification for new donation
+                      const { notifyNewDonation } = await import("@/lib/telegramNotifications");
+                      await notifyNewDonation({
+                        donor_name: profile?.full_name || "Unknown",
+                        hospital_name: hospitalName.trim(),
+                        donation_date: formattedDate,
+                        units_donated: 1
+                      });
 
                       setLastDonationDate(tempDonationDate);
                       setShowHospitalDialog(false);
                       setHospitalName("");
                       setTempDonationDate(undefined);
 
+                      await fetchProfile();
+                      await fetchDonationCount();
+
                       toast({
-                        title: "Date updated",
-                        description: "Your last donation date has been updated",
+                        title: "Donation recorded",
+                        description: `You earned ${pointsPerDonation} points!`,
                       });
                     }}
                   >
