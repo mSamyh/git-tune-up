@@ -37,15 +37,29 @@ Deno.serve(async (req) => {
       for (const voucher of expiredVouchers) {
         console.log(`Processing expired voucher: ${voucher.voucher_code}`);
 
-        // Refund points
-        const { error: refundError } = await supabase.rpc('refund_expired_voucher', {
-          p_donor_id: voucher.donor_id,
-          p_points: voucher.points_spent
-        });
+        // Fetch current donor points
+        const { data: donorPoints, error: fetchError } = await supabase
+          .from('donor_points')
+          .select('total_points')
+          .eq('donor_id', voucher.donor_id)
+          .single();
+
+        if (fetchError || !donorPoints) {
+          console.error(`Failed to fetch points for voucher ${voucher.voucher_code}:`, fetchError);
+          continue;
+        }
+
+        // Refund points by updating with new total
+        const { error: refundError } = await supabase
+          .from('donor_points')
+          .update({ 
+            total_points: donorPoints.total_points + voucher.points_spent,
+            updated_at: new Date().toISOString()
+          })
+          .eq('donor_id', voucher.donor_id);
 
         if (refundError) {
           console.error(`Failed to refund points for voucher ${voucher.voucher_code}:`, refundError);
-          // Continue with other vouchers even if one fails
           continue;
         }
 
