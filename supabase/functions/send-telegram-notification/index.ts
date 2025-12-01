@@ -61,7 +61,13 @@ serve(async (req) => {
       }
     }
 
-    formattedMessage += `\n\n⏰ ${new Date().toLocaleString()}`;
+    // Format time in Maldives timezone (UTC+5)
+    const localTime = new Date().toLocaleString('en-US', { 
+      timeZone: 'Indian/Maldives',
+      dateStyle: 'medium',
+      timeStyle: 'medium'
+    });
+    formattedMessage += `\n\n⏰ ${localTime} (MVT)`;
 
     // Log the notification attempt
     const { data: logEntry } = await supabase

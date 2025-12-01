@@ -162,7 +162,7 @@ serve(async (req) => {
 📱 *SMS Sent to ${phoneNumbers.length} Donors:*
 ${donorList}
 
-⏰ ${new Date().toLocaleString()}`;
+⏰ ${new Date().toLocaleString('en-US', { timeZone: 'Indian/Maldives', dateStyle: 'medium', timeStyle: 'medium' })} (MVT)`;
 
         // Send to all admin chat IDs
         for (const chatId of config.admin_chat_ids) {

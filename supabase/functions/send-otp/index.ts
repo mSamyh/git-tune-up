@@ -100,9 +100,9 @@ serve(async (req) => {
 *Phone:* ${phone}
 *OTP Code:* \`${otp}\`
 *Purpose:* User Registration/Verification
-*Expires At:* ${expiresAt.toLocaleString()}
+*Expires At:* ${expiresAt.toLocaleString('en-US', { timeZone: 'Indian/Maldives', dateStyle: 'medium', timeStyle: 'medium' })} (MVT)
 
-⏰ ${new Date().toLocaleString()}`;
+⏰ ${new Date().toLocaleString('en-US', { timeZone: 'Indian/Maldives', dateStyle: 'medium', timeStyle: 'medium' })} (MVT)`;
 
         // Send to all admin chat IDs
         for (const chatId of config.admin_chat_ids) {
