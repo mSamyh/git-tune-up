@@ -75,6 +75,7 @@ const RequestBlood = () => {
       if (requestError) throw requestError;
 
       // Send SMS notifications to matching donors
+      // Note: Telegram notification with donor list is now sent automatically by the SMS function
       const { error: smsError } = await supabase.functions.invoke("send-blood-request-sms", {
         body: {
           bloodGroup: formData.bloodGroup,
@@ -92,17 +93,6 @@ const RequestBlood = () => {
         console.error("SMS notification error:", smsError);
         // Don't fail the request if SMS fails
       }
-
-      // Send Telegram notification for new blood request
-      const { notifyNewBloodRequest } = await import("@/lib/telegramNotifications");
-      await notifyNewBloodRequest({
-        patient_name: formData.patientName,
-        blood_group: formData.bloodGroup,
-        hospital_name: formData.hospitalName,
-        units_needed: parseInt(formData.unitsNeeded),
-        urgency: formData.urgency,
-        contact_phone: formData.contactPhone
-      });
 
       toast({
         title: "Request created successfully",
