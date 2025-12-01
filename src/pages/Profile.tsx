@@ -82,6 +82,18 @@ const Profile = () => {
   };
 
   const awardPoints = async (donorId: string, donationId: string, hospitalName: string) => {
+    // Check if points were already awarded for this donation
+    const { data: existingTransaction } = await supabase
+      .from("points_transactions")
+      .select("id")
+      .eq("related_donation_id", donationId)
+      .maybeSingle();
+
+    if (existingTransaction) {
+      console.log("Points already awarded for this donation");
+      return;
+    }
+
     // Create or update donor_points record
     const { data: existingPoints } = await supabase
       .from("donor_points")
@@ -108,8 +120,8 @@ const Profile = () => {
         });
     }
 
-    // Record the transaction
-    await supabase
+    // Record the transaction (database has unique constraint to prevent duplicates)
+    const { error: transactionError } = await supabase
       .from("points_transactions")
       .insert({
         donor_id: donorId,
@@ -118,6 +130,26 @@ const Profile = () => {
         description: `Points earned from blood donation at ${hospitalName}`,
         related_donation_id: donationId,
       });
+
+    if (transactionError) {
+      console.error("Failed to record transaction:", transactionError);
+      // If transaction insert fails, rollback the points update
+      if (existingPoints) {
+        await supabase
+          .from("donor_points")
+          .update({
+            total_points: existingPoints.total_points,
+            lifetime_points: existingPoints.lifetime_points,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("donor_id", donorId);
+      } else {
+        await supabase
+          .from("donor_points")
+          .delete()
+          .eq("donor_id", donorId);
+      }
+    }
   };
 
   const fetchProfile = async () => {
