@@ -5,15 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Droplet } from "lucide-react";
 
 const Auth = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -25,84 +24,68 @@ const Auth = () => {
     });
   }, [navigate]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke("send-otp", {
+        body: { phone },
+      });
 
-    if (error) {
+      if (error || !data?.success) {
+        throw new Error(data?.error || "Failed to send OTP");
+      }
+
+      toast({
+        title: "OTP sent!",
+        description: "Check your phone for the verification code.",
+      });
+      setOtpSent(true);
+    } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Login failed",
+        title: "Failed to send OTP",
         description: error.message,
       });
-    } else {
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke("verify-otp", {
+        body: { phone, otp },
+      });
+
+      if (verifyError || !verifyData?.success) {
+        const message = verifyData?.error || verifyError?.message || "Invalid OTP";
+        throw new Error(message);
+      }
+
+      // Set the session from the backend response
+      if (verifyData.session) {
+        await supabase.auth.setSession(verifyData.session);
+      }
+
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
       navigate("/");
-    }
-
-    setLoading(false);
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-      },
-    });
-
-    if (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Signup failed",
+        title: "Login failed",
         description: error.message,
       });
-    } else {
-      toast({
-        title: "Account created!",
-        description: "Please complete your profile registration.",
-      });
-      navigate("/register");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-  };
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Password reset failed",
-        description: error.message,
-      });
-    } else {
-      toast({
-        title: "Check your email",
-        description: "We've sent you a password reset link.",
-      });
-      setShowForgotPassword(false);
-    }
-
-    setLoading(false);
   };
 
   return (
@@ -113,111 +96,81 @@ const Auth = () => {
             <Droplet className="h-8 w-8 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl">LeyHadhiya</CardTitle>
-          <CardDescription>Blood donors network - Login or create an account to continue</CardDescription>
+          <CardDescription>
+            {otpSent ? "Enter the OTP sent to your phone" : "Login with your phone number"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {showForgotPassword ? (
+          {!otpSent ? (
+            <form onSubmit={handleSendOTP} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="Enter your phone number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Sending OTP..." : "Send OTP"}
+              </Button>
+              <div className="text-center mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Don't have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => navigate("/register")}
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Register here
+                  </button>
+                </p>
+              </div>
+            </form>
+          ) : (
             <div className="space-y-4">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowForgotPassword(false)}
+                onClick={() => {
+                  setOtpSent(false);
+                  setOtp("");
+                }}
                 className="mb-2"
               >
-                ← Back to login
+                ← Change phone number
               </Button>
-              <form onSubmit={handleForgotPassword} className="space-y-4">
+              <form onSubmit={handleVerifyOTP} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="reset-email">Email</Label>
+                  <Label htmlFor="otp">Verification Code</Label>
                   <Input
-                    id="reset-email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="otp"
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
                     required
+                    maxLength={6}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Sending..." : "Send Reset Link"}
+                  {loading ? "Verifying..." : "Verify & Login"}
                 </Button>
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleSendOTP}
+                    className="text-sm text-muted-foreground hover:text-primary underline"
+                    disabled={loading}
+                  >
+                    Resend OTP
+                  </button>
+                </div>
               </form>
             </div>
-          ) : (
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-              </TabsList>
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Logging in..." : "Login"}
-                  </Button>
-                  <div className="text-center mt-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotPassword(true)}
-                      className="text-sm text-muted-foreground hover:text-primary underline"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                </form>
-              </TabsContent>
-            <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="Create a password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creating account..." : "Sign Up"}
-                </Button>
-              </form>
-            </TabsContent>
-            </Tabs>
           )}
         </CardContent>
       </Card>
