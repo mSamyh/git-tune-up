@@ -102,6 +102,17 @@ export const DonationHistoryManager = () => {
           .eq("id", selectedDonor);
       }
 
+      // Send Telegram notification for new donation
+      if (donor) {
+        const { notifyNewDonation } = await import("@/lib/telegramNotifications");
+        await notifyNewDonation({
+          donor_name: donor.full_name,
+          hospital_name: hospitalName,
+          donation_date: format(donationDate, "yyyy-MM-dd"),
+          units_donated: parseInt(units)
+        });
+      }
+
       toast({
         title: "Donation added",
         description: "Donation history updated successfully",
