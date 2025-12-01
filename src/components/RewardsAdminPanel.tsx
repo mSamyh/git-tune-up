@@ -11,8 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, Trash2, Plus, Gift, Settings, Trophy, Award } from "lucide-react";
+import { Edit, Trash2, Plus, Gift, Settings, Trophy, Award, Users } from "lucide-react";
 import { TierManagement } from "./TierManagement";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getUserTier } from "@/lib/tierSystem";
 
 interface Reward {
   id: string;
@@ -35,6 +37,7 @@ interface RewardSettings {
 export function RewardsAdminPanel() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [redemptions, setRedemptions] = useState<any[]>([]);
+  const [allDonorPoints, setAllDonorPoints] = useState<any[]>([]);
   const [settings, setSettings] = useState<RewardSettings>({
     points_per_donation: "100",
     qr_expiry_hours: "24",
@@ -84,6 +87,30 @@ export function RewardsAdminPanel() {
       .limit(50);
     
     setRedemptions(redemptionsData || []);
+
+    // Fetch all donor points
+    const { data: donorPointsData } = await supabase
+      .from("donor_points")
+      .select(`
+        *,
+        profiles:donor_id (
+          full_name,
+          phone,
+          blood_group
+        )
+      `)
+      .order("lifetime_points", { ascending: false });
+    
+    // Fetch tier info for each donor
+    if (donorPointsData) {
+      const donorsWithTiers = await Promise.all(
+        donorPointsData.map(async (donor) => ({
+          ...donor,
+          tier: await getUserTier(donor.lifetime_points)
+        }))
+      );
+      setAllDonorPoints(donorsWithTiers);
+    }
 
     // Fetch settings
     const { data: settingsData } = await supabase
@@ -266,8 +293,17 @@ export function RewardsAdminPanel() {
       {/* Tier Management */}
       <TierManagement />
 
-      {/* Settings Card */}
-      <Card>
+      <Tabs defaultValue="settings" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="rewards">Rewards</TabsTrigger>
+          <TabsTrigger value="redemptions">Redemptions</TabsTrigger>
+          <TabsTrigger value="users">All Users</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="settings">
+          {/* Settings Card */}
+          <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
@@ -307,10 +343,12 @@ export function RewardsAdminPanel() {
             </div>
           </div>
         </CardContent>
-      </Card>
+          </Card>
+        </TabsContent>
 
-      {/* Rewards Catalog */}
-      <Card>
+        <TabsContent value="rewards">
+          {/* Rewards Catalog */}
+          <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -369,10 +407,12 @@ export function RewardsAdminPanel() {
             </TableBody>
           </Table>
         </CardContent>
-      </Card>
+          </Card>
+        </TabsContent>
 
-      {/* Redemptions */}
-      <Card>
+        <TabsContent value="redemptions">
+          {/* Redemptions */}
+          <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trophy className="h-5 w-5" />
@@ -433,7 +473,68 @@ export function RewardsAdminPanel() {
             </TableBody>
           </Table>
         </CardContent>
-      </Card>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="users">
+          {/* All Users Points */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                All Donor Points & Tiers
+              </CardTitle>
+              <CardDescription>View all donors' reward points and tier status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Donor</TableHead>
+                    <TableHead>Blood Group</TableHead>
+                    <TableHead>Current Points</TableHead>
+                    <TableHead>Lifetime Points</TableHead>
+                    <TableHead>Tier</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {allDonorPoints.map((donor) => (
+                    <TableRow key={donor.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{donor.profiles?.full_name}</p>
+                          <p className="text-xs text-muted-foreground">{donor.profiles?.phone}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{donor.profiles?.blood_group}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-semibold">{donor.total_points}</span> pts
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-semibold">{donor.lifetime_points}</span> pts
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          className={
+                            donor.tier?.name === "Platinum" ? "bg-purple-500" :
+                            donor.tier?.name === "Gold" ? "bg-yellow-500" :
+                            donor.tier?.name === "Silver" ? "bg-gray-400" :
+                            "bg-orange-500"
+                          }
+                        >
+                          {donor.tier?.name} ({donor.tier?.discount}% off)
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Reward Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
