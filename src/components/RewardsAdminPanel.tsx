@@ -99,17 +99,52 @@ export function RewardsAdminPanel() {
       .from("profiles")
       .select("id, full_name, phone, blood_group");
     
+    // Fetch all donors with donation history
+    const { data: donorsWithDonations } = await supabase
+      .from("donation_history")
+      .select("donor_id")
+      .order("donor_id");
+    
+    // Create a set of unique donor IDs who have donations
+    const donorIdsWithDonations = new Set(
+      donorsWithDonations?.map(d => d.donor_id) || []
+    );
+    
     // Fetch tier info for each donor and match with profiles
-    if (donorPointsData && profilesData) {
+    if (profilesData) {
+      const pointsMap = new Map(donorPointsData?.map(p => [p.donor_id, p]) || []);
       const profilesMap = new Map(profilesData.map(p => [p.id, p]));
       
+      // Get all donors who have either points or donations
+      const allDonorIds = new Set([
+        ...(donorPointsData?.map(d => d.donor_id) || []),
+        ...Array.from(donorIdsWithDonations)
+      ]);
+      
       const donorsWithTiers = await Promise.all(
-        donorPointsData.map(async (donor) => ({
-          ...donor,
-          profiles: profilesMap.get(donor.donor_id),
-          tier: await getUserTier(donor.lifetime_points)
-        }))
+        Array.from(allDonorIds).map(async (donorId) => {
+          const pointsRecord = pointsMap.get(donorId);
+          const profile = profilesMap.get(donorId);
+          
+          // If no points record exists, create a default one
+          const lifetimePoints = pointsRecord?.lifetime_points || 0;
+          const totalPoints = pointsRecord?.total_points || 0;
+          
+          return {
+            donor_id: donorId,
+            total_points: totalPoints,
+            lifetime_points: lifetimePoints,
+            created_at: pointsRecord?.created_at || new Date().toISOString(),
+            updated_at: pointsRecord?.updated_at || new Date().toISOString(),
+            id: pointsRecord?.id || donorId,
+            profiles: profile,
+            tier: await getUserTier(lifetimePoints)
+          };
+        })
       );
+      
+      // Sort by lifetime points descending
+      donorsWithTiers.sort((a, b) => b.lifetime_points - a.lifetime_points);
       setAllDonorPoints(donorsWithTiers);
     }
 
