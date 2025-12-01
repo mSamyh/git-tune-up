@@ -82,6 +82,18 @@ export const UserRoleManager = () => {
           title: "Admin removed",
           description: "User has been demoted to regular user",
         });
+        
+        // Send Telegram notification for admin role removal
+        const user = users.find(u => u.id === userId);
+        if (user) {
+          const { notifyAdminRoleChange } = await import("@/lib/telegramNotifications");
+          await notifyAdminRoleChange({
+            full_name: user.full_name,
+            email: user.email,
+            action: "removed"
+          });
+        }
+        
         fetchUsers();
       }
     } else {
@@ -101,6 +113,18 @@ export const UserRoleManager = () => {
           title: "Admin added",
           description: "User has been promoted to admin",
         });
+        
+        // Send Telegram notification for admin role addition
+        const user = users.find(u => u.id === userId);
+        if (user) {
+          const { notifyAdminRoleChange } = await import("@/lib/telegramNotifications");
+          await notifyAdminRoleChange({
+            full_name: user.full_name,
+            email: user.email,
+            action: "added"
+          });
+        }
+        
         fetchUsers();
       }
     }

@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DonationHistoryManager } from "@/components/DonationHistoryManager";
 import { CSVImporter } from "@/components/CSVImporter";
 import { UserRoleManager } from "@/components/UserRoleManager";
+import { TelegramConfigManager } from "@/components/TelegramConfigManager";
 import { Textarea } from "@/components/ui/textarea";
 import { AppHeader } from "@/components/AppHeader";
 
@@ -85,6 +86,9 @@ const Admin = () => {
   };
 
   const updateRequestStatus = async (id: string, status: string) => {
+    // Get request details before updating
+    const request = requests.find(r => r.id === id);
+    
     const { error } = await supabase
       .from("blood_requests")
       .update({ status })
@@ -97,6 +101,16 @@ const Admin = () => {
         description: error.message,
       });
     } else {
+      // Send Telegram notification for blood request update
+      if (request) {
+        const { notifyBloodRequestUpdate } = await import("@/lib/telegramNotifications");
+        await notifyBloodRequestUpdate({
+          patient_name: request.patient_name,
+          blood_group: request.blood_group,
+          status
+        });
+      }
+      
       toast({
         title: "Status updated",
         description: `Request marked as ${status}`,
@@ -202,6 +216,9 @@ const Admin = () => {
   };
 
   const updateDonorBloodGroup = async (donorId: string, bloodGroup: string) => {
+    // Get donor details before updating
+    const donor = donors.find(d => d.id === donorId);
+    
     const { error } = await supabase
       .from("profiles")
       .update({ blood_group: bloodGroup })
@@ -214,6 +231,16 @@ const Admin = () => {
         description: error.message,
       });
     } else {
+      // Send Telegram notification for profile update
+      if (donor) {
+        const { notifyProfileUpdate } = await import("@/lib/telegramNotifications");
+        await notifyProfileUpdate({
+          full_name: donor.full_name,
+          field_changed: "Blood Group",
+          new_value: bloodGroup
+        });
+      }
+      
       toast({ title: "Blood group updated successfully" });
       fetchData();
     }
@@ -279,6 +306,7 @@ const Admin = () => {
             <TabsTrigger value="admins">Admins</TabsTrigger>
             <TabsTrigger value="locations">Locations</TabsTrigger>
             <TabsTrigger value="sms">SMS Settings</TabsTrigger>
+            <TabsTrigger value="telegram">Telegram</TabsTrigger>
           </TabsList>
 
           <TabsContent value="donors">
@@ -591,6 +619,10 @@ const Admin = () => {
                 </Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="telegram">
+            <TelegramConfigManager />
           </TabsContent>
         </Tabs>
       </main>

@@ -93,6 +93,17 @@ const RequestBlood = () => {
         // Don't fail the request if SMS fails
       }
 
+      // Send Telegram notification for new blood request
+      const { notifyNewBloodRequest } = await import("@/lib/telegramNotifications");
+      await notifyNewBloodRequest({
+        patient_name: formData.patientName,
+        blood_group: formData.bloodGroup,
+        hospital_name: formData.hospitalName,
+        units_needed: parseInt(formData.unitsNeeded),
+        urgency: formData.urgency,
+        contact_phone: formData.contactPhone
+      });
+
       toast({
         title: "Request created successfully",
         description: "Matching donors have been notified",

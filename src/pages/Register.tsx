@@ -170,6 +170,15 @@ const Register = () => {
           return;
         }
 
+        // Send Telegram notification for new registration
+        const { notifyNewUserRegistration } = await import("@/lib/telegramNotifications");
+        await notifyNewUserRegistration({
+          full_name: formData.fullName,
+          phone: formData.phone,
+          blood_group: formData.bloodGroup,
+          district: selectedAtoll && selectedIsland ? `${selectedAtoll} - ${selectedIsland}` : undefined
+        });
+
         toast({
           title: "Registration complete!",
           description: "You can now log in with your credentials",
