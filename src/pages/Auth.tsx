@@ -27,6 +27,22 @@ const Auth = () => {
 
       if (error) throw error;
 
+      // Fetch profile and send login notification
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, phone, blood_group")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profile) {
+        const { notifyUserLogin } = await import("@/lib/telegramNotifications");
+        await notifyUserLogin({
+          full_name: profile.full_name,
+          phone: profile.phone,
+          blood_group: profile.blood_group
+        });
+      }
+
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",

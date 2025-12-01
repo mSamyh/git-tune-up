@@ -126,3 +126,75 @@ export const notifyAdminRoleChange = async (user: {
     }
   });
 };
+
+export const notifyBloodRequestDeleted = async (request: {
+  patient_name: string;
+  blood_group: string;
+  hospital_name: string;
+  deleted_by: string;
+}) => {
+  await sendTelegramNotification({
+    eventType: "🗑️ Blood Request Deleted",
+    message: `A blood request has been deleted`,
+    details: {
+      "Patient": request.patient_name,
+      "Blood Group": request.blood_group,
+      "Hospital": request.hospital_name,
+      "Deleted By": request.deleted_by
+    }
+  });
+};
+
+export const notifyBloodRequestFulfilled = async (request: {
+  patient_name: string;
+  blood_group: string;
+  hospital_name: string;
+  units_needed: number;
+}) => {
+  await sendTelegramNotification({
+    eventType: "✅ Blood Request Fulfilled",
+    message: `A blood request has been successfully fulfilled!`,
+    details: {
+      "Patient": request.patient_name,
+      "Blood Group": request.blood_group,
+      "Hospital": request.hospital_name,
+      "Units": request.units_needed.toString()
+    }
+  });
+};
+
+export const notifyDonorResponse = async (response: {
+  donor_name: string;
+  patient_name: string;
+  blood_group: string;
+  status: string;
+  message?: string;
+}) => {
+  await sendTelegramNotification({
+    eventType: "💬 Donor Response",
+    message: `A donor has responded to a blood request`,
+    details: {
+      "Donor": response.donor_name,
+      "Patient": response.patient_name,
+      "Blood Group": response.blood_group,
+      "Status": response.status,
+      "Message": response.message || "No message"
+    }
+  });
+};
+
+export const notifyUserLogin = async (user: {
+  full_name: string;
+  phone: string;
+  blood_group: string;
+}) => {
+  await sendTelegramNotification({
+    eventType: "🔑 User Login",
+    message: `User logged into the platform`,
+    details: {
+      "Name": user.full_name,
+      "Phone": user.phone,
+      "Blood Group": user.blood_group
+    }
+  });
+};
