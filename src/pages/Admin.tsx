@@ -205,7 +205,6 @@ const Admin = () => {
           points: -pointsPerDonation,
           transaction_type: "adjusted",
           description: `Points deducted for deleted donation at ${hospitalName}`,
-          related_donation_id: donationId,
         });
     }
   };
