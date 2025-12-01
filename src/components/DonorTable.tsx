@@ -139,6 +139,22 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
         }
       }
 
+      // For unavailable donors with last_donation_date, sort by days until available (earliest first)
+      if (aStatus === 'unavailable' && bStatus === 'unavailable') {
+        const getDaysUntilAvailable = (donor: Donor) => {
+          if (!donor.last_donation_date) return 999; // Put donors without dates at the end
+          const daysSince = Math.floor(
+            (new Date().getTime() - new Date(donor.last_donation_date).getTime()) / (1000 * 60 * 60 * 24)
+          );
+          return daysSince < 90 ? (90 - daysSince) : 999;
+        };
+        const aDays = getDaysUntilAvailable(a);
+        const bDays = getDaysUntilAvailable(b);
+        if (aDays !== bDays) {
+          return aDays - bDays;
+        }
+      }
+
       return 0;
     });
 
