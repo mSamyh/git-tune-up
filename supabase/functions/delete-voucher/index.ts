@@ -106,13 +106,13 @@ Deno.serve(async (req) => {
         })
         .eq('donor_id', user.id);
 
-      // Record refund transaction
+      // Record refund transaction with 'adjusted' type
       await supabaseAdmin
         .from('points_transactions')
         .insert({
           donor_id: user.id,
           points: redemption.points_spent,
-          transaction_type: 'refunded',
+          transaction_type: 'adjusted',
           description: 'Voucher deleted - points refunded',
           related_redemption_id: redemption_id,
         });
