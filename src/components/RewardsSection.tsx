@@ -221,40 +221,19 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
 
   const handleDeleteVoucher = async (redemptionId: string, pointsSpent: number) => {
     try {
-      // Delete the redemption
-      const { error: deleteError } = await supabase
-        .from("redemption_history")
-        .delete()
-        .eq("id", redemptionId);
+      // Call secure edge function to delete voucher
+      const { data, error } = await supabase.functions.invoke("delete-voucher", {
+        body: { redemption_id: redemptionId },
+      });
 
-      if (deleteError) throw deleteError;
-
-      // Refund the points
-      if (points) {
-        await supabase
-          .from("donor_points")
-          .update({ 
-            total_points: points.total_points + pointsSpent 
-          })
-          .eq("donor_id", userId);
-
-        // Record refund transaction
-        await supabase
-          .from("points_transactions")
-          .insert({
-            donor_id: userId,
-            points: pointsSpent,
-            transaction_type: "refunded",
-            description: "Voucher deleted - points refunded",
-            related_redemption_id: redemptionId,
-          });
-      }
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
       await fetchRewardsData();
       
       toast({
         title: "Voucher deleted",
-        description: `${pointsSpent} points have been refunded to your account.`,
+        description: `${data.points_refunded || pointsSpent} points have been refunded to your account.`,
       });
     } catch (error: any) {
       console.error("Error deleting voucher:", error);
