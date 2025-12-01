@@ -64,9 +64,18 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Verify OTP via backend function
+      // Verify OTP and create user profile in one backend call
       const { data: verifyData, error: verifyError } = await supabase.functions.invoke("verify-otp", {
-        body: { phone: formData.phone, otp: formData.otp },
+        body: { 
+          phone: formData.phone, 
+          otp: formData.otp,
+          userData: {
+            fullName: formData.fullName,
+            bloodGroup: formData.bloodGroup,
+            atoll: selectedAtoll,
+            island: selectedIsland,
+          }
+        },
       });
 
       if (verifyError || !verifyData?.success) {
@@ -76,26 +85,10 @@ const Register = () => {
         throw new Error(message);
       }
 
-      // Create anonymous user session after OTP verification
-      const { data: { user }, error: signInError } = await supabase.auth.signInAnonymously();
-      
-      if (signInError || !user) {
-        throw new Error("Failed to create user session");
+      // Set the session from the backend response
+      if (verifyData.session) {
+        await supabase.auth.setSession(verifyData.session);
       }
-
-      // Create profile with location
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: user.id,
-        full_name: formData.fullName,
-        phone: formData.phone,
-        blood_group: formData.bloodGroup,
-        atoll: selectedAtoll,
-        island: selectedIsland,
-        district: selectedAtoll && selectedIsland ? `${selectedAtoll} - ${selectedIsland}` : null,
-        address: null,
-      });
-
-      if (profileError) throw profileError;
 
       toast({
         title: "Registration complete!",
