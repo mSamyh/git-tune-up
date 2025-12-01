@@ -662,24 +662,8 @@ const Profile = () => {
 
                       const formattedDate = format(tempDonationDate, "yyyy-MM-dd");
 
-                      // Check if this donation date already exists
-                      const { data: existingDonation } = await supabase
-                        .from("donation_history")
-                        .select("id")
-                        .eq("donor_id", user.id)
-                        .eq("donation_date", formattedDate)
-                        .maybeSingle();
-
-                      if (existingDonation) {
-                        toast({
-                          variant: "destructive",
-                          title: "Duplicate donation",
-                          description: "You already have a donation recorded for this date",
-                        });
-                        return;
-                      }
-
                       // Insert directly into donation_history
+                      // Database has a unique constraint on (donor_id, donation_date) to prevent duplicates
                       const { data: newDonation, error: historyError } = await supabase
                         .from("donation_history")
                         .insert({
@@ -692,11 +676,20 @@ const Profile = () => {
                         .single();
 
                       if (historyError) {
-                        toast({
-                          variant: "destructive",
-                          title: "Failed to add donation",
-                          description: historyError.message,
-                        });
+                        // Check if it's a duplicate entry error (unique constraint violation)
+                        if (historyError.code === '23505') {
+                          toast({
+                            variant: "destructive",
+                            title: "Duplicate donation",
+                            description: "You already have a donation recorded for this date",
+                          });
+                        } else {
+                          toast({
+                            variant: "destructive",
+                            title: "Failed to add donation",
+                            description: historyError.message,
+                          });
+                        }
                         return;
                       }
 
