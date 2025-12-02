@@ -27,6 +27,7 @@ interface Donor {
   donation_count?: number;
   source?: string;
   is_registered?: boolean;
+  title?: string | null;
 }
 
 interface DonorProfileDialogProps {
@@ -227,14 +228,21 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
               ) : (
                 <>
                   <h3 className="text-xl font-semibold">{donor.full_name}</h3>
-                  {donor.source === 'directory' && (
-                    <Badge variant="outline" className="mt-1 border-yellow-500 text-yellow-600">
-                      Not Registered
-                    </Badge>
-                  )}
-                  {isFirstTimeDonor && (
-                    <Badge variant="secondary" className="mt-1">First Time Donor</Badge>
-                  )}
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {donor.title && (
+                      <Badge variant="secondary">
+                        {donor.title}
+                      </Badge>
+                    )}
+                    {donor.source === 'directory' && (
+                      <Badge variant="outline" className="border-yellow-500 text-yellow-600">
+                        Not Registered
+                      </Badge>
+                    )}
+                    {isFirstTimeDonor && (
+                      <Badge variant="secondary">First Time Donor</Badge>
+                    )}
+                  </div>
                 </>
               )}
             </div>
