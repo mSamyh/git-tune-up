@@ -168,13 +168,14 @@ export function RewardsAdminPanel() {
             updated_at: pointsRecord?.updated_at || new Date().toISOString(),
             id: pointsRecord?.id || donorId,
             profiles: profile,
-            tier: await getUserTier(lifetimePoints)
+            // Tier is now based on CURRENT points (total_points), not lifetime
+            tier: await getUserTier(totalPoints)
           };
         })
       );
       
-      // Sort by lifetime points descending
-      donorsWithTiers.sort((a, b) => b.lifetime_points - a.lifetime_points);
+      // Sort by current points descending (tier-relevant)
+      donorsWithTiers.sort((a, b) => b.total_points - a.total_points);
       setAllDonorPoints(donorsWithTiers);
     }
 

@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Clock } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Percent } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 
 export default function VerifyQR() {
@@ -13,6 +13,7 @@ export default function VerifyQR() {
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [rewardProgramActive, setRewardProgramActive] = useState<boolean>(true);
+  const [tierInfo, setTierInfo] = useState<{ name: string; discount: number; current_points: number } | null>(null);
 
   useEffect(() => {
     verifyVoucher();
@@ -36,10 +37,12 @@ export default function VerifyQR() {
         setError(data.error);
         setResult(data.redemption);
         setRewardProgramActive(data.reward_program_active ?? true);
+        setTierInfo(data.tier || null);
       } else {
         setResult(data.redemption);
         setWarning(data.warning);
         setRewardProgramActive(data.reward_program_active ?? true);
+        setTierInfo(data.tier || null);
       }
     } catch (err: any) {
       console.error("Verification error:", err);
@@ -94,6 +97,21 @@ export default function VerifyQR() {
           </CardHeader>
           {result && (
             <CardContent className="space-y-4">
+              {/* Tier Discount Banner - Important for merchant */}
+              {tierInfo && tierInfo.discount > 0 && !error && (
+                <div className="p-4 bg-primary/10 border-2 border-primary rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Percent className="h-8 w-8 text-primary" />
+                    <div>
+                      <p className="text-lg font-bold text-primary">Apply {tierInfo.discount}% Discount</p>
+                      <p className="text-sm text-muted-foreground">
+                        {tierInfo.name} tier member ({tierInfo.current_points} pts)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div className="border-t pt-4">
                 <div className="space-y-3">
                   <div>
@@ -109,6 +127,14 @@ export default function VerifyQR() {
                     <p className="font-semibold">{result.profiles?.full_name}</p>
                     <p className="text-xs text-muted-foreground">{result.profiles?.phone}</p>
                   </div>
+                  {tierInfo && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Donor Tier</p>
+                      <Badge variant="outline" className="font-semibold">
+                        {tierInfo.name} ({tierInfo.discount}% discount)
+                      </Badge>
+                    </div>
+                  )}
                   <div>
                     <p className="text-sm text-muted-foreground">Reward Program Status</p>
                     {rewardProgramActive ? (

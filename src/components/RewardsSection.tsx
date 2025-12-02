@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Gift, QrCode, Trophy, Clock, CheckCircle, Award, Star, Crown } from "lucide-react";
 import QRCode from "qrcode";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getUserTier, calculateDiscountedPoints } from "@/lib/tierSystem";
+import { getUserTier, TierInfo } from "@/lib/tierSystem";
 
 interface RewardsSectionProps {
   userId: string;
@@ -50,7 +50,7 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedRedemption, setSelectedRedemption] = useState<Redemption | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
-  const [userTier, setUserTier] = useState<any>(null);
+  const [userTier, setUserTier] = useState<TierInfo | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -69,9 +69,13 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
     
     setPoints(pointsData);
 
-    // Get user tier
+    // Get user tier based on CURRENT points (total_points)
     if (pointsData) {
-      const tier = await getUserTier(pointsData.lifetime_points);
+      const tier = await getUserTier(pointsData.total_points);
+      setUserTier(tier);
+    } else {
+      // No points record = 0 points = Bronze tier
+      const tier = await getUserTier(0);
       setUserTier(tier);
     }
 
@@ -115,16 +119,14 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
       return;
     }
 
-    // Calculate discounted points based on user tier
-    const discountedPoints = userTier 
-      ? calculateDiscountedPoints(reward.points_required, userTier.discount)
-      : reward.points_required;
+    // Deduct FULL points required (no discount on points - merchant applies discount)
+    const pointsToDeduct = reward.points_required;
 
-    if (!points || points.total_points < discountedPoints) {
+    if (!points || points.total_points < pointsToDeduct) {
       toast({
         variant: "destructive",
         title: "Insufficient points",
-        description: `You need ${discountedPoints} points to redeem this reward.`,
+        description: `You need ${pointsToDeduct} points to redeem this reward.`,
       });
       return;
     }
@@ -150,13 +152,13 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
       // Generate QR code data (verification URL)
       const verifyUrl = `${window.location.origin}/verify-qr/${voucherCode}`;
       
-      // Create redemption record with discounted points
+      // Create redemption record with full points
       const { data: redemption, error: redemptionError } = await supabase
         .from("redemption_history")
         .insert({
           donor_id: userId,
           reward_id: reward.id,
-          points_spent: discountedPoints,
+          points_spent: pointsToDeduct,
           voucher_code: voucherCode,
           qr_code_data: verifyUrl,
           expires_at: expiresAt.toISOString(),
@@ -174,7 +176,7 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
       if (redemptionError) throw redemptionError;
       redemptionId = redemption.id;
 
-      // Deduct discounted points with optimistic locking check
+      // Deduct full points with optimistic locking check
       const { data: currentPoints, error: fetchError } = await supabase
         .from("donor_points")
         .select("total_points")
@@ -184,31 +186,31 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
       if (fetchError) throw fetchError;
 
       // Double-check user still has enough points (prevent race conditions)
-      if (currentPoints.total_points < discountedPoints) {
+      if (currentPoints.total_points < pointsToDeduct) {
         throw new Error("Insufficient points. Your balance may have changed.");
       }
 
       const { error: pointsError } = await supabase
         .from("donor_points")
         .update({ 
-          total_points: currentPoints.total_points - discountedPoints 
+          total_points: currentPoints.total_points - pointsToDeduct 
         })
         .eq("donor_id", userId);
 
       if (pointsError) throw pointsError;
 
-      // Record transaction with tier discount info - CRITICAL: Must succeed
-      const discountInfo = userTier 
-        ? ` (${userTier.name} ${userTier.discount}% discount: ${reward.points_required} → ${discountedPoints} pts)`
+      // Record transaction - merchant applies tier discount at POS
+      const tierInfo = userTier 
+        ? ` | ${userTier.name} tier (${userTier.discount}% merchant discount)`
         : "";
       
       const { error: transactionError } = await supabase
         .from("points_transactions")
         .insert({
           donor_id: userId,
-          points: -discountedPoints,
+          points: -pointsToDeduct,
           transaction_type: "redeemed",
-          description: `Redeemed reward: ${reward.title}${discountInfo}`,
+          description: `Redeemed reward: ${reward.title}${tierInfo}`,
           related_redemption_id: redemption.id,
         });
 
@@ -239,7 +241,7 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
 
       toast({
         title: "Reward redeemed!",
-        description: "Your QR code is ready to use.",
+        description: `Your QR code is ready. Merchant will apply ${userTier?.discount || 0}% discount.`,
       });
     } catch (error: any) {
       console.error("Error redeeming reward:", error);
@@ -380,8 +382,13 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
                 🎉 {userTier.name} Member Benefits:
               </p>
               <p className="text-sm text-muted-foreground">
-                You save {userTier.discount}% on all reward redemptions!
+                Merchants will apply <strong>{userTier.discount}% discount</strong> when you redeem rewards!
               </p>
+              {userTier.maxPoints && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Points range: {userTier.minPoints} - {userTier.maxPoints} pts
+                </p>
+              )}
             </div>
           )}
         </CardContent>
@@ -402,11 +409,6 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
           ) : (
             <div className="space-y-4">
               {rewards.map((reward) => {
-                const discountedPoints = userTier 
-                  ? calculateDiscountedPoints(reward.points_required, userTier.discount)
-                  : reward.points_required;
-                const hasSavings = discountedPoints < reward.points_required;
-                
                 return (
                   <div key={reward.id} className="p-4 border rounded-lg">
                     <div className="flex items-start justify-between">
@@ -417,23 +419,18 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
                         </div>
                         <p className="text-sm text-muted-foreground mb-2">{reward.description}</p>
                         <p className="text-xs text-muted-foreground">Partner: {reward.partner_name}</p>
+                        {userTier && userTier.discount > 0 && (
+                          <Badge variant="secondary" className="text-xs mt-2">
+                            🎁 {userTier.discount}% merchant discount applies
+                          </Badge>
+                        )}
                       </div>
                       <div className="text-right ml-4">
-                        {hasSavings ? (
-                          <div>
-                            <p className="text-sm text-muted-foreground line-through">{reward.points_required} pts</p>
-                            <p className="text-lg font-bold text-primary">{discountedPoints} pts</p>
-                            <Badge variant="secondary" className="text-xs mb-2">
-                              Save {reward.points_required - discountedPoints} pts
-                            </Badge>
-                          </div>
-                        ) : (
-                          <p className="text-lg font-bold text-primary">{reward.points_required} pts</p>
-                        )}
+                        <p className="text-lg font-bold text-primary">{reward.points_required} pts</p>
                         <Button
                           size="sm"
                           onClick={() => handleRedeem(reward)}
-                          disabled={currentPoints < discountedPoints || isRedeeming}
+                          disabled={currentPoints < reward.points_required || isRedeeming}
                           className="mt-2"
                         >
                           {isRedeeming ? "Processing..." : "Redeem"}

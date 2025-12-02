@@ -115,18 +115,27 @@ export function TierManagement() {
     setTiers(updatedTiers);
   };
 
+  // Calculate next tier threshold for display
+  const getNextTierThreshold = (index: number) => {
+    if (index < tiers.length - 1) {
+      return tiers[index + 1].minPoints - 1;
+    }
+    return null; // Top tier has no max
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Tier System Configuration</CardTitle>
         <CardDescription>
-          Configure membership tiers based on lifetime points earned. Higher tiers get better discounts on rewards.
+          Configure membership tiers based on current points balance. Merchants apply tier discounts at point of sale.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-6 md:grid-cols-2">
           {tiers.map((tier, index) => {
             const Icon = tier.icon;
+            const maxPoints = getNextTierThreshold(index);
             return (
               <Card key={tier.name} className="border-2">
                 <CardHeader>
@@ -137,7 +146,7 @@ export function TierManagement() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor={`${tier.name}-min`}>Minimum Lifetime Points</Label>
+                    <Label htmlFor={`${tier.name}-min`}>Minimum Current Points</Label>
                     <Input
                       id={`${tier.name}-min`}
                       type="number"
@@ -150,12 +159,12 @@ export function TierManagement() {
                     <p className="text-xs text-muted-foreground">
                       {tier.name === "Bronze" 
                         ? "Starting tier for all new donors"
-                        : `Users need ${tier.minPoints} lifetime points to reach this tier`
+                        : `Users need ${tier.minPoints}+ current points for this tier`
                       }
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor={`${tier.name}-discount`}>Discount Percentage</Label>
+                    <Label htmlFor={`${tier.name}-discount`}>Merchant Discount %</Label>
                     <div className="flex items-center gap-2">
                       <Input
                         id={`${tier.name}-discount`}
@@ -169,12 +178,12 @@ export function TierManagement() {
                       <span className="text-sm font-medium">%</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {tier.name} members save {tier.discount}% on all reward redemptions
+                      Merchant applies {tier.discount}% discount at checkout
                     </p>
                   </div>
                   <div className="pt-2">
                     <Badge variant="secondary" className="w-full justify-center">
-                      Example: 1000 pts reward = {1000 - Math.round(1000 * tier.discount / 100)} pts after discount
+                      Range: {tier.minPoints} - {maxPoints ?? "∞"} pts
                     </Badge>
                   </div>
                 </CardContent>
@@ -186,11 +195,11 @@ export function TierManagement() {
         <div className="mt-6 p-4 bg-muted rounded-lg">
           <h4 className="font-semibold mb-2">How Tiers Work:</h4>
           <ul className="text-sm text-muted-foreground space-y-1">
-            <li>• Users are automatically assigned to a tier based on their <strong>lifetime points</strong></li>
-            <li>• Each donation earns points (configurable in main settings)</li>
-            <li>• Higher tiers receive percentage discounts on all reward redemptions</li>
-            <li>• Tier status is permanent - users never lose their tier even if they spend points</li>
-            <li>• Discounts are automatically applied when redeeming rewards</li>
+            <li>• Users are assigned to a tier based on their <strong>current points balance</strong></li>
+            <li>• Tier changes dynamically as points are earned or spent</li>
+            <li>• When redeeming rewards, <strong>full points are deducted</strong></li>
+            <li>• Merchants apply the tier discount % at point of sale</li>
+            <li>• QR code displays donor's tier for merchant reference</li>
           </ul>
         </div>
       </CardContent>

@@ -60,12 +60,52 @@ Deno.serve(async (req) => {
     // Check if reward program is still active
     const rewardProgramActive = redemption.reward_catalog?.is_active ?? false;
 
-    // Load donor profile details separately (no FK relationship on table)
+    // Load donor profile details and points for tier calculation
     const { data: donorProfile } = await supabase
       .from('profiles')
       .select('full_name, phone')
       .eq('id', redemption.donor_id)
       .maybeSingle();
+
+    // Fetch donor points to calculate tier
+    const { data: donorPoints } = await supabase
+      .from('donor_points')
+      .select('total_points, lifetime_points')
+      .eq('donor_id', redemption.donor_id)
+      .maybeSingle();
+
+    // Fetch tier settings to calculate current tier
+    const { data: tierSettings } = await supabase
+      .from('reward_settings')
+      .select('*')
+      .in('setting_key', [
+        'tier_bronze_min', 'tier_bronze_discount',
+        'tier_silver_min', 'tier_silver_discount',
+        'tier_gold_min', 'tier_gold_discount',
+        'tier_platinum_min', 'tier_platinum_discount'
+      ]);
+
+    // Calculate tier based on current points
+    const currentPoints = donorPoints?.total_points || 0;
+    const settingsMap: Record<string, number> = {};
+    tierSettings?.forEach(setting => {
+      settingsMap[setting.setting_key] = parseInt(setting.setting_value);
+    });
+
+    const tiers = [
+      { name: 'Platinum', discount: settingsMap.tier_platinum_discount || 20, minPoints: settingsMap.tier_platinum_min || 1000 },
+      { name: 'Gold', discount: settingsMap.tier_gold_discount || 15, minPoints: settingsMap.tier_gold_min || 500 },
+      { name: 'Silver', discount: settingsMap.tier_silver_discount || 10, minPoints: settingsMap.tier_silver_min || 100 },
+      { name: 'Bronze', discount: settingsMap.tier_bronze_discount || 5, minPoints: settingsMap.tier_bronze_min || 0 },
+    ];
+
+    let donorTier = tiers[tiers.length - 1]; // Default to Bronze
+    for (const tier of tiers) {
+      if (currentPoints >= tier.minPoints) {
+        donorTier = tier;
+        break;
+      }
+    }
 
     // Check if already verified
     if (redemption.status === 'verified') {
@@ -139,6 +179,12 @@ Deno.serve(async (req) => {
           verified_at: now.toISOString(),
         },
         profiles: donorProfile,
+        // Tier info for merchant to apply discount
+        tier: {
+          name: donorTier.name,
+          discount: donorTier.discount,
+          current_points: currentPoints,
+        },
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
