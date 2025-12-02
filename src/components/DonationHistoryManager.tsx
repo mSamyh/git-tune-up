@@ -434,7 +434,9 @@ export const DonationHistoryManager = () => {
         <CardContent>
           <Accordion type="single" collapsible className="w-full">
             {donors.map((donor) => {
-              const donorDonations = donations.filter(d => d.donor_id === donor.id);
+              const donorDonations = donations
+                .filter(d => d.donor_id === donor.id)
+                .sort((a, b) => new Date(b.donation_date).getTime() - new Date(a.donation_date).getTime());
               if (donorDonations.length === 0) return null;
               
               return (
