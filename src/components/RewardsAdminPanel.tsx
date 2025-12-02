@@ -54,6 +54,12 @@ export function RewardsAdminPanel() {
     is_active: true,
     terms_conditions: "",
   });
+  const [pointsEditDialogOpen, setPointsEditDialogOpen] = useState(false);
+  const [editingDonorPoints, setEditingDonorPoints] = useState<any>(null);
+  const [pointsFormData, setPointsFormData] = useState({
+    total_points: 0,
+    lifetime_points: 0,
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -368,6 +374,52 @@ export function RewardsAdminPanel() {
     }
   };
 
+  const openPointsEditDialog = (donor: any) => {
+    setEditingDonorPoints(donor);
+    setPointsFormData({
+      total_points: donor.total_points,
+      lifetime_points: donor.lifetime_points,
+    });
+    setPointsEditDialogOpen(true);
+  };
+
+  const handlePointsSave = async () => {
+    if (!editingDonorPoints) return;
+
+    // Update or insert donor_points record
+    const { error } = await supabase
+      .from("donor_points")
+      .upsert({
+        donor_id: editingDonorPoints.donor_id,
+        total_points: pointsFormData.total_points,
+        lifetime_points: pointsFormData.lifetime_points,
+        updated_at: new Date().toISOString(),
+      });
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: error.message,
+      });
+      return;
+    }
+
+    // Record transaction for manual adjustment
+    await supabase
+      .from("points_transactions")
+      .insert({
+        donor_id: editingDonorPoints.donor_id,
+        points: pointsFormData.total_points - editingDonorPoints.total_points,
+        transaction_type: "adjusted",
+        description: `Manual points adjustment by admin`,
+      });
+
+    toast({ title: "Points updated successfully" });
+    setPointsEditDialogOpen(false);
+    fetchRewardsData();
+  };
+
   return (
     <div className="space-y-6">
       {/* Tier Management */}
@@ -589,6 +641,7 @@ export function RewardsAdminPanel() {
                     <TableHead>Current Points</TableHead>
                     <TableHead>Lifetime Points</TableHead>
                     <TableHead>Tier</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -620,6 +673,16 @@ export function RewardsAdminPanel() {
                         >
                           {donor.tier?.name} ({donor.tier?.discount}% off)
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => openPointsEditDialog(donor)}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Edit Points
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -714,6 +777,48 @@ export function RewardsAdminPanel() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSave}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Points Edit Dialog */}
+      <Dialog open={pointsEditDialogOpen} onOpenChange={setPointsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Points - {editingDonorPoints?.profiles?.full_name}</DialogTitle>
+            <DialogDescription>
+              Manually adjust donor's reward points. This will create a transaction record.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="total_points">Current Points</Label>
+              <Input
+                id="total_points"
+                type="number"
+                value={pointsFormData.total_points}
+                onChange={(e) => setPointsFormData({ ...pointsFormData, total_points: parseInt(e.target.value) || 0 })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Points available for redemption
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="lifetime_points">Lifetime Points</Label>
+              <Input
+                id="lifetime_points"
+                type="number"
+                value={pointsFormData.lifetime_points}
+                onChange={(e) => setPointsFormData({ ...pointsFormData, lifetime_points: parseInt(e.target.value) || 0 })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Total points earned (affects tier status)
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPointsEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handlePointsSave}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
