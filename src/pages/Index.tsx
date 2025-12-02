@@ -120,7 +120,7 @@ const Index = () => {
               FAQ
             </Button>
           </div>
-          <p className="text-muted-foreground text-sm">Mohamed Samyh</p>
+          <p className="text-muted-foreground text-sm">2025 - LeyHadhiya. All rights reserved</p>
         </footer>
       </main>
 
