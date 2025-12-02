@@ -58,7 +58,7 @@ const Index = () => {
             <div className="bg-card p-6 rounded-lg shadow-md text-center">
               <Search className="h-12 w-12 mx-auto mb-4 text-primary" />
               <h3 className="font-semibold text-lg mb-2">Find Donors</h3>
-              <p className="text-muted-foreground">Search donors by blood group and location</p>
+              <p className="text-muted-foreground">Search donors by blood group</p>
             </div>
             <div className="bg-card p-6 rounded-lg shadow-md text-center">
               <Heart className="h-12 w-12 mx-auto mb-4 text-primary" />
