@@ -502,6 +502,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "redemption_history_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "redemption_history_reward_id_fkey"
             columns: ["reward_id"]
             isOneToOne: false
