@@ -15,20 +15,25 @@ const Index = () => {
   const navigate = useNavigate();
   useEffect(() => {
     const {
-      data: { subscription },
+      data: {
+        subscription
+      }
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
     });
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({
+      data: {
+        session
+      }
+    }) => {
       setSession(session);
       setUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
   }, []);
   if (!session) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
         <div className="container mx-auto px-4 py-16">
           <div className="text-center mb-16">
             <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary animate-pulse">
@@ -69,30 +74,20 @@ const Index = () => {
               to connect with donors
             </p>
             <div className="flex items-center justify-center gap-4 mb-2">
-              <Button
-                variant="link"
-                onClick={() => navigate("/about")}
-                className="text-primary hover:underline p-0 h-auto"
-              >
+              <Button variant="link" onClick={() => navigate("/about")} className="text-primary hover:underline p-0 h-auto">
                 About
               </Button>
               <span className="text-muted-foreground">•</span>
-              <Button
-                variant="link"
-                onClick={() => navigate("/faq")}
-                className="text-primary hover:underline p-0 h-auto"
-              >
+              <Button variant="link" onClick={() => navigate("/faq")} className="text-primary hover:underline p-0 h-auto">
                 FAQ
               </Button>
             </div>
-            <p className="text-muted-foreground text-sm">Mohamed Samyh</p>
+            <p className="text-muted-foreground text-sm">2025 - LeyHadhiya. All rights reserved</p>
           </footer>
         </div>
-      </div>
-    );
+      </div>;
   }
-  return (
-    <div className="min-h-screen bg-background pb-20">
+  return <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
       <main className="container mx-auto px-4 py-8">
@@ -108,11 +103,7 @@ const Index = () => {
             donors
           </p>
           <div className="flex items-center justify-center gap-4 mb-2">
-            <Button
-              variant="link"
-              onClick={() => navigate("/about")}
-              className="text-primary hover:underline p-0 h-auto"
-            >
+            <Button variant="link" onClick={() => navigate("/about")} className="text-primary hover:underline p-0 h-auto">
               About
             </Button>
             <span className="text-muted-foreground">•</span>
@@ -125,7 +116,6 @@ const Index = () => {
       </main>
 
       <BottomNav />
-    </div>
-  );
+    </div>;
 };
 export default Index;
