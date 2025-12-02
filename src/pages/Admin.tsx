@@ -36,6 +36,7 @@ interface DonorProfile {
   address?: string;
   availability_status?: string;
   title?: string;
+  user_type?: string;
 }
 
 const Admin = () => {
@@ -722,7 +723,8 @@ const Admin = () => {
                       <TableHead>Blood Group</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>User Type</TableHead>
+                      <TableHead>Availability</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -736,12 +738,27 @@ const Admin = () => {
                         <TableCell>{donor.phone}</TableCell>
                         <TableCell>{donor.district || donor.atoll || '-'}</TableCell>
                         <TableCell>
-                          {donor.is_available ? (
+                          <Badge variant="secondary">
+                            {donor.user_type === 'both' ? 'Donor & Receiver' : donor.user_type === 'receiver' ? 'Receiver' : 'Donor'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {donor.availability_status === 'available' ? (
                             <Badge variant="outline" className="text-green-600 border-green-600">
                               Available
                             </Badge>
+                          ) : donor.availability_status === 'available_soon' ? (
+                            <Badge variant="outline" className="text-blue-600 border-blue-600">
+                              Available Soon
+                            </Badge>
+                          ) : donor.availability_status === 'reserved' ? (
+                            <Badge variant="outline" className="text-orange-600 border-orange-600">
+                              Reserved
+                            </Badge>
                           ) : (
-                            <Badge variant="outline">Unavailable</Badge>
+                            <Badge variant="outline" className="text-red-600 border-red-600">
+                              Unavailable
+                            </Badge>
                           )}
                         </TableCell>
                         <TableCell>
@@ -1156,6 +1173,7 @@ const Admin = () => {
                     onSelect={(date) =>
                       date && setHistoryForm({ ...historyForm, donation_date: date })
                     }
+                    disabled={(date) => date > new Date()}
                     initialFocus
                     className="pointer-events-auto"
                   />
@@ -1225,6 +1243,7 @@ const Admin = () => {
                     onSelect={(date) =>
                       date && setEditDonationForm({ ...editDonationForm, donation_date: date })
                     }
+                    disabled={(date) => date > new Date()}
                     initialFocus
                     className="pointer-events-auto"
                   />

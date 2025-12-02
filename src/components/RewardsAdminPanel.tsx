@@ -386,15 +386,15 @@ export function RewardsAdminPanel() {
   const handlePointsSave = async () => {
     if (!editingDonorPoints) return;
 
-    // Update or insert donor_points record
+    // Update donor_points record (we know it exists since we're editing)
     const { error } = await supabase
       .from("donor_points")
-      .upsert({
-        donor_id: editingDonorPoints.donor_id,
+      .update({
         total_points: pointsFormData.total_points,
         lifetime_points: pointsFormData.lifetime_points,
         updated_at: new Date().toISOString(),
-      });
+      })
+      .eq("donor_id", editingDonorPoints.donor_id);
 
     if (error) {
       toast({
