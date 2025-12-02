@@ -63,10 +63,13 @@ const Index = () => {
           </div>
 
           <footer className="mt-16 text-center pb-8">
-            <p className="text-muted-foreground mb-2 flex items-center justify-center gap-1">
-              Built with{" "}
-              <Heart className="h-4 w-4 text-red-500 fill-red-500 inline animate-pulse rounded-none shadow-none opacity-85 border-0" />{" "}
-              to connect with donors <br>Mohamed Samyh</br>
+            <p className="text-muted-foreground mb-2">
+              <span className="flex items-center justify-center gap-1">
+                Built with{" "}
+                <Heart className="h-4 w-4 text-red-500 fill-red-500 inline animate-pulse rounded-none shadow-none opacity-85 border-0" />{" "}
+                to connect with donors
+              </span>
+              <span className="block mt-1">Mohamed Samyh</span>
             </p>
             <div className="flex items-center justify-center gap-4">
               <Button
