@@ -57,7 +57,11 @@ export const ContactAdminForm = () => {
           body: {
             eventType: "📬 Contact Form Submission",
             message: `New message from ${values.name}`,
-            details: `Subject: ${values.subject}\nContact: ${values.contact}\n\nMessage:\n${values.message}`,
+            details: {
+              subject: values.subject,
+              contact: values.contact,
+              message: values.message,
+            },
           },
         }
       );
