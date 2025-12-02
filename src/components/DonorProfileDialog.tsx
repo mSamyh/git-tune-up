@@ -195,9 +195,9 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>Donor Profile</DialogTitle>
+            <DialogTitle className="sr-only">Donor Profile</DialogTitle>
             {isAdmin && donor.source === 'profile' && !isEditing && (
-              <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+              <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setIsEditing(true)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Button>
