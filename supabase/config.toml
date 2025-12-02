@@ -1,1 +1,4 @@
 project_id = "jfiepcajyctszbfskgfu"
+
+[functions.admin-update-email]
+verify_jwt = false
