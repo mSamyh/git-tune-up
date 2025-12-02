@@ -35,6 +35,7 @@ interface DonorProfile {
   last_donation_date?: string;
   address?: string;
   availability_status?: string;
+  title?: string;
 }
 
 const Admin = () => {
@@ -67,6 +68,7 @@ const Admin = () => {
     phone: "",
     district: "",
     address: "",
+    title: "",
   });
   
   // History form states
@@ -249,6 +251,7 @@ const Admin = () => {
       phone: donor.phone,
       district: donor.district || "",
       address: donor.address || "",
+      title: donor.title || "",
     });
     setEditDialogOpen(true);
   };
@@ -1107,6 +1110,14 @@ const Admin = () => {
               <Textarea
                 value={editForm.address}
                 onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Title (optional)</Label>
+              <Input
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                placeholder="e.g., Founder, Volunteer, etc."
               />
             </div>
           </div>
