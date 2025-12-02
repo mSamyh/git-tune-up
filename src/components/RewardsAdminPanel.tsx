@@ -15,6 +15,7 @@ import { Edit, Trash2, Plus, Gift, Settings, Trophy, Award, Users } from "lucide
 import { TierManagement } from "./TierManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getUserTier } from "@/lib/tierSystem";
+import { PointsAuditPanel } from "./PointsAuditPanel";
 
 interface Reward {
   id: string;
@@ -75,7 +76,7 @@ export function RewardsAdminPanel() {
     
     setRewards(rewardsData || []);
 
-    // Fetch redemptions
+    // Fetch ALL redemptions for complete audit trail
     const { data: redemptionsData } = await supabase
       .from("redemption_history")
       .select(`
@@ -89,8 +90,7 @@ export function RewardsAdminPanel() {
           phone
         )
       `)
-      .order("created_at", { ascending: false })
-      .limit(50);
+      .order("created_at", { ascending: false });
     
     setRedemptions(redemptionsData || []);
 
@@ -426,11 +426,12 @@ export function RewardsAdminPanel() {
       <TierManagement />
 
       <Tabs defaultValue="settings" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="rewards">Rewards</TabsTrigger>
           <TabsTrigger value="redemptions">Redemptions</TabsTrigger>
           <TabsTrigger value="users">All Users</TabsTrigger>
+          <TabsTrigger value="audit">Security Audit</TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings">
@@ -557,67 +558,88 @@ export function RewardsAdminPanel() {
         </TabsContent>
 
         <TabsContent value="redemptions">
-          {/* Redemptions */}
+          {/* Redemptions - Full History */}
           <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trophy className="h-5 w-5" />
-            Recent Redemptions
+            All Redemptions History
           </CardTitle>
-          <CardDescription>Manage voucher redemptions</CardDescription>
+          <CardDescription>Complete audit trail of all reward redemptions ({redemptions.length} total)</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Donor</TableHead>
-                <TableHead>Reward</TableHead>
-                <TableHead>Points</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {redemptions.map((redemption) => (
-                <TableRow key={redemption.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{redemption.profiles?.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{redemption.profiles?.phone}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{redemption.reward_catalog?.title}</TableCell>
-                  <TableCell>{redemption.points_spent} pts</TableCell>
-                  <TableCell>
-                    {redemption.status === "verified" ? (
-                      <Badge className="bg-green-500">Verified</Badge>
-                    ) : redemption.status === "cancelled" ? (
-                      <Badge variant="outline">Cancelled</Badge>
-                    ) : redemption.status === "expired" ? (
-                      <Badge variant="destructive">Expired</Badge>
-                    ) : (
-                      <Badge variant="secondary">Pending</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-xs">
-                    {new Date(redemption.expires_at).toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    {redemption.status === "pending" && (
-                      <Button 
-                        size="sm" 
-                        variant="destructive"
-                        onClick={() => cancelRedemption(redemption.id)}
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                  </TableCell>
+          <div className="mb-4 flex gap-2">
+            <Badge variant="outline">Pending: {redemptions.filter(r => r.status === 'pending').length}</Badge>
+            <Badge variant="outline" className="bg-green-50">Verified: {redemptions.filter(r => r.status === 'verified').length}</Badge>
+            <Badge variant="outline" className="bg-red-50">Expired: {redemptions.filter(r => r.status === 'expired').length}</Badge>
+            <Badge variant="outline">Cancelled: {redemptions.filter(r => r.status === 'cancelled').length}</Badge>
+          </div>
+          <div className="max-h-[600px] overflow-y-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background">
+                <TableRow>
+                  <TableHead>Date/Time</TableHead>
+                  <TableHead>Donor</TableHead>
+                  <TableHead>Reward</TableHead>
+                  <TableHead>Points</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Verified At</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {redemptions.map((redemption) => (
+                  <TableRow key={redemption.id}>
+                    <TableCell className="text-xs whitespace-nowrap">
+                      {new Date(redemption.created_at).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium text-sm">{redemption.profiles?.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{redemption.profiles?.phone}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium text-sm">{redemption.reward_catalog?.title}</p>
+                        <p className="text-xs text-muted-foreground">{redemption.reward_catalog?.partner_name}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{redemption.points_spent} pts</TableCell>
+                    <TableCell>
+                      {redemption.status === "verified" ? (
+                        <Badge className="bg-green-500">Verified</Badge>
+                      ) : redemption.status === "cancelled" ? (
+                        <Badge variant="outline">Cancelled</Badge>
+                      ) : redemption.status === "expired" ? (
+                        <Badge variant="destructive">Expired</Badge>
+                      ) : (
+                        <Badge variant="secondary">Pending</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">
+                      {redemption.verified_at ? new Date(redemption.verified_at).toLocaleString() : "-"}
+                    </TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">
+                      {new Date(redemption.expires_at).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      {redemption.status === "pending" && (
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => cancelRedemption(redemption.id)}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
           </Card>
         </TabsContent>
@@ -690,6 +712,10 @@ export function RewardsAdminPanel() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <PointsAuditPanel />
         </TabsContent>
       </Tabs>
 

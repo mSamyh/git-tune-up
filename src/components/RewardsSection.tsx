@@ -102,7 +102,19 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
     setLoading(false);
   };
 
+  const [isRedeeming, setIsRedeeming] = useState(false);
+
   const handleRedeem = async (reward: Reward) => {
+    // Prevent duplicate redemptions
+    if (isRedeeming) {
+      toast({
+        variant: "destructive",
+        title: "Please wait",
+        description: "A redemption is already in progress.",
+      });
+      return;
+    }
+
     // Calculate discounted points based on user tier
     const discountedPoints = userTier 
       ? calculateDiscountedPoints(reward.points_required, userTier.discount)
@@ -116,6 +128,9 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
       });
       return;
     }
+
+    setIsRedeeming(true);
+    let redemptionId: string | null = null;
 
     try {
       // Generate unique voucher code
@@ -157,23 +172,37 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
         .single();
 
       if (redemptionError) throw redemptionError;
+      redemptionId = redemption.id;
 
-      // Deduct discounted points
+      // Deduct discounted points with optimistic locking check
+      const { data: currentPoints, error: fetchError } = await supabase
+        .from("donor_points")
+        .select("total_points")
+        .eq("donor_id", userId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Double-check user still has enough points (prevent race conditions)
+      if (currentPoints.total_points < discountedPoints) {
+        throw new Error("Insufficient points. Your balance may have changed.");
+      }
+
       const { error: pointsError } = await supabase
         .from("donor_points")
         .update({ 
-          total_points: points.total_points - discountedPoints 
+          total_points: currentPoints.total_points - discountedPoints 
         })
         .eq("donor_id", userId);
 
       if (pointsError) throw pointsError;
 
-      // Record transaction with tier discount info
+      // Record transaction with tier discount info - CRITICAL: Must succeed
       const discountInfo = userTier 
         ? ` (${userTier.name} ${userTier.discount}% discount: ${reward.points_required} → ${discountedPoints} pts)`
         : "";
       
-      await supabase
+      const { error: transactionError } = await supabase
         .from("points_transactions")
         .insert({
           donor_id: userId,
@@ -182,6 +211,19 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
           description: `Redeemed reward: ${reward.title}${discountInfo}`,
           related_redemption_id: redemption.id,
         });
+
+      if (transactionError) {
+        console.error("CRITICAL: Transaction insert failed, rolling back points", transactionError);
+        // Rollback: Restore points
+        await supabase
+          .from("donor_points")
+          .update({ 
+            total_points: currentPoints.total_points 
+          })
+          .eq("donor_id", userId);
+        
+        throw new Error("Failed to record transaction. Points have been restored.");
+      }
 
       // Generate QR code image
       const qrUrl = await QRCode.toDataURL(verifyUrl, {
@@ -201,11 +243,22 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
       });
     } catch (error: any) {
       console.error("Error redeeming reward:", error);
+      
+      // Rollback: Delete redemption record if it was created
+      if (redemptionId) {
+        await supabase
+          .from("redemption_history")
+          .delete()
+          .eq("id", redemptionId);
+      }
+
       toast({
         variant: "destructive",
         title: "Redemption failed",
-        description: error.message,
+        description: error.message || "Please try again.",
       });
+    } finally {
+      setIsRedeeming(false);
     }
   };
 
@@ -380,10 +433,10 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
                         <Button
                           size="sm"
                           onClick={() => handleRedeem(reward)}
-                          disabled={currentPoints < discountedPoints}
+                          disabled={currentPoints < discountedPoints || isRedeeming}
                           className="mt-2"
                         >
-                          Redeem
+                          {isRedeeming ? "Processing..." : "Redeem"}
                         </Button>
                       </div>
                     </div>
