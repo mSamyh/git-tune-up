@@ -1,33 +1,74 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Droplet } from "lucide-react";
+import { Droplet, Loader2 } from "lucide-react";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(true);
+  const [tokenValid, setTokenValid] = useState(false);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const token = searchParams.get("token");
+
   useEffect(() => {
-    // Check if user has valid session from reset link
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
+    const verifyToken = async () => {
+      if (!token) {
         toast({
           variant: "destructive",
           title: "Invalid reset link",
-          description: "This password reset link is invalid or has expired.",
+          description: "No reset token found in the URL.",
         });
         navigate("/auth");
+        return;
       }
-    });
-  }, [navigate, toast]);
+
+      try {
+        const response = await fetch(
+          `https://jfiepcajyctszbfskgfu.supabase.co/functions/v1/reset-password?action=verify`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ token }),
+          }
+        );
+        
+        const data = await response.json();
+        
+        if (!response.ok || data.error) {
+          throw new Error(data?.error || "Invalid token");
+        }
+
+        if (data?.valid) {
+          setTokenValid(true);
+        } else {
+          throw new Error(data?.error || "Invalid or expired token");
+        }
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Invalid reset link",
+          description: error.message || "This password reset link is invalid or has expired.",
+        });
+        navigate("/auth");
+      } finally {
+        setVerifying(false);
+      }
+    };
+
+    verifyToken();
+  }, [token, navigate, toast]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,26 +93,48 @@ const ResetPassword = () => {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.updateUser({
-      password: password,
-    });
+    try {
+      const response = await supabase.functions.invoke("reset-password", {
+        body: { token, newPassword: password },
+      });
 
-    if (error) {
+      if (response.error) throw response.error;
+      
+      const data = response.data;
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: "Password updated!",
+        description: "Your password has been successfully reset. You can now login.",
+      });
+      navigate("/auth");
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Password reset failed",
-        description: error.message,
+        description: error.message || "An error occurred. Please try again.",
       });
-    } else {
-      toast({
-        title: "Password updated!",
-        description: "Your password has been successfully reset.",
-      });
-      navigate("/");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
+
+  if (verifying) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Verifying reset link...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!tokenValid) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">

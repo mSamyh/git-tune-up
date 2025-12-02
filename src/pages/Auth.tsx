@@ -75,11 +75,15 @@ const Auth = () => {
 
     setResetLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      // Use custom email function instead of Supabase's built-in
+      const response = await supabase.functions.invoke("custom-email", {
+        body: {
+          email: resetEmail,
+          redirectUrl: window.location.origin,
+        },
       });
 
-      if (error) throw error;
+      if (response.error) throw response.error;
 
       toast({
         title: "Reset link sent!",
@@ -91,7 +95,7 @@ const Auth = () => {
       toast({
         variant: "destructive",
         title: "Failed to send reset link",
-        description: error.message,
+        description: error.message || "An error occurred. Please try again.",
       });
     } finally {
       setResetLoading(false);

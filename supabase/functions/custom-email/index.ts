@@ -1,20 +1,28 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface EmailRequest {
+interface PasswordResetRequest {
   email: string;
-  type: string;
-  token?: string;
-  token_hash?: string;
-  redirect_to?: string;
+  redirectUrl?: string;
+}
+
+function generateSecureToken(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
 async function sendEmailWithResend(to: string, subject: string, html: string) {
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+  
+  if (!RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY is not configured");
+  }
   
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -46,16 +54,71 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const payload = await req.json();
-    console.log("Received payload:", JSON.stringify(payload, null, 2));
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const { email, redirectUrl } = await req.json() as PasswordResetRequest;
+    
+    if (!email) {
+      return new Response(JSON.stringify({ error: "Email is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
-    const { email, type, token_hash, redirect_to } = payload;
+    console.log("Processing password reset for:", email);
 
-    if (type === "recovery" || type === "magiclink") {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-      const resetLink = `${supabaseUrl}/auth/v1/verify?token=${token_hash}&type=${type}&redirect_to=${redirect_to || ""}`;
+    // Check if user exists
+    const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+    
+    if (userError) {
+      console.error("Error fetching users:", userError);
+      throw userError;
+    }
 
-      const emailHtml = `
+    const user = userData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      console.log("User not found, returning success anyway for security");
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Generate secure token
+    const token = generateSecureToken();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
+
+    // Delete any existing tokens for this email
+    await supabase
+      .from("password_reset_tokens")
+      .delete()
+      .eq("email", email.toLowerCase());
+
+    // Store the token
+    const { error: insertError } = await supabase
+      .from("password_reset_tokens")
+      .insert({
+        user_id: user.id,
+        email: email.toLowerCase(),
+        token: token,
+        expires_at: expiresAt.toISOString(),
+      });
+
+    if (insertError) {
+      console.error("Error storing token:", insertError);
+      throw insertError;
+    }
+
+    // Build reset link
+    const baseUrl = redirectUrl || "https://leyhadhiya.com";
+    const resetLink = `${baseUrl}/reset-password?token=${token}`;
+
+    const emailHtml = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -90,7 +153,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </tr>
               </table>
               <p style="margin: 24px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280;">
-                If you didn't request a password reset, you can safely ignore this email. This link will expire in 24 hours.
+                If you didn't request a password reset, you can safely ignore this email. This link will expire in 1 hour.
               </p>
               <hr style="margin: 32px 0; border: none; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0; font-size: 12px; color: #9ca3af;">
@@ -114,24 +177,18 @@ const handler = async (req: Request): Promise<Response> => {
   </table>
 </body>
 </html>
-      `;
+    `;
 
-      const emailResponse = await sendEmailWithResend(
-        email,
-        "Reset Your Password - LeyHadhiya",
-        emailHtml
-      );
+    const emailResponse = await sendEmailWithResend(
+      email,
+      "Reset Your Password - LeyHadhiya",
+      emailHtml
+    );
 
-      console.log("Email sent successfully:", emailResponse);
+    console.log("Email sent successfully:", emailResponse);
 
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    return new Response(JSON.stringify({ error: "Unknown email type" }), {
-      status: 400,
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
