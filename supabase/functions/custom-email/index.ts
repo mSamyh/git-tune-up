@@ -166,7 +166,25 @@ const handler = async (req: Request): Promise<Response> => {
           </tr>
           <tr>
             <td style="padding: 24px 40px; text-align: center; background-color: #f9fafb; border-radius: 0 0 12px 12px;">
-              <p style="margin: 0; font-size: 14px; color: #6b7280;">
+              <table role="presentation" style="margin: 0 auto 12px; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 16px; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border-radius: 20px;">
+                    <table role="presentation" style="border-collapse: collapse;">
+                      <tr>
+                        <td style="vertical-align: middle; padding-right: 8px;">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" fill="#ffffff"/>
+                          </svg>
+                        </td>
+                        <td style="vertical-align: middle;">
+                          <span style="font-size: 14px; font-weight: 600; color: #ffffff;">LeyHadhiya</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0; font-size: 12px; color: #9ca3af;">
                 © ${new Date().getFullYear()} LeyHadhiya. All rights reserved.
               </p>
             </td>
