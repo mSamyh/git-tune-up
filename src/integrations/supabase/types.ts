@@ -420,6 +420,7 @@ export type Database = {
           last_donation_date: string | null
           phone: string
           title: string | null
+          title_color: string | null
           updated_at: string | null
           user_type: string | null
         }
@@ -439,6 +440,7 @@ export type Database = {
           last_donation_date?: string | null
           phone: string
           title?: string | null
+          title_color?: string | null
           updated_at?: string | null
           user_type?: string | null
         }
@@ -458,6 +460,7 @@ export type Database = {
           last_donation_date?: string | null
           phone?: string
           title?: string | null
+          title_color?: string | null
           updated_at?: string | null
           user_type?: string | null
         }

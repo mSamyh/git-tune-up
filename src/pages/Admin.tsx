@@ -36,6 +36,7 @@ interface DonorProfile {
   address?: string;
   availability_status?: string;
   title?: string;
+  title_color?: string;
   user_type?: string;
 }
 
@@ -70,6 +71,7 @@ const Admin = () => {
     district: "",
     address: "",
     title: "",
+    title_color: "",
   });
   
   // History form states
@@ -253,6 +255,7 @@ const Admin = () => {
       district: donor.district || "",
       address: donor.address || "",
       title: donor.title || "",
+      title_color: donor.title_color || "",
     });
     setEditDialogOpen(true);
   };
@@ -1137,6 +1140,45 @@ const Admin = () => {
                 placeholder="e.g., Founder, Volunteer, etc."
               />
             </div>
+            {editForm.title && (
+              <div>
+                <Label>Title Badge Color</Label>
+                <div className="grid grid-cols-6 gap-2 mt-2">
+                  {[
+                    { name: "Default", value: "", className: "bg-secondary" },
+                    { name: "Red", value: "bg-red-500 text-white", className: "bg-red-500" },
+                    { name: "Blue", value: "bg-blue-500 text-white", className: "bg-blue-500" },
+                    { name: "Green", value: "bg-green-500 text-white", className: "bg-green-500" },
+                    { name: "Yellow", value: "bg-yellow-500 text-black", className: "bg-yellow-500" },
+                    { name: "Purple", value: "bg-purple-500 text-white", className: "bg-purple-500" },
+                    { name: "Pink", value: "bg-pink-500 text-white", className: "bg-pink-500" },
+                    { name: "Orange", value: "bg-orange-500 text-white", className: "bg-orange-500" },
+                    { name: "Teal", value: "bg-teal-500 text-white", className: "bg-teal-500" },
+                    { name: "Indigo", value: "bg-indigo-500 text-white", className: "bg-indigo-500" },
+                    { name: "Rose", value: "bg-rose-500 text-white", className: "bg-rose-500" },
+                    { name: "Gold", value: "bg-yellow-600 text-white", className: "bg-yellow-600" },
+                  ].map((color) => (
+                    <button
+                      key={color.name}
+                      type="button"
+                      onClick={() => setEditForm({ ...editForm, title_color: color.value })}
+                      className={`w-8 h-8 rounded-full ${color.className} border-2 ${
+                        editForm.title_color === color.value ? "border-foreground ring-2 ring-offset-2 ring-primary" : "border-transparent"
+                      } transition-all`}
+                      title={color.name}
+                    />
+                  ))}
+                </div>
+                {editForm.title && (
+                  <div className="mt-3">
+                    <span className="text-sm text-muted-foreground mr-2">Preview:</span>
+                    <Badge className={editForm.title_color || "bg-secondary text-secondary-foreground"}>
+                      {editForm.title}
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
