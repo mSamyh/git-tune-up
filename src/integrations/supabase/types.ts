@@ -419,6 +419,7 @@ export type Database = {
           island: string | null
           last_donation_date: string | null
           phone: string
+          title: string | null
           updated_at: string | null
           user_type: string | null
         }
@@ -437,6 +438,7 @@ export type Database = {
           island?: string | null
           last_donation_date?: string | null
           phone: string
+          title?: string | null
           updated_at?: string | null
           user_type?: string | null
         }
@@ -455,6 +457,7 @@ export type Database = {
           island?: string | null
           last_donation_date?: string | null
           phone?: string
+          title?: string | null
           updated_at?: string | null
           user_type?: string | null
         }

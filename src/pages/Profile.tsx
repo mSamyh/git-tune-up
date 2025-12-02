@@ -37,6 +37,7 @@ interface Profile {
   available_date: string | null;
   last_donation_date: string | null;
   user_type: string;
+  title: string | null;
 }
 
 interface DonationHistory {
@@ -405,7 +406,12 @@ const Profile = () => {
                 </div>
                 <div>
                   <CardTitle className="text-2xl">{profile.full_name}</CardTitle>
-                  <CardDescription>Your Profile</CardDescription>
+                  {profile.title && (
+                    <Badge variant="secondary" className="mt-1">
+                      {profile.title}
+                    </Badge>
+                  )}
+                  <CardDescription className="mt-1">Your Profile</CardDescription>
                   {isFirstTimeDonor && (
                     <p className="text-sm text-primary mt-1">First Time Donor</p>
                   )}
