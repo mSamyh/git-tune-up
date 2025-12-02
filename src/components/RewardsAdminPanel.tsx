@@ -77,7 +77,7 @@ export function RewardsAdminPanel() {
     setRewards(rewardsData || []);
 
     // Fetch ALL redemptions for complete audit trail
-    const { data: redemptionsData } = await supabase
+    const { data: redemptionsData, error: redemptionsError } = await supabase
       .from("redemption_history")
       .select(`
         *,
@@ -92,6 +92,11 @@ export function RewardsAdminPanel() {
       `)
       .order("created_at", { ascending: false });
     
+    if (redemptionsError) {
+      console.error("Error fetching redemptions:", redemptionsError);
+    }
+    
+    console.log("Redemptions fetched:", redemptionsData?.length || 0, "items");
     setRedemptions(redemptionsData || []);
 
     // Fetch all donor points
