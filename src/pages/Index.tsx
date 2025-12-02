@@ -71,9 +71,15 @@ const Index = () => {
             <p className="text-muted-foreground mb-2 flex items-center justify-center gap-1">
               Built with <Heart className="h-4 w-4 text-red-500 fill-red-500 inline animate-pulse rounded-none shadow-none opacity-85 border-0" /> to connect with donors
             </p>
-            <Button variant="link" onClick={() => navigate("/faq")} className="text-primary hover:underline p-0 h-auto">
-              FAQ
-            </Button>
+            <div className="flex items-center justify-center gap-4">
+              <Button variant="link" onClick={() => navigate("/about")} className="text-primary hover:underline p-0 h-auto">
+                About
+              </Button>
+              <span className="text-muted-foreground">•</span>
+              <Button variant="link" onClick={() => navigate("/faq")} className="text-primary hover:underline p-0 h-auto">
+                FAQ
+              </Button>
+            </div>
           </footer>
         </div>
       </div>;
@@ -92,9 +98,15 @@ const Index = () => {
           <p className="text-muted-foreground mb-2 flex items-center justify-center gap-1">
             Built with <Heart className="h-4 w-4 text-red-500 fill-red-500 inline animate-pulse" /> to connect with donors
           </p>
-          <Button variant="link" onClick={() => navigate("/faq")} className="text-primary hover:underline p-0 h-auto">
-            FAQ
-          </Button>
+          <div className="flex items-center justify-center gap-4">
+            <Button variant="link" onClick={() => navigate("/about")} className="text-primary hover:underline p-0 h-auto">
+              About
+            </Button>
+            <span className="text-muted-foreground">•</span>
+            <Button variant="link" onClick={() => navigate("/faq")} className="text-primary hover:underline p-0 h-auto">
+              FAQ
+            </Button>
+          </div>
         </footer>
       </main>
 
