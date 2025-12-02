@@ -12,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Droplet, MapPin, Phone, Calendar as CalendarIcon, Edit, Save, Medal, Settings, Gift } from "lucide-react";
+import { ArrowLeft, Droplet, MapPin, Phone, Calendar as CalendarIcon, Edit, Save, Medal, Settings, Gift, QrCode } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { BottomNav } from "@/components/BottomNav";
@@ -21,6 +21,7 @@ import { LocationSelector } from "@/components/LocationSelector";
 import { AppHeader } from "@/components/AppHeader";
 import { TopDonorBadge } from "@/components/TopDonorBadge";
 import { RewardsSection } from "@/components/RewardsSection";
+import { DonorQRCard } from "@/components/DonorQRCard";
 
 interface Profile {
   id: string;
@@ -63,6 +64,7 @@ const Profile = () => {
   const [selectedAtoll, setSelectedAtoll] = useState("");
   const [selectedIsland, setSelectedIsland] = useState("");
   const [showRewardsDialog, setShowRewardsDialog] = useState(false);
+  const [showQRCard, setShowQRCard] = useState(false);
   const [pointsPerDonation, setPointsPerDonation] = useState(100); // default value
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -418,10 +420,22 @@ const Profile = () => {
                   )}
                 </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setIsEditing(!isEditing)}>
-                {isEditing ? <Save className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
-                {isEditing ? "Save" : "Edit"}
-              </Button>
+              <div className="flex items-center gap-2">
+                {(userType === 'donor' || userType === 'both') && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => setShowQRCard(true)}
+                    title="Donor ID Card"
+                  >
+                    <QrCode className="h-5 w-5 text-primary" />
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => setIsEditing(!isEditing)}>
+                  {isEditing ? <Save className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
+                  {isEditing ? "Save" : "Edit"}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -797,6 +811,12 @@ const Profile = () => {
           <RewardsSection userId={profile.id} />
         </DialogContent>
       </Dialog>
+
+      <DonorQRCard
+        open={showQRCard}
+        onOpenChange={setShowQRCard}
+        donor={profile}
+      />
 
       <BottomNav />
     </div>
