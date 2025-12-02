@@ -63,15 +63,12 @@ const Index = () => {
           </div>
 
           <footer className="mt-16 text-center pb-8">
-            <p className="text-muted-foreground mb-2">
-              <span className="flex items-center justify-center gap-1">
-                Built with{" "}
-                <Heart className="h-4 w-4 text-red-500 fill-red-500 inline animate-pulse rounded-none shadow-none opacity-85 border-0" />{" "}
-                to connect with donors
-              </span>
-              <span className="block mt-1">Mohamed Samyh</span>
+            <p className="text-muted-foreground mb-2 flex items-center justify-center gap-1">
+              Built with{" "}
+              <Heart className="h-4 w-4 text-red-500 fill-red-500 inline animate-pulse rounded-none shadow-none opacity-85 border-0" />{" "}
+              to connect with donors
             </p>
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center gap-4 mb-2">
               <Button
                 variant="link"
                 onClick={() => navigate("/about")}
@@ -88,6 +85,7 @@ const Index = () => {
                 FAQ
               </Button>
             </div>
+            <p className="text-muted-foreground text-sm">Mohamed Samyh</p>
           </footer>
         </div>
       </div>
@@ -109,7 +107,7 @@ const Index = () => {
             Built with <Heart className="h-4 w-4 text-red-500 fill-red-500 inline animate-pulse" /> to connect with
             donors
           </p>
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center justify-center gap-4 mb-2">
             <Button
               variant="link"
               onClick={() => navigate("/about")}
@@ -122,6 +120,7 @@ const Index = () => {
               FAQ
             </Button>
           </div>
+          <p className="text-muted-foreground text-sm">Mohamed Samyh</p>
         </footer>
       </main>
 
