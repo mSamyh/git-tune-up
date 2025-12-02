@@ -25,6 +25,7 @@ interface Donor {
   donation_count?: number;
   source?: string;
   is_registered?: boolean;
+  title?: string | null;
 }
 
 interface DonorTableProps {
