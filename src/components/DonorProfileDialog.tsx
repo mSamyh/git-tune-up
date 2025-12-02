@@ -28,6 +28,7 @@ interface Donor {
   source?: string;
   is_registered?: boolean;
   title?: string | null;
+  title_color?: string | null;
 }
 
 interface DonorProfileDialogProps {
@@ -230,7 +231,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
                   <h3 className="text-xl font-semibold">{donor.full_name}</h3>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {donor.title && (
-                      <Badge variant="secondary">
+                      <Badge className={donor.title_color || "bg-secondary text-secondary-foreground"}>
                         {donor.title}
                       </Badge>
                     )}

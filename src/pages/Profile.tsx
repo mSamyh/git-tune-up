@@ -38,6 +38,7 @@ interface Profile {
   last_donation_date: string | null;
   user_type: string;
   title: string | null;
+  title_color: string | null;
 }
 
 interface DonationHistory {
@@ -406,8 +407,8 @@ const Profile = () => {
                 </div>
                 <div>
                   <CardTitle className="text-2xl">{profile.full_name}</CardTitle>
-                  {profile.title && (
-                    <Badge variant="secondary" className="mt-1">
+                {profile.title && (
+                    <Badge className={`mt-1 ${profile.title_color || "bg-secondary text-secondary-foreground"}`}>
                       {profile.title}
                     </Badge>
                   )}
