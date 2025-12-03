@@ -22,6 +22,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { TopDonorBadge } from "@/components/TopDonorBadge";
 import { RewardsSection } from "@/components/RewardsSection";
 import { DonorQRCard } from "@/components/DonorQRCard";
+import { DonationHistoryByYear } from "@/components/DonationHistoryByYear";
 
 interface Profile {
   id: string;
@@ -790,7 +791,7 @@ const Profile = () => {
               </DialogContent>
             </Dialog>
 
-            <DonationHistory donorId={profile.id} />
+            <DonationHistoryByYear donorId={profile.id} />
               </>
             )}
 
@@ -823,74 +824,7 @@ const Profile = () => {
   );
 };
 
-const DonationHistory = ({ donorId }: { donorId: string }) => {
-  const [history, setHistory] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetchHistory();
-  }, [donorId]);
-
-  const fetchHistory = async () => {
-    const { data } = await supabase
-      .from("donation_history")
-      .select("*")
-      .eq("donor_id", donorId)
-      .order("donation_date", { ascending: false });
-
-    if (data) setHistory(data);
-  };
-
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const diffMonths = Math.floor(diffDays / 30);
-    const diffYears = Math.floor(diffDays / 365);
-
-    if (diffYears > 0) {
-      return `${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
-    } else if (diffMonths > 0) {
-      return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
-    } else if (diffDays > 0) {
-      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    } else {
-      return 'Today';
-    }
-  };
-
-  if (history.length === 0) return null;
-
-  return (
-    <Card className="mt-4">
-      <CardHeader>
-        <CardTitle className="text-lg">Donation History</CardTitle>
-        <CardDescription>Your past donations</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          {history.map((donation) => (
-            <div key={donation.id} className="flex justify-between items-center p-3 bg-muted rounded-lg">
-              <div>
-                <p className="font-medium">{donation.hospital_name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(donation.donation_date).toLocaleDateString()}
-                </p>
-                <p className="text-xs text-muted-foreground italic">
-                  {getTimeAgo(donation.donation_date)}
-                </p>
-                {donation.notes && (
-                  <p className="text-xs text-muted-foreground">{donation.notes}</p>
-                )}
-              </div>
-              <Badge variant="outline">{donation.units_donated} unit(s)</Badge>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+// DonationHistory component has been moved to src/components/DonationHistoryByYear.tsx
 
 const CheckAdminButton = () => {
   const [isAdmin, setIsAdmin] = useState(false);
