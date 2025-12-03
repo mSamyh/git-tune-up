@@ -63,7 +63,7 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
     }
   };
 
-  // Group donations by year
+  // Group donations by year and sort within each year by date (newest first)
   const donationsByYear = history.reduce((acc, donation) => {
     const year = new Date(donation.donation_date).getFullYear().toString();
     if (!acc[year]) {
@@ -72,6 +72,13 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
     acc[year].push(donation);
     return acc;
   }, {} as Record<string, DonationRecord[]>);
+
+  // Sort donations within each year by date (newest first)
+  Object.keys(donationsByYear).forEach(year => {
+    donationsByYear[year].sort((a, b) => 
+      new Date(b.donation_date).getTime() - new Date(a.donation_date).getTime()
+    );
+  });
 
   // Sort years in descending order
   const sortedYears = Object.keys(donationsByYear).sort((a, b) => Number(b) - Number(a));
