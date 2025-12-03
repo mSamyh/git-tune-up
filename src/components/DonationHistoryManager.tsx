@@ -67,34 +67,20 @@ export const DonationHistoryManager = () => {
   };
 
   const awardPoints = async (donorId: string, donationId: string, hospitalName: string) => {
-    // Create or update donor_points record
-    const { data: existingPoints } = await supabase
-      .from("donor_points")
-      .select("*")
-      .eq("donor_id", donorId)
-      .single();
+    // Check if points already awarded for this donation (duplicate prevention)
+    const { data: existingTransaction } = await supabase
+      .from("points_transactions")
+      .select("id")
+      .eq("related_donation_id", donationId)
+      .maybeSingle();
 
-    if (existingPoints) {
-      await supabase
-        .from("donor_points")
-        .update({
-          total_points: existingPoints.total_points + pointsPerDonation,
-          lifetime_points: existingPoints.lifetime_points + pointsPerDonation,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("donor_id", donorId);
-    } else {
-      await supabase
-        .from("donor_points")
-        .insert({
-          donor_id: donorId,
-          total_points: pointsPerDonation,
-          lifetime_points: pointsPerDonation,
-        });
+    if (existingTransaction) {
+      console.log(`Points already awarded for donation ${donationId}, skipping`);
+      return;
     }
 
-    // Record the transaction
-    await supabase
+    // Record the transaction FIRST to ensure it's created
+    const { error: txError } = await supabase
       .from("points_transactions")
       .insert({
         donor_id: donorId,
@@ -103,6 +89,50 @@ export const DonationHistoryManager = () => {
         description: `Points earned from blood donation at ${hospitalName}`,
         related_donation_id: donationId,
       });
+
+    if (txError) {
+      console.error("Failed to create points transaction:", txError);
+      toast({
+        variant: "destructive",
+        title: "Points Error",
+        description: "Failed to award points for this donation. Please check the audit panel.",
+      });
+      return; // Don't update points if transaction failed
+    }
+
+    // Now update donor_points record
+    const { data: existingPoints } = await supabase
+      .from("donor_points")
+      .select("*")
+      .eq("donor_id", donorId)
+      .single();
+
+    if (existingPoints) {
+      const { error: updateError } = await supabase
+        .from("donor_points")
+        .update({
+          total_points: existingPoints.total_points + pointsPerDonation,
+          lifetime_points: existingPoints.lifetime_points + pointsPerDonation,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("donor_id", donorId);
+
+      if (updateError) {
+        console.error("Failed to update donor points:", updateError);
+      }
+    } else {
+      const { error: insertError } = await supabase
+        .from("donor_points")
+        .insert({
+          donor_id: donorId,
+          total_points: pointsPerDonation,
+          lifetime_points: pointsPerDonation,
+        });
+
+      if (insertError) {
+        console.error("Failed to insert donor points:", insertError);
+      }
+    }
   };
 
   const deductPoints = async (donorId: string, donationId: string, hospitalName: string) => {
@@ -181,12 +211,20 @@ export const DonationHistoryManager = () => {
       if (newDonation) {
         await awardPoints(selectedDonor, newDonation.id, hospitalName);
       }
-      // Update last_donation_date in profile only if the new date is more recent
-      const donor = donors.find(d => d.id === selectedDonor);
-      if (!donor?.last_donation_date || donationDate > new Date(donor.last_donation_date)) {
+      
+      // Sync last_donation_date to the most recent donation in history
+      const { data: mostRecentDonation } = await supabase
+        .from("donation_history")
+        .select("donation_date")
+        .eq("donor_id", selectedDonor)
+        .order("donation_date", { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (mostRecentDonation) {
         await supabase
           .from("profiles")
-          .update({ last_donation_date: format(donationDate, "yyyy-MM-dd") })
+          .update({ last_donation_date: mostRecentDonation.donation_date })
           .eq("id", selectedDonor);
       }
 
@@ -311,16 +349,19 @@ export const DonationHistoryManager = () => {
         description: error.message,
       });
     } else {
-      // Update last_donation_date in profile if this was the most recent donation
-      const donorDonations = donations.filter(d => d.donor_id === editingDonation.donor_id);
-      const isNewest = !donorDonations.some(d => 
-        d.id !== editingDonation.id && new Date(d.donation_date) > editDate
-      );
-
-      if (isNewest) {
+      // Sync last_donation_date to the most recent donation in history
+      const { data: mostRecentDonation } = await supabase
+        .from("donation_history")
+        .select("donation_date")
+        .eq("donor_id", editingDonation.donor_id)
+        .order("donation_date", { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (mostRecentDonation) {
         await supabase
           .from("profiles")
-          .update({ last_donation_date: format(editDate, "yyyy-MM-dd") })
+          .update({ last_donation_date: mostRecentDonation.donation_date })
           .eq("id", editingDonation.donor_id);
       }
 
