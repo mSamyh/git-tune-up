@@ -87,7 +87,7 @@ const Profile = () => {
   };
 
   const awardPoints = async (donorId: string, donationId: string, hospitalName: string) => {
-    // Check if points were already awarded for this donation
+    // Check if points already awarded for this donation (duplicate prevention)
     const { data: existingTransaction } = await supabase
       .from("points_transactions")
       .select("id")
@@ -95,38 +95,12 @@ const Profile = () => {
       .maybeSingle();
 
     if (existingTransaction) {
-      console.log("Points already awarded for this donation");
+      console.log(`Points already awarded for donation ${donationId}, skipping`);
       return;
     }
 
-    // Create or update donor_points record
-    const { data: existingPoints } = await supabase
-      .from("donor_points")
-      .select("*")
-      .eq("donor_id", donorId)
-      .maybeSingle();
-
-    if (existingPoints) {
-      await supabase
-        .from("donor_points")
-        .update({
-          total_points: existingPoints.total_points + pointsPerDonation,
-          lifetime_points: existingPoints.lifetime_points + pointsPerDonation,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("donor_id", donorId);
-    } else {
-      await supabase
-        .from("donor_points")
-        .insert({
-          donor_id: donorId,
-          total_points: pointsPerDonation,
-          lifetime_points: pointsPerDonation,
-        });
-    }
-
-    // Record the transaction (database has unique constraint to prevent duplicates)
-    const { error: transactionError } = await supabase
+    // Record the transaction FIRST to ensure it's created
+    const { error: txError } = await supabase
       .from("points_transactions")
       .insert({
         donor_id: donorId,
@@ -136,23 +110,47 @@ const Profile = () => {
         related_donation_id: donationId,
       });
 
-    if (transactionError) {
-      console.error("Failed to record transaction:", transactionError);
-      // If transaction insert fails, rollback the points update
-      if (existingPoints) {
-        await supabase
-          .from("donor_points")
-          .update({
-            total_points: existingPoints.total_points,
-            lifetime_points: existingPoints.lifetime_points,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("donor_id", donorId);
-      } else {
-        await supabase
-          .from("donor_points")
-          .delete()
-          .eq("donor_id", donorId);
+    if (txError) {
+      console.error("Failed to create points transaction:", txError);
+      toast({
+        variant: "destructive",
+        title: "Points Error",
+        description: "Failed to award points for this donation.",
+      });
+      return; // Don't update points if transaction failed
+    }
+
+    // Now update donor_points record
+    const { data: existingPoints } = await supabase
+      .from("donor_points")
+      .select("*")
+      .eq("donor_id", donorId)
+      .maybeSingle();
+
+    if (existingPoints) {
+      const { error: updateError } = await supabase
+        .from("donor_points")
+        .update({
+          total_points: existingPoints.total_points + pointsPerDonation,
+          lifetime_points: existingPoints.lifetime_points + pointsPerDonation,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("donor_id", donorId);
+
+      if (updateError) {
+        console.error("Failed to update donor points:", updateError);
+      }
+    } else {
+      const { error: insertError } = await supabase
+        .from("donor_points")
+        .insert({
+          donor_id: donorId,
+          total_points: pointsPerDonation,
+          lifetime_points: pointsPerDonation,
+        });
+
+      if (insertError) {
+        console.error("Failed to insert donor points:", insertError);
       }
     }
   };
