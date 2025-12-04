@@ -1017,32 +1017,41 @@ const Admin = () => {
                     />
                     <Button onClick={addIsland}>Add</Button>
                   </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Island Name</TableHead>
-                        <TableHead>Atoll</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {islands.map((island) => (
-                        <TableRow key={island.id}>
-                          <TableCell>{island.name}</TableCell>
-                          <TableCell>{island.atolls?.name}</TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => deleteIsland(island.id)}
-                            >
-                              Delete
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  
+                  {/* Islands grouped by atoll - collapsible */}
+                  <Accordion type="multiple" className="w-full">
+                    {atolls.map((atoll) => {
+                      const atollIslands = islands.filter((i: any) => i.atolls?.name === atoll.name);
+                      return (
+                        <AccordionItem key={atoll.id} value={atoll.id}>
+                          <AccordionTrigger className="text-sm">
+                            {atoll.name} ({atollIslands.length} islands)
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            {atollIslands.length === 0 ? (
+                              <p className="text-sm text-muted-foreground py-2">No islands added</p>
+                            ) : (
+                              <div className="space-y-1">
+                                {atollIslands.map((island: any) => (
+                                  <div key={island.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                                    <span className="text-sm">{island.name}</span>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 text-destructive hover:text-destructive"
+                                      onClick={() => deleteIsland(island.id)}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
+                  </Accordion>
                 </div>
               </CardContent>
             </Card>
