@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Edit, Trash2, Plus, Gift, Settings, Trophy, Award, Users } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { TierManagement } from "./TierManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getUserTier } from "@/lib/tierSystem";
@@ -651,71 +652,85 @@ export function RewardsAdminPanel() {
         </TabsContent>
 
         <TabsContent value="users">
-          {/* All Users Points */}
+          {/* All Users Points - Grouped by Blood Group */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
                 All Donor Points & Tiers
               </CardTitle>
-              <CardDescription>View all donors' reward points and tier status</CardDescription>
+              <CardDescription>View all donors' reward points and tier status (grouped by blood group)</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Donor</TableHead>
-                    <TableHead>Blood Group</TableHead>
-                    <TableHead>Current Points</TableHead>
-                    <TableHead>Lifetime Points</TableHead>
-                    <TableHead>Tier</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allDonorPoints.map((donor) => (
-                    <TableRow key={donor.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{donor.profiles?.full_name}</p>
-                          <p className="text-xs text-muted-foreground">{donor.profiles?.phone}</p>
+              <Accordion type="multiple" className="w-full" defaultValue={["A+", "B+", "O+", "AB+"]}>
+                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bloodGroup) => {
+                  const groupDonors = allDonorPoints.filter(d => d.profiles?.blood_group === bloodGroup);
+                  if (groupDonors.length === 0) return null;
+                  return (
+                    <AccordionItem key={bloodGroup} value={bloodGroup}>
+                      <AccordionTrigger className="text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="font-bold">{bloodGroup}</Badge>
+                          <span className="text-muted-foreground">({groupDonors.length} donors)</span>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{donor.profiles?.blood_group}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-semibold">{donor.total_points}</span> pts
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-semibold">{donor.lifetime_points}</span> pts
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          className={
-                            donor.tier?.name === "Platinum" ? "bg-purple-500" :
-                            donor.tier?.name === "Gold" ? "bg-yellow-500" :
-                            donor.tier?.name === "Silver" ? "bg-gray-400" :
-                            "bg-orange-500"
-                          }
-                        >
-                          {donor.tier?.name} ({donor.tier?.discount}% off)
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => openPointsEditDialog(donor)}
-                        >
-                          <Edit className="h-3 w-3 mr-1" />
-                          Edit Points
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Donor</TableHead>
+                              <TableHead>Current Points</TableHead>
+                              <TableHead>Lifetime Points</TableHead>
+                              <TableHead>Tier</TableHead>
+                              <TableHead>Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {groupDonors.map((donor) => (
+                              <TableRow key={donor.id}>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium">{donor.profiles?.full_name}</p>
+                                    <p className="text-xs text-muted-foreground">{donor.profiles?.phone}</p>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="font-semibold">{donor.total_points}</span> pts
+                                </TableCell>
+                                <TableCell>
+                                  <span className="font-semibold">{donor.lifetime_points}</span> pts
+                                </TableCell>
+                                <TableCell>
+                                  <Badge 
+                                    className={
+                                      donor.tier?.name === "Platinum" ? "bg-purple-500" :
+                                      donor.tier?.name === "Gold" ? "bg-yellow-500" :
+                                      donor.tier?.name === "Silver" ? "bg-gray-400" :
+                                      "bg-orange-500"
+                                    }
+                                  >
+                                    {donor.tier?.name} ({donor.tier?.discount}% off)
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={() => openPointsEditDialog(donor)}
+                                  >
+                                    <Edit className="h-3 w-3 mr-1" />
+                                    Edit
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
             </CardContent>
           </Card>
         </TabsContent>

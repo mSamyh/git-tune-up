@@ -205,43 +205,45 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
           </div>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
+          {/* Header with avatar and name */}
           <div className="flex items-center gap-4">
             <div className="relative">
-              <Avatar className={`h-20 w-20 ${donor.source === 'directory' ? 'ring-2 ring-yellow-500' : ''}`}>
+              <Avatar className={`h-16 w-16 ${donor.source === 'directory' ? 'ring-2 ring-yellow-500' : ''}`}>
                 <AvatarImage src={donor.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl">{donor.full_name.charAt(0)}</AvatarFallback>
+                <AvatarFallback className="text-xl">{donor.full_name.charAt(0)}</AvatarFallback>
               </Avatar>
               {(() => {
                 const rank = getTopDonorRank(donor.id, topDonors);
                 return rank > 0 && <TopDonorBadge rank={rank} className="absolute -top-1 -right-1" />;
               })()}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               {isEditing ? (
-                <div className="space-y-2">
-                  <Label>Full Name</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">Full Name</Label>
                   <Input
                     value={editedDonor.full_name}
                     onChange={(e) => setEditedDonor({ ...editedDonor, full_name: e.target.value })}
+                    className="h-8"
                   />
                 </div>
               ) : (
                 <>
-                  <h3 className="text-xl font-semibold">{donor.full_name}</h3>
-                  <div className="flex flex-wrap gap-2 mt-1">
+                  <h3 className="text-lg font-semibold truncate">{donor.full_name}</h3>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
                     {donor.title && (
-                      <Badge className={donor.title_color || "bg-secondary text-secondary-foreground"}>
+                      <Badge className={`text-xs ${donor.title_color || "bg-secondary text-secondary-foreground"}`}>
                         {donor.title}
                       </Badge>
                     )}
                     {donor.source === 'directory' && (
-                      <Badge variant="outline" className="border-yellow-500 text-yellow-600">
+                      <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
                         Not Registered
                       </Badge>
                     )}
                     {isFirstTimeDonor && (
-                      <Badge variant="secondary">First Time Donor</Badge>
+                      <Badge variant="secondary" className="text-xs">First Time</Badge>
                     )}
                   </div>
                 </>
@@ -249,133 +251,129 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
             </div>
           </div>
 
-          <div className="space-y-4">
-            {isEditing ? (
-              <>
-                <div className="space-y-2">
-                  <Label>Blood Group</Label>
+          {isEditing ? (
+            /* Edit Mode - Compact Form */
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Blood Group</Label>
                   <Select
                     value={editedDonor.blood_group}
                     onValueChange={(value) => setEditedDonor({ ...editedDonor, blood_group: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((group) => (
-                        <SelectItem key={group} value={group}>
-                          {group}
-                        </SelectItem>
+                        <SelectItem key={group} value={group}>{group}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Phone</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">Phone</Label>
                   <Input
                     value={editedDonor.phone}
                     onChange={(e) => setEditedDonor({ ...editedDonor, phone: e.target.value })}
+                    className="h-8"
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Location</Label>
-                  <LocationSelector
-                    selectedAtoll={selectedAtoll}
-                    selectedIsland={selectedIsland}
-                    onAtollChange={setSelectedAtoll}
-                    onIslandChange={setSelectedIsland}
-                  />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Location</Label>
+                <LocationSelector
+                  selectedAtoll={selectedAtoll}
+                  selectedIsland={selectedIsland}
+                  onAtollChange={setSelectedAtoll}
+                  onIslandChange={setSelectedIsland}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Availability Status</Label>
+                <Select
+                  value={editedDonor.availability_status}
+                  onValueChange={(value) => setEditedDonor({ ...editedDonor, availability_status: value })}
+                >
+                  <SelectTrigger className="h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="unavailable">Unavailable</SelectItem>
+                    <SelectItem value="reserved">Reserved</SelectItem>
+                    <SelectItem value="available_soon">Available Soon</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          ) : (
+            /* View Mode - Compact Grid */
+            <>
+              {/* Key Stats Row */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="text-center p-2.5 bg-primary/10 rounded-lg">
+                  <Droplet className="h-4 w-4 mx-auto text-primary mb-1" />
+                  <p className="text-lg font-bold text-primary">{donor.blood_group}</p>
+                  <p className="text-[10px] text-muted-foreground">Blood Type</p>
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Availability Status</Label>
-                  <Select
-                    value={editedDonor.availability_status}
-                    onValueChange={(value) => setEditedDonor({ ...editedDonor, availability_status: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="available">Available</SelectItem>
-                      <SelectItem value="unavailable">Unavailable</SelectItem>
-                      <SelectItem value="reserved">Reserved</SelectItem>
-                      <SelectItem value="available_soon">Available Soon</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="text-center p-2.5 bg-muted rounded-lg">
+                  <Medal className="h-4 w-4 mx-auto text-primary mb-1" />
+                  <p className="text-lg font-bold">{donor.donation_count || 0}</p>
+                  <p className="text-[10px] text-muted-foreground">Donations</p>
                 </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                  <Droplet className="h-5 w-5 text-primary" />
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground">Blood Group</p>
-                    <p className="font-semibold">{donor.blood_group}</p>
-                  </div>
+                <div className="text-center p-2.5 bg-muted rounded-lg">
+                  {getAvailabilityText()}
+                  <p className="text-[10px] text-muted-foreground mt-1">Status</p>
                 </div>
+              </div>
 
-                <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                  <Phone className="h-5 w-5 text-primary" />
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground">Phone</p>
-                    <p className="font-semibold">{donor.phone}</p>
-                  </div>
+              {/* Contact & Location */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                  <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-sm font-medium">{donor.phone}</span>
                 </div>
-
-                <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground">Location</p>
-                    <p className="font-semibold">{donor.district}</p>
+                <div className="flex items-start gap-2 p-2 bg-muted/50 rounded-md">
+                  <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{donor.district || 'Not specified'}</p>
                     {donor.address && (
-                      <p className="text-sm text-muted-foreground">{donor.address}</p>
+                      <p className="text-xs text-muted-foreground truncate">{donor.address}</p>
                     )}
                   </div>
                 </div>
-
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-2">Availability Status</p>
-                  {getAvailabilityText()}
-                </div>
-              </>
-            )}
-
-            {donor.last_donation_date && (
-              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                <Calendar className="h-5 w-5 text-primary" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Last Donation</p>
-                  <p className="font-semibold">
-                    {new Date(donor.last_donation_date).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">Total Donations</p>
-              <p className="text-2xl font-bold text-primary">{donor.donation_count || 0}</p>
-            </div>
-
-            {isOwnProfile && donationHistory.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="font-semibold">Recent Donations</h4>
-                <div className="space-y-2">
-                  {donationHistory.slice(0, 5).map((donation) => (
-                    <div key={donation.id} className="p-2 bg-muted rounded text-sm">
-                      <p className="font-medium">{donation.hospital_name}</p>
-                      <p className="text-muted-foreground">
-                        {new Date(donation.donation_date).toLocaleDateString()}
-                      </p>
+                {donor.last_donation_date && (
+                  <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                    <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div>
+                      <span className="text-sm font-medium">
+                        {new Date(donor.last_donation_date).toLocaleDateString()}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-1">(Last donation)</span>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+
+              {/* Recent Donations - Only for own profile */}
+              {isOwnProfile && donationHistory.length > 0 && (
+                <div className="space-y-1.5">
+                  <h4 className="text-sm font-semibold">Recent Donations</h4>
+                  <div className="space-y-1">
+                    {donationHistory.slice(0, 3).map((donation) => (
+                      <div key={donation.id} className="flex items-center justify-between p-1.5 bg-muted/50 rounded text-xs">
+                        <span className="font-medium truncate flex-1">{donation.hospital_name}</span>
+                        <span className="text-muted-foreground ml-2">
+                          {new Date(donation.donation_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {isAdmin && donor.source === 'profile' && isEditing && (
