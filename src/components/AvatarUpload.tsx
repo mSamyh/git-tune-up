@@ -13,6 +13,7 @@ interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
   userName: string;
   onUploadComplete: (url: string) => void;
+  size?: "sm" | "md" | "lg";
 }
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -54,7 +55,7 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
   });
 }
 
-export const AvatarUpload = ({ currentAvatarUrl, userName, onUploadComplete }: AvatarUploadProps) => {
+export const AvatarUpload = ({ currentAvatarUrl, userName, onUploadComplete, size = "md" }: AvatarUploadProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
@@ -130,12 +131,18 @@ export const AvatarUpload = ({ currentAvatarUrl, userName, onUploadComplete }: A
     }
   };
 
+  const sizeClasses = {
+    sm: "h-16 w-16",
+    md: "h-24 w-24",
+    lg: "h-28 w-28",
+  };
+
   return (
     <>
       <div className="relative group cursor-pointer" onClick={() => document.getElementById("avatar-input")?.click()}>
-        <Avatar className="h-24 w-24">
+        <Avatar className={sizeClasses[size]}>
           <AvatarImage src={currentAvatarUrl || undefined} />
-          <AvatarFallback className="text-2xl">{userName.charAt(0)}</AvatarFallback>
+          <AvatarFallback className={size === "lg" ? "text-3xl" : "text-2xl"}>{userName.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
           <Camera className="h-6 w-6 text-white" />

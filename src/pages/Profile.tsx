@@ -41,6 +41,7 @@ interface Profile {
   user_type: string;
   title: string | null;
   title_color: string | null;
+  bio: string | null;
 }
 
 interface DonationHistory {
@@ -67,6 +68,8 @@ const Profile = () => {
   const [showRewardsDialog, setShowRewardsDialog] = useState(false);
   const [showQRCard, setShowQRCard] = useState(false);
   const [pointsPerDonation, setPointsPerDonation] = useState(100); // default value
+  const [bio, setBio] = useState("");
+  const [isEditingBio, setIsEditingBio] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -181,6 +184,7 @@ const Profile = () => {
       setUserType(data.user_type || 'donor');
       setSelectedAtoll(data.atoll || '');
       setSelectedIsland(data.island || '');
+      setBio(data.bio || '');
       if (data.last_donation_date) {
         setLastDonationDate(new Date(data.last_donation_date));
       }
@@ -380,60 +384,134 @@ const Profile = () => {
 
   const isFirstTimeDonor = !profile?.last_donation_date && donationCount === 0;
 
+  const saveBio = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ bio })
+      .eq("id", user.id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: error.message,
+      });
+    } else {
+      setProfile(prev => prev ? { ...prev, bio } : null);
+      setIsEditingBio(false);
+      toast({
+        title: "Bio updated",
+        description: "Your bio has been saved",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <AvatarUpload
-                    currentAvatarUrl={profile.avatar_url}
-                    userName={profile.full_name}
-                    onUploadComplete={(url) => setProfile(prev => prev ? {...prev, avatar_url: url} : null)}
-                  />
-                  {(userType === 'donor' || userType === 'both') && (
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full shadow-md"
-                      onClick={() => setShowRewardsDialog(true)}
-                    >
-                      <Gift className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-                <div>
-                  <CardTitle className="text-2xl">{profile.full_name}</CardTitle>
-                {profile.title && (
-                    <Badge className={`mt-1 ${profile.title_color || "bg-secondary text-secondary-foreground"}`}>
-                      {profile.title}
-                    </Badge>
-                  )}
-                  <CardDescription className="mt-1">Your Profile</CardDescription>
-                  {isFirstTimeDonor && (
-                    <p className="text-sm text-primary mt-1">First Time Donor</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
+          <CardHeader className="pb-2">
+            {/* Action buttons at top right */}
+            <div className="flex justify-end gap-2">
+              {(userType === 'donor' || userType === 'both') && (
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => setShowQRCard(true)}
+                  title="Donor ID Card"
+                >
+                  <QrCode className="h-5 w-5 text-primary" />
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => setIsEditing(!isEditing)}>
+                {isEditing ? <Save className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
+                {isEditing ? "Save" : "Edit"}
+              </Button>
+            </div>
+
+            {/* Centered Profile Section */}
+            <div className="flex flex-col items-center text-center pt-2">
+              <div className="relative">
+                <AvatarUpload
+                  currentAvatarUrl={profile.avatar_url}
+                  userName={profile.full_name}
+                  onUploadComplete={(url) => setProfile(prev => prev ? {...prev, avatar_url: url} : null)}
+                  size="lg"
+                />
                 {(userType === 'donor' || userType === 'both') && (
-                  <Button 
-                    variant="ghost" 
+                  <Button
                     size="icon"
-                    onClick={() => setShowQRCard(true)}
-                    title="Donor ID Card"
+                    variant="secondary"
+                    className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-md"
+                    onClick={() => setShowRewardsDialog(true)}
                   >
-                    <QrCode className="h-5 w-5 text-primary" />
+                    <Gift className="h-4 w-4" />
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" onClick={() => setIsEditing(!isEditing)}>
-                  {isEditing ? <Save className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
-                  {isEditing ? "Save" : "Edit"}
-                </Button>
+              </div>
+              
+              <CardTitle className="text-2xl mt-4">{profile.full_name}</CardTitle>
+              
+              {profile.title && (
+                <Badge className={`mt-2 ${profile.title_color || "bg-secondary text-secondary-foreground"}`}>
+                  {profile.title}
+                </Badge>
+              )}
+              
+              {isFirstTimeDonor && (
+                <p className="text-sm text-primary mt-1">First Time Donor</p>
+              )}
+
+              {/* Stats Row */}
+              <div className="flex items-center justify-center gap-6 mt-4 py-3 border-y w-full">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-primary">{profile.blood_group}</p>
+                  <p className="text-xs text-muted-foreground">Blood Type</p>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{donationCount}</p>
+                  <p className="text-xs text-muted-foreground">Donations</p>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <div className="text-center">
+                  <Badge variant={availabilityStatus === 'available' ? 'default' : 'secondary'} className="text-xs">
+                    {availabilityStatus === 'available' ? 'Available' : 
+                     availabilityStatus === 'reserved' ? 'Reserved' : 'Unavailable'}
+                  </Badge>
+                  <p className="text-xs text-muted-foreground mt-1">Status</p>
+                </div>
+              </div>
+
+              {/* Bio Section */}
+              <div className="w-full mt-3">
+                {isEditingBio ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      placeholder="Write something about yourself..."
+                      className="text-center"
+                      maxLength={150}
+                    />
+                    <div className="flex justify-center gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setIsEditingBio(false)}>Cancel</Button>
+                      <Button size="sm" onClick={saveBio}>Save</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsEditingBio(true)}
+                    className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+                  >
+                    {bio || "+ Add bio"}
+                  </button>
+                )}
               </div>
             </div>
           </CardHeader>
