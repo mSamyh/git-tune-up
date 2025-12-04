@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Droplet, MapPin, Phone, Calendar, Medal, Edit, Save, X } from "lucide-react";
+import { MapPin, Phone, Calendar, Edit, Save, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { LocationSelector } from "./LocationSelector";
@@ -29,6 +29,7 @@ interface Donor {
   is_registered?: boolean;
   title?: string | null;
   title_color?: string | null;
+  bio?: string | null;
 }
 
 interface DonorProfileDialogProps {
@@ -206,49 +207,71 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Header with avatar and name */}
-          <div className="flex items-center gap-4">
+          {/* Centered Profile Header */}
+          <div className="flex flex-col items-center text-center">
             <div className="relative">
-              <Avatar className={`h-16 w-16 ${donor.source === 'directory' ? 'ring-2 ring-yellow-500' : ''}`}>
+              <Avatar className={`h-20 w-20 ${donor.source === 'directory' ? 'ring-2 ring-yellow-500' : ''}`}>
                 <AvatarImage src={donor.avatar_url || undefined} />
-                <AvatarFallback className="text-xl">{donor.full_name.charAt(0)}</AvatarFallback>
+                <AvatarFallback className="text-2xl">{donor.full_name.charAt(0)}</AvatarFallback>
               </Avatar>
               {(() => {
                 const rank = getTopDonorRank(donor.id, topDonors);
                 return rank > 0 && <TopDonorBadge rank={rank} className="absolute -top-1 -right-1" />;
               })()}
             </div>
-            <div className="flex-1 min-w-0">
-              {isEditing ? (
-                <div className="space-y-1">
-                  <Label className="text-xs">Full Name</Label>
-                  <Input
-                    value={editedDonor.full_name}
-                    onChange={(e) => setEditedDonor({ ...editedDonor, full_name: e.target.value })}
-                    className="h-8"
-                  />
+            
+            {isEditing ? (
+              <div className="space-y-1 mt-3 w-full">
+                <Label className="text-xs">Full Name</Label>
+                <Input
+                  value={editedDonor.full_name}
+                  onChange={(e) => setEditedDonor({ ...editedDonor, full_name: e.target.value })}
+                  className="h-8 text-center"
+                />
+              </div>
+            ) : (
+              <>
+                <h3 className="text-xl font-semibold mt-3">{donor.full_name}</h3>
+                <div className="flex flex-wrap justify-center gap-1.5 mt-1">
+                  {donor.title && (
+                    <Badge className={`text-xs ${donor.title_color || "bg-secondary text-secondary-foreground"}`}>
+                      {donor.title}
+                    </Badge>
+                  )}
+                  {donor.source === 'directory' && (
+                    <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
+                      Not Registered
+                    </Badge>
+                  )}
+                  {isFirstTimeDonor && (
+                    <Badge variant="secondary" className="text-xs">First Time</Badge>
+                  )}
                 </div>
-              ) : (
-                <>
-                  <h3 className="text-lg font-semibold truncate">{donor.full_name}</h3>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {donor.title && (
-                      <Badge className={`text-xs ${donor.title_color || "bg-secondary text-secondary-foreground"}`}>
-                        {donor.title}
-                      </Badge>
-                    )}
-                    {donor.source === 'directory' && (
-                      <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
-                        Not Registered
-                      </Badge>
-                    )}
-                    {isFirstTimeDonor && (
-                      <Badge variant="secondary" className="text-xs">First Time</Badge>
-                    )}
-                  </div>
-                </>
-              )}
+              </>
+            )}
+
+            {/* Stats Row */}
+            <div className="flex items-center justify-center gap-4 mt-4 py-3 border-y w-full">
+              <div className="text-center flex-1">
+                <p className="text-xl font-bold text-primary">{donor.blood_group}</p>
+                <p className="text-[10px] text-muted-foreground">Blood Type</p>
+              </div>
+              <div className="h-8 w-px bg-border" />
+              <div className="text-center flex-1">
+                <p className="text-xl font-bold">{donor.donation_count || 0}</p>
+                <p className="text-[10px] text-muted-foreground">Donations</p>
+              </div>
+              <div className="h-8 w-px bg-border" />
+              <div className="text-center flex-1">
+                {getAvailabilityText()}
+                <p className="text-[10px] text-muted-foreground mt-0.5">Status</p>
+              </div>
             </div>
+
+            {/* Bio */}
+            {donor.bio && (
+              <p className="text-sm text-muted-foreground mt-3 px-2">{donor.bio}</p>
+            )}
           </div>
 
           {isEditing ? (
@@ -308,71 +331,33 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
               </div>
             </div>
           ) : (
-            /* View Mode - Compact Grid */
-            <>
-              {/* Key Stats Row */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="text-center p-2.5 bg-primary/10 rounded-lg">
-                  <Droplet className="h-4 w-4 mx-auto text-primary mb-1" />
-                  <p className="text-lg font-bold text-primary">{donor.blood_group}</p>
-                  <p className="text-[10px] text-muted-foreground">Blood Type</p>
-                </div>
-                <div className="text-center p-2.5 bg-muted rounded-lg">
-                  <Medal className="h-4 w-4 mx-auto text-primary mb-1" />
-                  <p className="text-lg font-bold">{donor.donation_count || 0}</p>
-                  <p className="text-[10px] text-muted-foreground">Donations</p>
-                </div>
-                <div className="text-center p-2.5 bg-muted rounded-lg">
-                  {getAvailabilityText()}
-                  <p className="text-[10px] text-muted-foreground mt-1">Status</p>
+            /* View Mode - Contact & Location */
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-sm font-medium">{donor.phone}</span>
+              </div>
+              <div className="flex items-start gap-2 p-2 bg-muted/50 rounded-md">
+                <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{donor.district || 'Not specified'}</p>
+                  {donor.address && (
+                    <p className="text-xs text-muted-foreground truncate">{donor.address}</p>
+                  )}
                 </div>
               </div>
-
-              {/* Contact & Location */}
-              <div className="space-y-2">
+              {donor.last_donation_date && (
                 <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                  <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <span className="text-sm font-medium">{donor.phone}</span>
-                </div>
-                <div className="flex items-start gap-2 p-2 bg-muted/50 rounded-md">
-                  <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{donor.district || 'Not specified'}</p>
-                    {donor.address && (
-                      <p className="text-xs text-muted-foreground truncate">{donor.address}</p>
-                    )}
-                  </div>
-                </div>
-                {donor.last_donation_date && (
-                  <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                    <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <div>
-                      <span className="text-sm font-medium">
-                        {new Date(donor.last_donation_date).toLocaleDateString()}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-1">(Last donation)</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Recent Donations - Only for own profile */}
-              {isOwnProfile && donationHistory.length > 0 && (
-                <div className="space-y-1.5">
-                  <h4 className="text-sm font-semibold">Recent Donations</h4>
-                  <div className="space-y-1">
-                    {donationHistory.slice(0, 3).map((donation) => (
-                      <div key={donation.id} className="flex items-center justify-between p-1.5 bg-muted/50 rounded text-xs">
-                        <span className="font-medium truncate flex-1">{donation.hospital_name}</span>
-                        <span className="text-muted-foreground ml-2">
-                          {new Date(donation.donation_date).toLocaleDateString()}
-                        </span>
-                      </div>
-                    ))}
+                  <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium">
+                      {new Date(donor.last_donation_date).toLocaleDateString()}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-1">(Last donation)</span>
                   </div>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
 

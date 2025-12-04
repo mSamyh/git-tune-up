@@ -440,6 +440,7 @@ export type Database = {
           availability_status: string | null
           available_date: string | null
           avatar_url: string | null
+          bio: string | null
           blood_group: string
           created_at: string | null
           district: string | null
@@ -460,6 +461,7 @@ export type Database = {
           availability_status?: string | null
           available_date?: string | null
           avatar_url?: string | null
+          bio?: string | null
           blood_group: string
           created_at?: string | null
           district?: string | null
@@ -480,6 +482,7 @@ export type Database = {
           availability_status?: string | null
           available_date?: string | null
           avatar_url?: string | null
+          bio?: string | null
           blood_group?: string
           created_at?: string | null
           district?: string | null
