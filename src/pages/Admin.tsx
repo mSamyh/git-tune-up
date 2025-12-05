@@ -713,88 +713,111 @@ const Admin = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Donor Management</CardTitle>
-                <CardDescription>Quick actions for each donor</CardDescription>
+                <CardDescription>Quick actions for each donor grouped by blood group</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="mb-4">
                   <CSVImporter />
                 </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Blood Group</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>User Type</TableHead>
-                      <TableHead>Availability</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {donors.map((donor) => (
-                      <TableRow key={donor.id}>
-                        <TableCell className="font-medium">{donor.full_name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{donor.blood_group}</Badge>
-                        </TableCell>
-                        <TableCell>{donor.phone}</TableCell>
-                        <TableCell>{donor.district || donor.atoll || '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {donor.user_type === 'both' ? 'Donor & Receiver' : donor.user_type === 'receiver' ? 'Receiver' : 'Donor'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {donor.availability_status === 'available' ? (
-                            <Badge variant="outline" className="text-green-600 border-green-600">
-                              Available
-                            </Badge>
-                          ) : donor.availability_status === 'available_soon' ? (
-                            <Badge variant="outline" className="text-blue-600 border-blue-600">
-                              Available Soon
-                            </Badge>
-                          ) : donor.availability_status === 'reserved' ? (
-                            <Badge variant="outline" className="text-orange-600 border-orange-600">
-                              Reserved
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-red-600 border-red-600">
-                              Unavailable
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEditDialog(donor)}
-                            >
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openHistoryDialog(donor)}
-                            >
-                              <Plus className="h-4 w-4 mr-1" />
-                              History
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteDonor(donor)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                {(() => {
+                  const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+                  const donorsByBloodGroup = bloodGroups.reduce((acc, group) => {
+                    acc[group] = donors.filter(d => d.blood_group === group);
+                    return acc;
+                  }, {} as Record<string, DonorProfile[]>);
+                  const groupsWithDonors = bloodGroups.filter(g => donorsByBloodGroup[g].length > 0);
+
+                  return (
+                    <Accordion type="multiple" defaultValue={['A+', 'B+', 'O+', 'AB+']} className="w-full space-y-2">
+                      {groupsWithDonors.map(group => (
+                        <AccordionItem key={group} value={group} className="border rounded-lg">
+                          <AccordionTrigger className="px-4 hover:no-underline">
+                            <div className="flex items-center gap-3">
+                              <Badge variant="outline" className="font-bold">{group}</Badge>
+                              <span className="text-sm text-muted-foreground">
+                                {donorsByBloodGroup[group].length} {donorsByBloodGroup[group].length === 1 ? 'donor' : 'donors'}
+                              </span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-4">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Name</TableHead>
+                                  <TableHead>Phone</TableHead>
+                                  <TableHead>Location</TableHead>
+                                  <TableHead>User Type</TableHead>
+                                  <TableHead>Availability</TableHead>
+                                  <TableHead>Actions</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {donorsByBloodGroup[group].map((donor) => (
+                                  <TableRow key={donor.id}>
+                                    <TableCell className="font-medium">{donor.full_name}</TableCell>
+                                    <TableCell>{donor.phone}</TableCell>
+                                    <TableCell>{donor.district || donor.atoll || '-'}</TableCell>
+                                    <TableCell>
+                                      <Badge variant="secondary">
+                                        {donor.user_type === 'both' ? 'Donor & Receiver' : donor.user_type === 'receiver' ? 'Receiver' : 'Donor'}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      {donor.availability_status === 'available' ? (
+                                        <Badge variant="outline" className="text-green-600 border-green-600">
+                                          Available
+                                        </Badge>
+                                      ) : donor.availability_status === 'available_soon' ? (
+                                        <Badge variant="outline" className="text-blue-600 border-blue-600">
+                                          Available Soon
+                                        </Badge>
+                                      ) : donor.availability_status === 'reserved' ? (
+                                        <Badge variant="outline" className="text-orange-600 border-orange-600">
+                                          Reserved
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-red-600 border-red-600">
+                                          Unavailable
+                                        </Badge>
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex gap-2">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => openEditDialog(donor)}
+                                        >
+                                          <Edit className="h-4 w-4 mr-1" />
+                                          Edit
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => openHistoryDialog(donor)}
+                                        >
+                                          <Plus className="h-4 w-4 mr-1" />
+                                          History
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="destructive"
+                                          onClick={() => handleDeleteDonor(donor)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>

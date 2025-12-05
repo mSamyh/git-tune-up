@@ -480,7 +480,16 @@ const Profile = () => {
                 </div>
                 <div className="h-8 w-px bg-border" />
                 <div className="text-center">
-                  <Badge variant={availabilityStatus === 'available' ? 'default' : 'secondary'} className="text-xs">
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs ${
+                      availabilityStatus === 'available' 
+                        ? 'text-green-600 border-green-600 bg-green-50' 
+                        : availabilityStatus === 'reserved' 
+                          ? 'text-orange-600 border-orange-600 bg-orange-50' 
+                          : 'text-red-600 border-red-600 bg-red-50'
+                    }`}
+                  >
                     {availabilityStatus === 'available' ? 'Available' : 
                      availabilityStatus === 'reserved' ? 'Reserved' : 'Unavailable'}
                   </Badge>
