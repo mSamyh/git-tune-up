@@ -3,18 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Droplet, MapPin, Phone, Calendar as CalendarIcon, Edit, Save, Medal, Settings, Gift, QrCode } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { Droplet, MapPin, Phone, Edit, Save, Settings, Gift, QrCode } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { LocationSelector } from "@/components/LocationSelector";
@@ -22,7 +17,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { TopDonorBadge } from "@/components/TopDonorBadge";
 import { RewardsSection } from "@/components/RewardsSection";
 import { DonorQRCard } from "@/components/DonorQRCard";
-import { DonationHistoryByYear } from "@/components/DonationHistoryByYear";
+
 
 interface Profile {
   id: string;
@@ -44,30 +39,19 @@ interface Profile {
   bio: string | null;
 }
 
-interface DonationHistory {
-  id: string;
-  donation_date: string;
-  hospital_name: string;
-  notes: string | null;
-  units_donated: number;
-}
 
 const Profile = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [donationCount, setDonationCount] = useState(0);
-  const [lastDonationDate, setLastDonationDate] = useState<Date>();
-  const [tempDonationDate, setTempDonationDate] = useState<Date>();
-  const [hospitalName, setHospitalName] = useState("");
-  const [showHospitalDialog, setShowHospitalDialog] = useState(false);
   const [availabilityStatus, setAvailabilityStatus] = useState("available");
   const [userType, setUserType] = useState("donor");
   const [selectedAtoll, setSelectedAtoll] = useState("");
   const [selectedIsland, setSelectedIsland] = useState("");
   const [showRewardsDialog, setShowRewardsDialog] = useState(false);
   const [showQRCard, setShowQRCard] = useState(false);
-  const [pointsPerDonation, setPointsPerDonation] = useState(100); // default value
+  
   const [bio, setBio] = useState("");
   const [isEditingBio, setIsEditingBio] = useState(false);
   const navigate = useNavigate();
@@ -76,87 +60,8 @@ const Profile = () => {
   useEffect(() => {
     fetchProfile();
     fetchDonationCount();
-    fetchPointsSettings();
   }, []);
 
-  const fetchPointsSettings = async () => {
-    const { data } = await supabase
-      .from("reward_settings")
-      .select("setting_value")
-      .eq("setting_key", "points_per_donation")
-      .maybeSingle();
-
-    if (data) setPointsPerDonation(parseInt(data.setting_value));
-  };
-
-  const awardPoints = async (donorId: string, donationId: string, hospitalName: string) => {
-    // Check if points already awarded for this donation (duplicate prevention)
-    const { data: existingTransaction } = await supabase
-      .from("points_transactions")
-      .select("id")
-      .eq("related_donation_id", donationId)
-      .maybeSingle();
-
-    if (existingTransaction) {
-      console.log(`Points already awarded for donation ${donationId}, skipping`);
-      return;
-    }
-
-    // Record the transaction FIRST to ensure it's created
-    const { error: txError } = await supabase
-      .from("points_transactions")
-      .insert({
-        donor_id: donorId,
-        points: pointsPerDonation,
-        transaction_type: "earned",
-        description: `Points earned from blood donation at ${hospitalName}`,
-        related_donation_id: donationId,
-      });
-
-    if (txError) {
-      console.error("Failed to create points transaction:", txError);
-      toast({
-        variant: "destructive",
-        title: "Points Error",
-        description: "Failed to award points for this donation.",
-      });
-      return; // Don't update points if transaction failed
-    }
-
-    // Now update donor_points record
-    const { data: existingPoints } = await supabase
-      .from("donor_points")
-      .select("*")
-      .eq("donor_id", donorId)
-      .maybeSingle();
-
-    if (existingPoints) {
-      const { error: updateError } = await supabase
-        .from("donor_points")
-        .update({
-          total_points: existingPoints.total_points + pointsPerDonation,
-          lifetime_points: existingPoints.lifetime_points + pointsPerDonation,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("donor_id", donorId);
-
-      if (updateError) {
-        console.error("Failed to update donor points:", updateError);
-      }
-    } else {
-      const { error: insertError } = await supabase
-        .from("donor_points")
-        .insert({
-          donor_id: donorId,
-          total_points: pointsPerDonation,
-          lifetime_points: pointsPerDonation,
-        });
-
-      if (insertError) {
-        console.error("Failed to insert donor points:", insertError);
-      }
-    }
-  };
 
   const fetchProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -185,9 +90,6 @@ const Profile = () => {
       setSelectedAtoll(data.atoll || '');
       setSelectedIsland(data.island || '');
       setBio(data.bio || '');
-      if (data.last_donation_date) {
-        setLastDonationDate(new Date(data.last_donation_date));
-      }
     }
 
     setLoading(false);
@@ -640,243 +542,7 @@ const Profile = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-4 p-4 border rounded-lg">
-              <div>
-                <Label className="text-base font-semibold">Last Donation Date</Label>
-                <p className="text-sm text-muted-foreground mb-3">
-                  {donationCount === 0 
-                    ? "Set your first blood donation date. No future dates allowed."
-                    : "You can only update to a newer date. Cannot clear or backdate once you have donation history."
-                  }
-                </p>
-              </div>
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !lastDonationDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {lastDonationDate ? format(lastDonationDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={lastDonationDate}
-                    onSelect={(date) => {
-                      if (date) {
-                        setTempDonationDate(date);
-                        setShowHospitalDialog(true);
-                      }
-                    }}
-                    disabled={(date) => {
-                      // Can't select future dates
-                      if (date > new Date()) return true;
-                      // Can't select dates older than existing last_donation_date if history exists
-                      if (profile?.last_donation_date && donationCount > 0) {
-                        const existingDate = new Date(profile.last_donation_date);
-                        if (date < existingDate) return true;
-                      }
-                      return false;
-                    }}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
 
-              {lastDonationDate && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  Selected: {format(lastDonationDate, "PPP")}
-                </p>
-              )}
-
-              {(profile?.last_donation_date || lastDonationDate) && donationCount === 0 && (
-                <Button 
-                  variant="outline"
-                  onClick={async () => {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) return;
-
-                    // Only allow clearing if donation count is 0
-                    if (donationCount > 0) {
-                      toast({
-                        variant: "destructive",
-                        title: "Cannot clear",
-                        description: "You can only clear last donation date when you have no donation history",
-                      });
-                      return;
-                    }
-
-                    // Clear last donation date
-                    const { error } = await supabase
-                      .from("profiles")
-                      .update({ 
-                        last_donation_date: null,
-                        availability_status: 'available'
-                      })
-                      .eq("id", user.id);
-
-                    if (error) {
-                      toast({
-                        variant: "destructive",
-                        title: "Clear failed",
-                        description: error.message,
-                      });
-                      return;
-                    }
-
-                    setLastDonationDate(undefined);
-                    toast({
-                      title: "Date cleared",
-                      description: "Your last donation date has been cleared",
-                    });
-                    
-                    // Refresh all data
-                    await fetchProfile();
-                    await fetchDonationCount();
-                  }}
-                >
-                  Clear
-                </Button>
-              )}
-              
-              {donationCount > 0 && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  ℹ️ Clear button is only available when you have 0 donations. Contact an admin to delete donation history if needed.
-                </p>
-              )}
-            </div>
-
-            <Dialog open={showHospitalDialog} onOpenChange={setShowHospitalDialog}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Enter Hospital Name</DialogTitle>
-                  <DialogDescription>
-                    Please enter the name of the hospital where you donated blood on {tempDonationDate && format(tempDonationDate, "PPP")}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="hospital">Hospital Name</Label>
-                    <Input
-                      id="hospital"
-                      placeholder="Enter hospital name"
-                      value={hospitalName}
-                      onChange={(e) => setHospitalName(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowHospitalDialog(false);
-                      setHospitalName("");
-                      setTempDonationDate(undefined);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={async () => {
-                      if (!hospitalName.trim()) {
-                        toast({
-                          variant: "destructive",
-                          title: "Hospital name required",
-                          description: "Please enter the hospital name",
-                        });
-                        return;
-                      }
-
-                      if (!tempDonationDate) return;
-
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) return;
-
-                      const formattedDate = format(tempDonationDate, "yyyy-MM-dd");
-
-                      // Insert directly into donation_history
-                      // Database has a unique constraint on (donor_id, donation_date) to prevent duplicates
-                      const { data: newDonation, error: historyError } = await supabase
-                        .from("donation_history")
-                        .insert({
-                          donor_id: user.id,
-                          donation_date: formattedDate,
-                          hospital_name: hospitalName.trim(),
-                          units_donated: 1,
-                        })
-                        .select()
-                        .single();
-
-                      if (historyError) {
-                        // Check if it's a duplicate entry error (unique constraint violation)
-                        if (historyError.code === '23505') {
-                          toast({
-                            variant: "destructive",
-                            title: "Duplicate donation",
-                            description: "You already have a donation recorded for this date",
-                          });
-                        } else {
-                          toast({
-                            variant: "destructive",
-                            title: "Failed to add donation",
-                            description: historyError.message,
-                          });
-                        }
-                        return;
-                      }
-
-                      // Award points for the donation
-                      if (newDonation) {
-                        await awardPoints(user.id, newDonation.id, hospitalName.trim());
-                      }
-
-                      // Update profile with last donation date
-                      const { error: profileError } = await supabase
-                        .from("profiles")
-                        .update({ last_donation_date: formattedDate })
-                        .eq("id", user.id);
-
-                      if (profileError) {
-                        console.error("Error updating profile:", profileError);
-                      }
-
-                      // Send Telegram notification for new donation
-                      const { notifyNewDonation } = await import("@/lib/telegramNotifications");
-                      await notifyNewDonation({
-                        donor_name: profile?.full_name || "Unknown",
-                        hospital_name: hospitalName.trim(),
-                        donation_date: formattedDate,
-                        units_donated: 1
-                      });
-
-                      setLastDonationDate(tempDonationDate);
-                      setShowHospitalDialog(false);
-                      setHospitalName("");
-                      setTempDonationDate(undefined);
-
-                      await fetchProfile();
-                      await fetchDonationCount();
-
-                      toast({
-                        title: "Donation recorded",
-                        description: `You earned ${pointsPerDonation} points!`,
-                      });
-                    }}
-                  >
-                    Save
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            <DonationHistoryByYear donorId={profile.id} />
               </>
             )}
 
