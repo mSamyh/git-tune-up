@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -193,24 +193,32 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="sr-only">Donor Profile</DialogTitle>
-            {isAdmin && donor.source === 'profile' && !isEditing && (
-              <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setIsEditing(true)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            )}
-          </div>
-        </DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-transparent border-none p-0 shadow-none [&>button]:hidden">
+        <DialogTitle className="sr-only">Donor Profile</DialogTitle>
+        
+        {/* Main container with rounded border */}
+        <div className="relative bg-card border border-border rounded-2xl p-5 shadow-xl">
+          {/* Close button inside the border */}
+          <button
+            onClick={onClose}
+            className="absolute right-3 top-3 h-8 w-8 rounded-full bg-muted/80 hover:bg-muted flex items-center justify-center transition-colors z-10"
+          >
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
+          
+          {/* Admin edit button */}
+          {isAdmin && donor.source === 'profile' && !isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="absolute left-3 top-3 h-8 w-8 rounded-full bg-muted/80 hover:bg-muted flex items-center justify-center transition-colors z-10"
+            >
+              <Edit className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
 
-        <div className="space-y-4">
-          {/* Profile Card with Border */}
-          <div className="border border-border rounded-2xl p-5 bg-card">
+          <div className="space-y-4 mt-2">
             {/* Centered Profile Header */}
-            <div className="flex flex-col items-center text-center">
+            <div className="flex flex-col items-center text-center pt-6">
               <div className="relative">
                 <Avatar className={`h-24 w-24 ring-4 ring-background shadow-lg ${donor.source === 'directory' ? 'ring-yellow-500/30' : 'ring-primary/10'}`}>
                   <AvatarImage src={donor.avatar_url || undefined} />
@@ -259,7 +267,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
             </div>
 
             {/* Stats Row */}
-            <div className="grid grid-cols-3 gap-2 mt-5">
+            <div className="grid grid-cols-3 gap-2">
               <div className="text-center p-3 bg-muted/50 rounded-xl border border-border/50">
                 <p className="text-2xl font-bold text-primary">{donor.blood_group}</p>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Blood Type</p>
@@ -273,7 +281,6 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Status</p>
               </div>
             </div>
-          </div>
 
           {isEditing ? (
             /* Edit Mode - Compact Form */
@@ -366,20 +373,20 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
               )}
             </div>
           )}
+          {isAdmin && donor.source === 'profile' && isEditing && (
+            <div className="flex gap-2 mt-4 justify-end">
+              <Button variant="outline" size="sm" onClick={handleCancelEdit} className="rounded-xl">
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSaveProfile} className="rounded-xl">
+                <Save className="h-4 w-4 mr-2" />
+                Save
+              </Button>
+            </div>
+          )}
+          </div>
         </div>
-
-        {isAdmin && donor.source === 'profile' && isEditing && (
-          <DialogFooter className="mt-4 gap-2">
-            <Button variant="outline" onClick={handleCancelEdit}>
-              <X className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-            <Button onClick={handleSaveProfile}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
-            </Button>
-          </DialogFooter>
-        )}
       </DialogContent>
     </Dialog>
   );
