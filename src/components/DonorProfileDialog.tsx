@@ -207,76 +207,77 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Centered Profile Header */}
-          <div className="flex flex-col items-center text-center">
-            <div className="relative">
-              <Avatar className={`h-20 w-20 ${donor.source === 'directory' ? 'ring-2 ring-yellow-500' : ''}`}>
-                <AvatarImage src={donor.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl">{donor.full_name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              {(() => {
-                const rank = getTopDonorRank(donor.id, topDonors);
-                return rank > 0 && <TopDonorBadge rank={rank} className="absolute -top-1 -right-1" />;
-              })()}
-            </div>
-            
-            {isEditing ? (
-              <div className="space-y-1 mt-3 w-full">
-                <Label className="text-xs">Full Name</Label>
-                <Input
-                  value={editedDonor.full_name}
-                  onChange={(e) => setEditedDonor({ ...editedDonor, full_name: e.target.value })}
-                  className="h-8 text-center"
-                />
+          {/* Profile Card with Border */}
+          <div className="border border-border rounded-2xl p-5 bg-card">
+            {/* Centered Profile Header */}
+            <div className="flex flex-col items-center text-center">
+              <div className="relative">
+                <Avatar className={`h-24 w-24 ring-4 ring-background shadow-lg ${donor.source === 'directory' ? 'ring-yellow-500/30' : 'ring-primary/10'}`}>
+                  <AvatarImage src={donor.avatar_url || undefined} />
+                  <AvatarFallback className="text-2xl bg-primary/10 text-primary font-semibold">{donor.full_name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                {(() => {
+                  const rank = getTopDonorRank(donor.id, topDonors);
+                  return rank > 0 && <TopDonorBadge rank={rank} className="absolute -top-1 -right-1" />;
+                })()}
               </div>
-            ) : (
-              <>
-                <h3 className="text-xl font-semibold mt-3">{donor.full_name}</h3>
-                <div className="flex flex-wrap justify-center gap-1.5 mt-1">
-                  {donor.title && (
-                    <Badge className={`text-xs ${donor.title_color || "bg-secondary text-secondary-foreground"}`}>
-                      {donor.title}
-                    </Badge>
-                  )}
-                  {donor.source === 'directory' && (
-                    <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
-                      Not Registered
-                    </Badge>
-                  )}
-                  {isFirstTimeDonor && (
-                    <Badge variant="secondary" className="text-xs">First Time</Badge>
-                  )}
+              
+              {isEditing ? (
+                <div className="space-y-1 mt-4 w-full">
+                  <Label className="text-xs">Full Name</Label>
+                  <Input
+                    value={editedDonor.full_name}
+                    onChange={(e) => setEditedDonor({ ...editedDonor, full_name: e.target.value })}
+                    className="h-9 text-center rounded-xl"
+                  />
                 </div>
-              </>
-            )}
+              ) : (
+                <>
+                  <h3 className="text-xl font-bold mt-4">{donor.full_name}</h3>
+                  <div className="flex flex-wrap justify-center gap-1.5 mt-2">
+                    {donor.title && (
+                      <Badge className={`text-xs rounded-full px-3 ${donor.title_color || "bg-secondary text-secondary-foreground"}`}>
+                        {donor.title}
+                      </Badge>
+                    )}
+                    {donor.source === 'directory' && (
+                      <Badge variant="outline" className="text-xs rounded-full px-3 border-yellow-500 text-yellow-600">
+                        Not Registered
+                      </Badge>
+                    )}
+                    {isFirstTimeDonor && (
+                      <Badge variant="secondary" className="text-xs rounded-full px-3">First Time</Badge>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Bio */}
+              {donor.bio && !isEditing && (
+                <p className="text-sm text-muted-foreground mt-3 px-2 max-w-xs">{donor.bio}</p>
+              )}
+            </div>
 
             {/* Stats Row */}
-            <div className="flex items-center justify-center gap-4 mt-4 py-3 border-y w-full">
-              <div className="text-center flex-1">
-                <p className="text-xl font-bold text-primary">{donor.blood_group}</p>
-                <p className="text-[10px] text-muted-foreground">Blood Type</p>
+            <div className="grid grid-cols-3 gap-2 mt-5">
+              <div className="text-center p-3 bg-muted/50 rounded-xl border border-border/50">
+                <p className="text-2xl font-bold text-primary">{donor.blood_group}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Blood Type</p>
               </div>
-              <div className="h-8 w-px bg-border" />
-              <div className="text-center flex-1">
-                <p className="text-xl font-bold">{donor.donation_count || 0}</p>
-                <p className="text-[10px] text-muted-foreground">Donations</p>
+              <div className="text-center p-3 bg-muted/50 rounded-xl border border-border/50">
+                <p className="text-2xl font-bold">{donor.donation_count || 0}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Donations</p>
               </div>
-              <div className="h-8 w-px bg-border" />
-              <div className="text-center flex-1">
+              <div className="text-center p-3 bg-muted/50 rounded-xl border border-border/50 flex flex-col items-center justify-center">
                 {getAvailabilityText()}
-                <p className="text-[10px] text-muted-foreground mt-0.5">Status</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Status</p>
               </div>
             </div>
-
-            {/* Bio */}
-            {donor.bio && (
-              <p className="text-sm text-muted-foreground mt-3 px-2">{donor.bio}</p>
-            )}
           </div>
 
           {isEditing ? (
             /* Edit Mode - Compact Form */
-            <div className="space-y-3">
+            <div className="border border-border rounded-2xl p-4 bg-card space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Blood Group</Label>
@@ -284,7 +285,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
                     value={editedDonor.blood_group}
                     onValueChange={(value) => setEditedDonor({ ...editedDonor, blood_group: value })}
                   >
-                    <SelectTrigger className="h-8">
+                    <SelectTrigger className="h-9 rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -299,7 +300,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
                   <Input
                     value={editedDonor.phone}
                     onChange={(e) => setEditedDonor({ ...editedDonor, phone: e.target.value })}
-                    className="h-8"
+                    className="h-9 rounded-xl"
                   />
                 </div>
               </div>
@@ -318,7 +319,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
                   value={editedDonor.availability_status}
                   onValueChange={(value) => setEditedDonor({ ...editedDonor, availability_status: value })}
                 >
-                  <SelectTrigger className="h-8">
+                  <SelectTrigger className="h-9 rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -332,13 +333,17 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
             </div>
           ) : (
             /* View Mode - Contact & Location */
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <div className="border border-border rounded-2xl p-4 bg-card space-y-2">
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Phone className="h-4 w-4 text-primary" />
+                </div>
                 <span className="text-sm font-medium">{donor.phone}</span>
               </div>
-              <div className="flex items-start gap-2 p-2 bg-muted/50 rounded-md">
-                <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="h-4 w-4 text-primary" />
+                </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{donor.district || 'Not specified'}</p>
                   {donor.address && (
@@ -347,8 +352,10 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
                 </div>
               </div>
               {donor.last_donation_date && (
-                <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                  <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Calendar className="h-4 w-4 text-primary" />
+                  </div>
                   <div>
                     <span className="text-sm font-medium">
                       {new Date(donor.last_donation_date).toLocaleDateString()}
