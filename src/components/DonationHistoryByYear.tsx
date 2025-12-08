@@ -94,10 +94,13 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
   if (history.length === 0) {
     if (variant === "standalone") {
       return (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">No donation history yet</p>
-          <p className="text-sm text-muted-foreground">
-            Your donations will appear here after you update your profile
+        <div className="text-center py-8">
+          <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+            <Calendar className="h-8 w-8 text-muted-foreground/50" />
+          </div>
+          <p className="text-muted-foreground font-medium mb-1">No donations yet</p>
+          <p className="text-sm text-muted-foreground/70">
+            Tap the + button to record your first donation
           </p>
         </div>
       );
@@ -114,54 +117,56 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
 
         return (
           <Collapsible key={year} open={isOpen} onOpenChange={() => toggleYear(year)}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors">
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors border border-border/50">
               <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-primary" />
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Calendar className="h-4 w-4 text-primary" />
+                </div>
                 <span className="font-semibold">{year}</span>
-                <Badge variant="secondary" className="ml-2">
-                  {yearDonations.length} donation{yearDonations.length !== 1 ? 's' : ''}
+                <Badge variant="secondary" className="rounded-full text-xs">
+                  {yearDonations.length}
                 </Badge>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">{totalUnits} unit{totalUnits !== 1 ? 's' : ''}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{totalUnits} unit{totalUnits !== 1 ? 's' : ''}</span>
                 <ChevronDown className={cn(
                   "h-4 w-4 text-muted-foreground transition-transform duration-200",
                   isOpen && "rotate-180"
                 )} />
               </div>
             </CollapsibleTrigger>
-            <CollapsibleContent className="pt-2">
-              <div className="space-y-2 pl-2 border-l-2 border-muted ml-2">
+            <CollapsibleContent className="pt-3 animate-accordion-down">
+              <div className="space-y-2 ml-4 pl-4 border-l-2 border-primary/20">
                 {yearDonations.map((donation) => (
                   <div 
                     key={donation.id} 
-                    className={cn(
-                      "p-3 rounded-lg transition-colors",
-                      variant === "standalone" 
-                        ? "border hover:bg-muted/50" 
-                        : "bg-background border"
-                    )}
+                    className="p-3 bg-background rounded-xl border border-border/50 hover:border-border transition-colors"
                   >
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1 flex-1">
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-primary" />
-                          <p className="font-medium">{donation.hospital_name}</p>
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <Building2 className="h-3 w-3 text-primary" />
+                          </div>
+                          <p className="font-medium text-sm truncate">{donation.hospital_name}</p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(donation.donation_date).toLocaleDateString('en-US', {
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </p>
-                        <p className="text-xs text-muted-foreground italic">
-                          {getTimeAgo(donation.donation_date)}
-                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground ml-8">
+                          <span>
+                            {new Date(donation.donation_date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </span>
+                          <span className="text-muted-foreground/50">•</span>
+                          <span className="italic">{getTimeAgo(donation.donation_date)}</span>
+                        </div>
                         {donation.notes && (
-                          <p className="text-xs text-muted-foreground">{donation.notes}</p>
+                          <p className="text-xs text-muted-foreground mt-1 ml-8">{donation.notes}</p>
                         )}
                       </div>
-                      <Badge variant="outline">{donation.units_donated || 1} unit{(donation.units_donated || 1) !== 1 ? 's' : ''}</Badge>
+                      <Badge variant="secondary" className="rounded-full text-xs flex-shrink-0">
+                        {donation.units_donated || 1}u
+                      </Badge>
                     </div>
                   </div>
                 ))}
