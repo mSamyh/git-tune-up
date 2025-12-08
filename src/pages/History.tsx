@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -13,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AppHeader } from "@/components/AppHeader";
 import { DonationHistoryByYear } from "@/components/DonationHistoryByYear";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Droplets, Award, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +32,7 @@ const History = () => {
   const [hospitalName, setHospitalName] = useState("");
   const [pointsPerDonation, setPointsPerDonation] = useState(100);
   const [donationCount, setDonationCount] = useState(0);
+  const [totalPoints, setTotalPoints] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -64,6 +64,14 @@ const History = () => {
 
     const { data: countData } = await supabase.rpc('get_donation_count', { donor_uuid: user.id });
     setDonationCount(countData || 0);
+
+    const { data: pointsData } = await supabase
+      .from("donor_points")
+      .select("total_points")
+      .eq("donor_id", user.id)
+      .maybeSingle();
+    
+    setTotalPoints(pointsData?.total_points || 0);
 
     setLoading(false);
   };
@@ -134,6 +142,8 @@ const History = () => {
           lifetime_points: pointsPerDonation,
         });
     }
+
+    setTotalPoints(prev => prev + pointsPerDonation);
   };
 
   const handleAddDonation = async () => {
@@ -182,7 +192,6 @@ const History = () => {
       await awardPoints(userId, newDonation.id, hospitalName.trim());
     }
 
-    // Fetch most recent donation date to update profile
     const { data: historyData } = await supabase
       .from("donation_history")
       .select("donation_date")
@@ -198,7 +207,6 @@ const History = () => {
         .eq("id", userId);
     }
 
-    // Send Telegram notification
     const { notifyNewDonation } = await import("@/lib/telegramNotifications");
     await notifyNewDonation({
       donor_name: profile.full_name,
@@ -225,8 +233,9 @@ const History = () => {
     return (
       <div className="min-h-screen bg-background pb-20">
         <AppHeader />
-        <main className="container mx-auto px-4 py-8 max-w-2xl">
-          <Skeleton className="h-64 w-full" />
+        <main className="container mx-auto px-4 py-6 max-w-lg">
+          <Skeleton className="h-32 w-full rounded-2xl mb-4" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
         </main>
         <BottomNav />
       </div>
@@ -237,23 +246,47 @@ const History = () => {
     <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle>My Donation History</CardTitle>
-            <CardDescription>Your personal donation records grouped by year</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {userId && <DonationHistoryByYear key={refreshKey} donorId={userId} variant="standalone" />}
-          </CardContent>
-        </Card>
+      <main className="container mx-auto px-4 py-6 max-w-lg space-y-4">
+        {/* Stats Summary Card */}
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+          <h2 className="text-lg font-semibold mb-4">My Donations</h2>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center p-3 bg-primary/10 rounded-xl">
+              <div className="flex items-center justify-center mb-1">
+                <Droplets className="h-5 w-5 text-primary" />
+              </div>
+              <p className="text-2xl font-bold text-primary">{donationCount}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Donations</p>
+            </div>
+            <div className="text-center p-3 bg-amber-500/10 rounded-xl">
+              <div className="flex items-center justify-center mb-1">
+                <Award className="h-5 w-5 text-amber-500" />
+              </div>
+              <p className="text-2xl font-bold text-amber-500">{totalPoints}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Points</p>
+            </div>
+            <div className="text-center p-3 bg-emerald-500/10 rounded-xl">
+              <div className="flex items-center justify-center mb-1">
+                <TrendingUp className="h-5 w-5 text-emerald-500" />
+              </div>
+              <p className="text-2xl font-bold text-emerald-500">{donationCount}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Units</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Donation History */}
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+          <h2 className="text-lg font-semibold mb-4">History by Year</h2>
+          {userId && <DonationHistoryByYear key={refreshKey} donorId={userId} variant="standalone" />}
+        </div>
       </main>
 
       {/* Floating Add Button */}
       {isDonorType && (
         <Button
           size="lg"
-          className="fixed bottom-24 right-4 h-14 w-14 rounded-full shadow-lg z-50"
+          className="fixed bottom-24 right-4 h-14 w-14 rounded-full shadow-xl z-50 bg-primary hover:bg-primary/90"
           onClick={() => setShowAddDialog(true)}
         >
           <Plus className="h-6 w-6" />
@@ -262,7 +295,7 @@ const History = () => {
 
       {/* Add Donation Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
             <DialogTitle>Add Donation</DialogTitle>
             <DialogDescription>
@@ -277,7 +310,7 @@ const History = () => {
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal rounded-xl",
                       !tempDonationDate && "text-muted-foreground"
                     )}
                   >
@@ -305,7 +338,7 @@ const History = () => {
               </Popover>
               {donationCount > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  You can only add dates newer than your last donation date.
+                  You can only add dates newer than your last donation.
                 </p>
               )}
             </div>
@@ -316,12 +349,14 @@ const History = () => {
                 placeholder="Enter hospital name"
                 value={hospitalName}
                 onChange={(e) => setHospitalName(e.target.value)}
+                className="rounded-xl"
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button
               variant="outline"
+              className="rounded-xl"
               onClick={() => {
                 setShowAddDialog(false);
                 setHospitalName("");
@@ -330,7 +365,11 @@ const History = () => {
             >
               Cancel
             </Button>
-            <Button onClick={handleAddDonation} disabled={!tempDonationDate || !hospitalName.trim()}>
+            <Button 
+              onClick={handleAddDonation} 
+              disabled={!tempDonationDate || !hospitalName.trim()}
+              className="rounded-xl"
+            >
               Save
             </Button>
           </DialogFooter>
