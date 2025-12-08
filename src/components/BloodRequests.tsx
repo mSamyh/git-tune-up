@@ -259,7 +259,11 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading requests...</div>;
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
   }
 
   // Group requests by blood group
@@ -270,87 +274,90 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
   }, {} as Record<string, BloodRequest[]>);
 
   const renderRequestCard = (request: BloodRequest) => (
-    <Card key={request.id} className={`hover:shadow-lg transition-shadow ${request.urgency === 'urgent' ? 'border-destructive' : ''}`}>
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h3 className="font-semibold text-lg">{request.patient_name}</h3>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-              <Clock className="h-4 w-4" />
-              {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <Badge className="bg-primary text-primary-foreground">
-              <Droplet className="h-3 w-3 mr-1" />
-              {request.blood_group}
-            </Badge>
-            {request.urgency === 'urgent' && (
-              <Badge variant="destructive">URGENT</Badge>
-            )}
-            {request.emergency_type && (
-              <Badge variant="outline">{request.emergency_type}</Badge>
-            )}
+    <div 
+      key={request.id} 
+      className={`p-4 rounded-xl border transition-all hover:shadow-md ${
+        request.urgency === 'urgent' 
+          ? 'border-destructive/50 bg-destructive/5' 
+          : 'border-border bg-muted/30'
+      }`}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-sm truncate">{request.patient_name}</h3>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+            <Clock className="h-3 w-3" />
+            {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
           </div>
         </div>
+        <div className="flex items-center gap-1.5 ml-2">
+          <Badge className="bg-primary/10 text-primary border-0 text-xs px-2 py-0.5">
+            <Droplet className="h-3 w-3 mr-1" />
+            {request.blood_group}
+          </Badge>
+          {request.urgency === 'urgent' && (
+            <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">URGENT</Badge>
+          )}
+        </div>
+      </div>
 
-        <div className="space-y-2 text-sm">
-          <div className="flex items-start gap-2">
-            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="font-medium">{request.hospital_name}</p>
-            </div>
-          </div>
+      <div className="space-y-1.5 text-xs">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <MapPin className="h-3 w-3 shrink-0" />
+          <span className="truncate">{request.hospital_name}</span>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{request.contact_name}</span>
-          </div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <User className="h-3 w-3 shrink-0" />
+          <span>{request.contact_name}</span>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <Phone className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{request.contact_phone}</span>
-          </div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Phone className="h-3 w-3 shrink-0" />
+          <span>{request.contact_phone}</span>
+        </div>
 
-          <div className="pt-2">
-            <span className="font-medium">Units needed: </span>
-            <span className="text-primary">{request.units_needed}</span>
-          </div>
-
-          {request.notes && (
-            <p className="text-muted-foreground pt-2 italic">{request.notes}</p>
+        <div className="flex items-center gap-2 pt-1">
+          <span className="text-muted-foreground">Units:</span>
+          <span className="font-medium text-primary">{request.units_needed}</span>
+          {request.emergency_type && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">{request.emergency_type}</Badge>
           )}
         </div>
 
-        <div className="mt-4 flex gap-2 flex-wrap">
-          {isRequestor(request) ? (
-            <>
-              <Button size="sm" variant="outline" onClick={() => viewResponses(request)}>
-                <MessageSquare className="h-4 w-4 mr-1" />
-                View Responses
-              </Button>
-              {status === "active" && (
-                <>
-                  <Button size="sm" variant="outline" onClick={() => markAsFulfilled(request.id)}>
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    Mark Fulfilled
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => deleteRequest(request.id)}>
-                    <Trash className="h-4 w-4 mr-1" />
-                    Delete
-                  </Button>
-                </>
-              )}
-            </>
-          ) : status === "active" && (
-            <Button size="sm" onClick={() => handleRespond(request)}>
-              <MessageSquare className="h-4 w-4 mr-1" />
-              Respond
+        {request.notes && (
+          <p className="text-muted-foreground pt-1 italic line-clamp-2">{request.notes}</p>
+        )}
+      </div>
+
+      <div className="mt-3 flex gap-2 flex-wrap">
+        {isRequestor(request) ? (
+          <>
+            <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => viewResponses(request)}>
+              <MessageSquare className="h-3 w-3 mr-1" />
+              Responses
             </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            {status === "active" && (
+              <>
+                <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => markAsFulfilled(request.id)}>
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Fulfilled
+                </Button>
+                <Button size="sm" variant="destructive" className="h-7 text-xs rounded-lg" onClick={() => deleteRequest(request.id)}>
+                  <Trash className="h-3 w-3 mr-1" />
+                  Delete
+                </Button>
+              </>
+            )}
+          </>
+        ) : status === "active" && (
+          <Button size="sm" className="h-7 text-xs rounded-lg" onClick={() => handleRespond(request)}>
+            <MessageSquare className="h-3 w-3 mr-1" />
+            Respond
+          </Button>
+        )}
+      </div>
+    </div>
   );
 
   const groupsWithRequests = bloodGroups.filter(group => requestsByBloodGroup[group].length > 0);
@@ -358,26 +365,31 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
   return (
     <>
       {requests.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          No {status} blood requests at the moment
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+            <Droplet className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <p className="text-muted-foreground text-sm">
+            No {status} blood requests at the moment
+          </p>
         </div>
       ) : (
         <Accordion type="multiple" defaultValue={groupsWithRequests} className="w-full space-y-2">
           {groupsWithRequests.map(group => (
-            <AccordionItem key={group} value={group} className="border rounded-lg px-4">
-              <AccordionTrigger className="hover:no-underline">
-                <div className="flex items-center gap-3">
-                  <Badge className="bg-primary text-primary-foreground">
+            <AccordionItem key={group} value={group} className="border border-border rounded-xl px-3 bg-background">
+              <AccordionTrigger className="hover:no-underline py-3">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-primary/10 text-primary border-0 text-xs">
                     <Droplet className="h-3 w-3 mr-1" />
                     {group}
                   </Badge>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {requestsByBloodGroup[group].length} {requestsByBloodGroup[group].length === 1 ? 'request' : 'requests'}
                   </span>
                 </div>
               </AccordionTrigger>
               <AccordionContent>
-                <div className="grid gap-4 md:grid-cols-2 pt-2">
+                <div className="space-y-3 pb-2">
                   {requestsByBloodGroup[group].map(renderRequestCard)}
                 </div>
               </AccordionContent>
@@ -387,9 +399,9 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
       )}
 
       <Dialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg">
               {selectedRequest
                 ? isRequestor(selectedRequest)
                   ? "Responses"
@@ -399,57 +411,62 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
           </DialogHeader>
           
           {selectedRequest && isRequestor(selectedRequest) ? (
-            <div className="space-y-4">
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
               {responses.map((response) => (
-                <Card key={response.id}>
-                  <CardContent className="pt-6">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="font-semibold">{response.profiles.full_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {response.profiles.blood_group} • {response.profiles.phone}
-                        </p>
-                      </div>
-                      <Badge variant={
+                <div key={response.id} className="p-3 rounded-xl border border-border bg-muted/30">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-semibold text-sm">{response.profiles.full_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {response.profiles.blood_group} • {response.profiles.phone}
+                      </p>
+                    </div>
+                    <Badge 
+                      variant={
                         response.status === "accepted" ? "default" : 
                         response.status === "rejected" ? "destructive" : 
                         "outline"
-                      }>
-                        {response.status}
-                      </Badge>
+                      }
+                      className="text-xs"
+                    >
+                      {response.status}
+                    </Badge>
+                  </div>
+                  {response.message && (
+                    <p className="text-xs text-muted-foreground mb-3">{response.message}</p>
+                  )}
+                  {response.status === "pending" && (
+                    <div className="flex gap-2">
+                      <Button size="sm" className="h-7 text-xs rounded-lg" onClick={() => updateResponseStatus(response.id, "accepted")}>
+                        Accept
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => updateResponseStatus(response.id, "rejected")}>
+                        Reject
+                      </Button>
                     </div>
-                    {response.message && (
-                      <p className="text-sm text-muted-foreground mb-3">{response.message}</p>
-                    )}
-                    {response.status === "pending" && (
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => updateResponseStatus(response.id, "accepted")}>
-                          Accept
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => updateResponseStatus(response.id, "rejected")}>
-                          Reject
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                  )}
+                </div>
               ))}
               {responses.length === 0 && (
-                <p className="text-center py-8 text-muted-foreground">No responses yet</p>
+                <div className="flex flex-col items-center justify-center py-8">
+                  <MessageSquare className="h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">No responses yet</p>
+                </div>
               )}
             </div>
           ) : (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Your Message (Optional)</Label>
+                <Label className="text-sm">Your Message (Optional)</Label>
                 <Textarea
                   value={responseMessage}
                   onChange={(e) => setResponseMessage(e.target.value)}
                   placeholder="Add a message for the requestor..."
                   rows={4}
+                  className="rounded-xl resize-none"
                 />
               </div>
-              <Button onClick={submitResponse} className="w-full" disabled={!selectedRequest}>
+              <Button onClick={submitResponse} className="w-full rounded-xl" disabled={!selectedRequest}>
                 Send Response
               </Button>
             </div>
