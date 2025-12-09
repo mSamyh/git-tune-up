@@ -135,61 +135,66 @@ const DonorDirectory = () => {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Stats Header */}
-      <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-4 border border-border/50">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-xl">
-            <Users className="h-5 w-5 text-primary" />
+    <div className="flex flex-col h-full">
+      {/* Sticky Search & Filters */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md pb-4 -mx-4 px-4 pt-1">
+        <div className="space-y-3">
+          {/* Search Bar */}
+          <div className="relative">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 p-1.5 bg-primary/10 rounded-lg">
+              <Search className="h-4 w-4 text-primary" />
+            </div>
+            <Input
+              placeholder="Search donors..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-14 h-12 rounded-2xl border-border/30 bg-card/80 shadow-sm focus:shadow-md transition-shadow"
+            />
+            {/* Results count badge */}
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <Badge variant="secondary" className="text-xs font-medium">
+                {filteredDonors.length}
+              </Badge>
+            </div>
           </div>
-          <div>
-            <p className="text-2xl font-bold">{filteredDonors.length}</p>
-            <p className="text-xs text-muted-foreground">Donors found</p>
+          
+          {/* Filter Pills */}
+          <div className="flex gap-2">
+            <Select value={selectedBloodGroup} onValueChange={setSelectedBloodGroup}>
+              <SelectTrigger className="flex-1 h-10 rounded-xl border-border/30 bg-card/80 shadow-sm text-sm">
+                <Droplet className="h-3.5 w-3.5 mr-2 text-primary" />
+                <SelectValue placeholder="Blood" />
+              </SelectTrigger>
+              <SelectContent>
+                {BLOOD_GROUPS.map((group) => (
+                  <SelectItem key={group} value={group}>
+                    {group === "All" ? "All Groups" : group}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
+              <SelectTrigger className="flex-1 h-10 rounded-xl border-border/30 bg-card/80 shadow-sm text-sm">
+                <MapPin className="h-3.5 w-3.5 mr-2 text-primary" />
+                <SelectValue placeholder="District" />
+              </SelectTrigger>
+              <SelectContent>
+                {DISTRICTS.map((district) => (
+                  <SelectItem key={district} value={district}>
+                    {district === "All" ? "All Districts" : district}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </div>
-
-      {/* Filters */}
-      <div className="space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 rounded-xl border-border/50 bg-card/50"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Select value={selectedBloodGroup} onValueChange={setSelectedBloodGroup}>
-            <SelectTrigger className="rounded-xl border-border/50 bg-card/50">
-              <SelectValue placeholder="Blood Group" />
-            </SelectTrigger>
-            <SelectContent>
-              {BLOOD_GROUPS.map((group) => (
-                <SelectItem key={group} value={group}>
-                  {group === "All" ? "All Groups" : group}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-            <SelectTrigger className="rounded-xl border-border/50 bg-card/50">
-              <SelectValue placeholder="District" />
-            </SelectTrigger>
-            <SelectContent>
-              {DISTRICTS.map((district) => (
-                <SelectItem key={district} value={district}>
-                  {district === "All" ? "All Districts" : district}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        
+        {/* Separator line */}
+        <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent mt-4" />
       </div>
 
       {/* Donor List */}
-      <div className="space-y-3">
+      <div className="space-y-3 pt-2 flex-1">
         {filteredDonors.map((donor) => (
           <div
             key={donor.id}
