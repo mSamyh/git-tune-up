@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Phone, MapPin, Droplet } from "lucide-react";
+import { Phone, MapPin, Droplet, Search, Users, Loader2 } from "lucide-react";
 
 const BLOOD_GROUPS = ["All", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const DISTRICTS = ["All", "Dhaka", "Chittagong", "Rajshahi", "Khulna", "Barisal", "Sylhet", "Rangpur", "Mymensingh"];
@@ -17,6 +16,8 @@ interface Donor {
   district: string;
   address: string;
   is_available: boolean;
+  availability_status?: string;
+  available_date?: string;
 }
 
 const DonorDirectory = () => {
@@ -44,7 +45,7 @@ const DonorDirectory = () => {
     if (!error && data) {
       const sortedData = data.sort((a, b) => {
         const getDaysUntilAvailable = (availableDate: string | null) => {
-          if (!availableDate) return 0; // treat as available now
+          if (!availableDate) return 0;
           const diff = Math.floor(
             (new Date(availableDate).getTime() - new Date().getTime()) /
             (1000 * 60 * 60 * 24)
@@ -56,19 +57,10 @@ const DonorDirectory = () => {
           const status = donor.availability_status as string | null;
           const daysUntil = getDaysUntilAvailable(donor.available_date);
 
-          // 1. Available
           if (status === "available") return 1;
-
-          // 2. Available in X days (unavailable but has future available_date)
           if (status === "unavailable" && daysUntil > 0) return 2;
-
-          // 3. Reserved
           if (status === "reserved") return 3;
-
-          // 4. Unavailable (no upcoming available_date)
           if (status === "unavailable") return 4;
-
-          // Fallback
           return 5;
         };
 
@@ -79,7 +71,6 @@ const DonorDirectory = () => {
           return priorityA - priorityB;
         }
 
-        // Within Priority 2 (Available in X days), sort by soonest date
         if (priorityA === 2 && priorityB === 2) {
           const daysA = getDaysUntilAvailable(a.available_date);
           const daysB = getDaysUntilAvailable(b.available_date);
@@ -88,7 +79,6 @@ const DonorDirectory = () => {
           }
         }
 
-        // Within same priority, sort by name
         return a.full_name.localeCompare(b.full_name);
       });
 
@@ -96,6 +86,7 @@ const DonorDirectory = () => {
     }
     setLoading(false);
   };
+
   const filterDonors = () => {
     let filtered = donors;
 
@@ -116,83 +107,128 @@ const DonorDirectory = () => {
     setFilteredDonors(filtered);
   };
 
+  const getStatusBadge = (donor: Donor) => {
+    const status = donor.availability_status;
+    if (status === "available") {
+      return <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-xs">Available</Badge>;
+    }
+    if (status === "reserved") {
+      return <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs">Reserved</Badge>;
+    }
+    if (status === "unavailable" && donor.available_date) {
+      const daysUntil = Math.ceil(
+        (new Date(donor.available_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysUntil > 0) {
+        return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs">In {daysUntil}d</Badge>;
+      }
+    }
+    return <Badge variant="outline" className="text-muted-foreground text-xs">Unavailable</Badge>;
+  };
+
   if (loading) {
-    return <div className="text-center py-8">Loading donors...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <Input
-          placeholder="Search by name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <Select value={selectedBloodGroup} onValueChange={setSelectedBloodGroup}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {BLOOD_GROUPS.map((group) => (
-              <SelectItem key={group} value={group}>
-                {group}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {DISTRICTS.map((district) => (
-              <SelectItem key={district} value={district}>
-                {district}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="space-y-4">
+      {/* Stats Header */}
+      <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-4 border border-border/50">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-xl">
+            <Users className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold">{filteredDonors.length}</p>
+            <p className="text-xs text-muted-foreground">Donors found</p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* Filters */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 rounded-xl border-border/50 bg-card/50"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Select value={selectedBloodGroup} onValueChange={setSelectedBloodGroup}>
+            <SelectTrigger className="rounded-xl border-border/50 bg-card/50">
+              <SelectValue placeholder="Blood Group" />
+            </SelectTrigger>
+            <SelectContent>
+              {BLOOD_GROUPS.map((group) => (
+                <SelectItem key={group} value={group}>
+                  {group === "All" ? "All Groups" : group}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
+            <SelectTrigger className="rounded-xl border-border/50 bg-card/50">
+              <SelectValue placeholder="District" />
+            </SelectTrigger>
+            <SelectContent>
+              {DISTRICTS.map((district) => (
+                <SelectItem key={district} value={district}>
+                  {district === "All" ? "All Districts" : district}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Donor List */}
+      <div className="space-y-3">
         {filteredDonors.map((donor) => (
-          <Card key={donor.id} className="hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-semibold text-lg">{donor.full_name}</h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                    <MapPin className="h-4 w-4" />
-                    {donor.district}
-                  </div>
+          <div
+            key={donor.id}
+            className="bg-card/50 backdrop-blur-sm rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-colors"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm truncate">{donor.full_name}</h3>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                  <MapPin className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{donor.district || "Unknown"}</span>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  <Badge className="bg-primary text-primary-foreground">
-                    <Droplet className="h-3 w-3 mr-1" />
-                    {donor.blood_group}
-                  </Badge>
-                  {donor.is_available && (
-                    <Badge variant="outline" className="text-green-600 border-green-600">
-                      Available
-                    </Badge>
-                  )}
+                <div className="flex items-center gap-1.5 text-xs mt-1.5">
+                  <Phone className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                  <a href={`tel:${donor.phone}`} className="text-primary hover:underline">
+                    {donor.phone}
+                  </a>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{donor.phone}</span>
+              <div className="flex flex-col items-end gap-2">
+                <Badge className="bg-primary text-primary-foreground text-xs px-2 py-0.5">
+                  <Droplet className="h-3 w-3 mr-1" />
+                  {donor.blood_group}
+                </Badge>
+                {getStatusBadge(donor)}
               </div>
-              {donor.address && (
-                <p className="text-sm text-muted-foreground mt-2">{donor.address}</p>
-              )}
-            </CardContent>
-          </Card>
+            </div>
+            {donor.address && (
+              <p className="text-xs text-muted-foreground mt-2 line-clamp-1">{donor.address}</p>
+            )}
+          </div>
         ))}
       </div>
 
       {filteredDonors.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          No donors found matching your criteria
+        <div className="text-center py-12">
+          <Users className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+          <p className="text-muted-foreground text-sm">No donors found</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">Try adjusting your filters</p>
         </div>
       )}
     </div>
