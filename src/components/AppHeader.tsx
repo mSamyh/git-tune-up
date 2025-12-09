@@ -22,8 +22,8 @@ export const AppHeader = () => {
   };
 
   return (
-    <header className="border-b bg-card">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+    <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <button
           onClick={() => navigate("/")}
           className="flex items-center gap-2"
