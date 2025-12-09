@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Heart } from "lucide-react";
+import { Heart, X } from "lucide-react";
 import { LocationSelector } from "@/components/LocationSelector";
 import { AppHeader } from "@/components/AppHeader";
 
@@ -112,23 +111,34 @@ const RequestBlood = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-                <Heart className="h-6 w-6 text-primary-foreground" />
+      <main className="container mx-auto px-4 py-6 max-w-2xl">
+        <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
+          {/* Header */}
+          <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
+                <Heart className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <CardTitle className="text-2xl">Request Blood</CardTitle>
-                <CardDescription>Create a blood donation request</CardDescription>
+                <h1 className="text-lg font-semibold">Request Blood</h1>
+                <p className="text-xs text-muted-foreground">Create a blood donation request</p>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+          
+          {/* Form */}
+          <div className="p-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
@@ -274,12 +284,12 @@ const RequestBlood = () => {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full rounded-xl" disabled={loading}>
                 {loading ? "Creating request..." : "Create Request"}
               </Button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </main>
     </div>
   );
