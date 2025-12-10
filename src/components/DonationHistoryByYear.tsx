@@ -73,7 +73,7 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
     return acc;
   }, {} as Record<string, DonationRecord[]>);
 
-  // Sort donations within each year by date (newest first)
+  // Sort donations within each year by date (newest first within year)
   Object.keys(donationsByYear).forEach(year => {
     donationsByYear[year].sort((a, b) => 
       new Date(b.donation_date).getTime() - new Date(a.donation_date).getTime()
