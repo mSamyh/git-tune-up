@@ -69,11 +69,19 @@ const Register = () => {
         return;
       }
 
-      const { error } = await supabase.functions.invoke("send-otp", {
+      const { data, error } = await supabase.functions.invoke("send-otp", {
         body: { phone: formData.phone },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Try to parse the error message from the response
+        const errorMessage = data?.error || error.message || "Failed to send OTP";
+        throw new Error(errorMessage);
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       setOtpSent(true);
       toast({
@@ -81,10 +89,14 @@ const Register = () => {
         description: "Please check your phone for the verification code",
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const displayMessage = errorMessage.includes("Invalid phone number") 
+        ? "Invalid mobile number. Must be 7 digits starting with 7 or 9"
+        : errorMessage;
       toast({
         variant: "destructive",
         title: "Failed to send OTP",
-        description: error instanceof Error ? error.message : "Unknown error",
+        description: displayMessage,
       });
     }
     setLoading(false);
