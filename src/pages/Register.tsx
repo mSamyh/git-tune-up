@@ -48,6 +48,27 @@ const Register = () => {
 
     setLoading(true);
     try {
+      // Check if phone number already exists in profiles
+      const { data: existingProfile, error: checkError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("phone", formData.phone)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("Error checking phone:", checkError);
+      }
+
+      if (existingProfile) {
+        toast({
+          variant: "destructive",
+          title: "Mobile already exists",
+          description: "This phone number is already registered. Please login instead.",
+        });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.functions.invoke("send-otp", {
         body: { phone: formData.phone },
       });
