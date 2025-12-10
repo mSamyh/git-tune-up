@@ -18,6 +18,12 @@ serve(async (req) => {
       throw new Error('Phone number is required');
     }
 
+    // Validate phone number format: must be 7 digits starting with 7 or 9
+    const phoneRegex = /^[79]\d{6}$/;
+    if (!phoneRegex.test(phone)) {
+      throw new Error('Invalid phone number. Must be 7 digits starting with 7 or 9');
+    }
+
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     
