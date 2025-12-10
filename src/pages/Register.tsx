@@ -315,11 +315,24 @@ const Register = () => {
                   <Input
                     id="phone"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="Enter phone number"
-                    className="pl-10 rounded-xl"
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 7);
+                      setFormData({ ...formData, phone: value });
+                    }}
+                    placeholder="7xxxxxx or 9xxxxxx"
+                    className={`pl-10 rounded-xl ${formData.phone && !/^[79]\d{0,6}$/.test(formData.phone) ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    maxLength={7}
                   />
                 </div>
+                {formData.phone && (
+                  <p className={`text-xs ${/^[79]\d{6}$/.test(formData.phone) ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    {/^[79]\d{6}$/.test(formData.phone) 
+                      ? '✓ Valid phone number' 
+                      : formData.phone.length > 0 && !/^[79]/.test(formData.phone)
+                        ? '✗ Must start with 7 or 9'
+                        : `${formData.phone.length}/7 digits`}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
