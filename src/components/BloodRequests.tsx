@@ -25,6 +25,7 @@ interface BloodRequest {
   status: string;
   created_at: string;
   requested_by: string | null;
+  poster_name?: string;
 }
 
 interface Response {
@@ -91,7 +92,21 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      setRequests(data);
+      // Fetch poster names for requests with requested_by
+      const requestsWithPosters = await Promise.all(
+        data.map(async (request) => {
+          if (request.requested_by) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("id", request.requested_by)
+              .single();
+            return { ...request, poster_name: profile?.full_name };
+          }
+          return request;
+        })
+      );
+      setRequests(requestsWithPosters);
     }
     setLoading(false);
   };
@@ -285,10 +300,6 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-sm truncate">{request.patient_name}</h3>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-            <Clock className="h-3 w-3" />
-            {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-          </div>
         </div>
         <div className="flex items-center gap-1.5 ml-2">
           <Badge className="bg-primary/10 text-primary border-0 text-xs px-2 py-0.5">
@@ -330,32 +341,45 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
         )}
       </div>
 
-      <div className="mt-3 flex gap-2 flex-wrap">
-        {isRequestor(request) ? (
-          <>
-            <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => viewResponses(request)}>
+      <div className="mt-3 flex items-center justify-between flex-wrap gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {isRequestor(request) ? (
+            <>
+              <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => viewResponses(request)}>
+                <MessageSquare className="h-3 w-3 mr-1" />
+                Responses
+              </Button>
+              {status === "active" && (
+                <>
+                  <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => markAsFulfilled(request.id)}>
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Fulfilled
+                  </Button>
+                  <Button size="sm" variant="destructive" className="h-7 text-xs rounded-lg" onClick={() => deleteRequest(request.id)}>
+                    <Trash className="h-3 w-3 mr-1" />
+                    Delete
+                  </Button>
+                </>
+              )}
+            </>
+          ) : status === "active" && (
+            <Button size="sm" className="h-7 text-xs rounded-lg" onClick={() => handleRespond(request)}>
               <MessageSquare className="h-3 w-3 mr-1" />
-              Responses
+              Respond
             </Button>
-            {status === "active" && (
-              <>
-                <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => markAsFulfilled(request.id)}>
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Fulfilled
-                </Button>
-                <Button size="sm" variant="destructive" className="h-7 text-xs rounded-lg" onClick={() => deleteRequest(request.id)}>
-                  <Trash className="h-3 w-3 mr-1" />
-                  Delete
-                </Button>
-              </>
-            )}
-          </>
-        ) : status === "active" && (
-          <Button size="sm" className="h-7 text-xs rounded-lg" onClick={() => handleRespond(request)}>
-            <MessageSquare className="h-3 w-3 mr-1" />
-            Respond
-          </Button>
-        )}
+          )}
+        </div>
+        
+        {/* Posted by and timestamp - bottom right */}
+        <div className="text-[10px] text-muted-foreground text-right ml-auto">
+          <div className="flex items-center gap-1 justify-end">
+            <span>by {request.poster_name || 'Anonymous'}</span>
+          </div>
+          <div className="flex items-center gap-1 justify-end">
+            <Clock className="h-2.5 w-2.5" />
+            <span>{formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}</span>
+          </div>
+        </div>
       </div>
     </div>
   );
