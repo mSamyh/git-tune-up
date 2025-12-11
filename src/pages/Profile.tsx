@@ -315,29 +315,36 @@ const Profile = () => {
     <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <Card>
-          <CardHeader className="pb-2">
+      <main className="container mx-auto px-4 py-6 max-w-2xl space-y-4">
+        {/* Profile Card */}
+        <Card className="rounded-2xl border-border/50 shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 pb-4">
             {/* Action buttons at top right */}
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 -mt-2 -mr-2">
               {(userType === 'donor' || userType === 'both') && (
                 <Button 
                   variant="ghost" 
                   size="icon"
                   onClick={() => setShowQRCard(true)}
                   title="Donor ID Card"
+                  className="h-9 w-9 rounded-full bg-background/80 backdrop-blur"
                 >
-                  <QrCode className="h-5 w-5 text-primary" />
+                  <QrCode className="h-4 w-4 text-primary" />
                 </Button>
               )}
-              <Button variant="ghost" size="sm" onClick={() => setIsEditing(!isEditing)}>
-                {isEditing ? <Save className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setIsEditing(!isEditing)}
+                className="rounded-full bg-background/80 backdrop-blur px-3"
+              >
+                {isEditing ? <Save className="h-4 w-4 mr-1" /> : <Edit className="h-4 w-4 mr-1" />}
                 {isEditing ? "Save" : "Edit"}
               </Button>
             </div>
 
             {/* Centered Profile Section */}
-            <div className="flex flex-col items-center text-center pt-2">
+            <div className="flex flex-col items-center text-center">
               <div className="relative">
                 <AvatarUpload
                   currentAvatarUrl={profile.avatar_url}
@@ -348,16 +355,15 @@ const Profile = () => {
                 {(userType === 'donor' || userType === 'both') && (
                   <Button
                     size="icon"
-                    variant="secondary"
-                    className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-md"
+                    className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-md bg-primary hover:bg-primary/90"
                     onClick={() => setShowRewardsDialog(true)}
                   >
-                    <Gift className="h-4 w-4" />
+                    <Gift className="h-4 w-4 text-primary-foreground" />
                   </Button>
                 )}
               </div>
               
-              <CardTitle className="text-2xl mt-4">{profile.full_name}</CardTitle>
+              <h1 className="text-2xl font-bold mt-4">{profile.full_name}</h1>
               
               {profile.title && (
                 <Badge className={`mt-2 ${profile.title_color || "bg-secondary text-secondary-foreground"}`}>
@@ -366,48 +372,18 @@ const Profile = () => {
               )}
               
               {isFirstTimeDonor && (
-                <p className="text-sm text-primary mt-1">First Time Donor</p>
+                <p className="text-sm text-primary mt-1 font-medium">First Time Donor</p>
               )}
 
-              {/* Stats Row */}
-              <div className="flex items-center justify-center gap-6 mt-4 py-3 border-y w-full">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{profile.blood_group}</p>
-                  <p className="text-xs text-muted-foreground">Blood Type</p>
-                </div>
-                <div className="h-8 w-px bg-border" />
-                <div className="text-center">
-                  <p className="text-2xl font-bold">{donationCount}</p>
-                  <p className="text-xs text-muted-foreground">Donations</p>
-                </div>
-                <div className="h-8 w-px bg-border" />
-                <div className="text-center">
-                  <Badge 
-                    variant="outline" 
-                    className={`text-xs ${
-                      availabilityStatus === 'available' 
-                        ? 'text-green-600 border-green-600 bg-green-50' 
-                        : availabilityStatus === 'reserved' 
-                          ? 'text-orange-600 border-orange-600 bg-orange-50' 
-                          : 'text-red-600 border-red-600 bg-red-50'
-                    }`}
-                  >
-                    {availabilityStatus === 'available' ? 'Available' : 
-                     availabilityStatus === 'reserved' ? 'Reserved' : 'Unavailable'}
-                  </Badge>
-                  <p className="text-xs text-muted-foreground mt-1">Status</p>
-                </div>
-              </div>
-
               {/* Bio Section */}
-              <div className="w-full mt-3">
+              <div className="w-full mt-3 max-w-xs">
                 {isEditingBio ? (
                   <div className="space-y-2">
                     <Input
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       placeholder="Write something about yourself..."
-                      className="text-center"
+                      className="text-center text-sm"
                       maxLength={150}
                     />
                     <div className="flex justify-center gap-2">
@@ -425,129 +401,148 @@ const Profile = () => {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Stats Row */}
+          <div className="flex items-center justify-around py-4 border-t bg-muted/30">
+            <div className="text-center px-4">
+              <p className="text-2xl font-bold text-primary">{profile.blood_group}</p>
+              <p className="text-xs text-muted-foreground">Blood Type</p>
+            </div>
+            <div className="h-10 w-px bg-border" />
+            <div className="text-center px-4">
+              <p className="text-2xl font-bold">{donationCount}</p>
+              <p className="text-xs text-muted-foreground">Donations</p>
+            </div>
+            <div className="h-10 w-px bg-border" />
+            <div className="text-center px-4">
+              <Badge 
+                variant="outline" 
+                className={`text-xs ${
+                  availabilityStatus === 'available' 
+                    ? 'text-green-600 border-green-600 bg-green-50 dark:bg-green-950' 
+                    : availabilityStatus === 'reserved' 
+                      ? 'text-orange-600 border-orange-600 bg-orange-50 dark:bg-orange-950' 
+                      : 'text-red-600 border-red-600 bg-red-50 dark:bg-red-950'
+                }`}
+              >
+                {availabilityStatus === 'available' ? 'Available' : 
+                 availabilityStatus === 'reserved' ? 'Reserved' : 'Unavailable'}
+              </Badge>
+              <p className="text-xs text-muted-foreground mt-1">Status</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Contact Info Card */}
+        <Card className="rounded-2xl border-border/50 shadow-sm">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Phone className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Phone</p>
+                <p className="font-medium">{profile.phone}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <MapPin className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground">Location</p>
+                <p className="font-medium">
+                  {profile.atoll && profile.island
+                    ? `${profile.atoll} - ${profile.island}`
+                    : profile.district || "Not set"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Settings Cards */}
+        <Card className="rounded-2xl border-border/50 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              Update Location
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Droplet className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Blood Group</p>
-                    <p className="font-semibold text-lg">{profile.blood_group}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Total Donations</p>
-                  <p className="text-2xl font-bold text-primary">{donationCount}</p>
-                </div>
-              </div>
+          <CardContent className="space-y-3">
+            <LocationSelector
+              selectedAtoll={selectedAtoll}
+              selectedIsland={selectedIsland}
+              onAtollChange={setSelectedAtoll}
+              onIslandChange={setSelectedIsland}
+            />
+            <Button onClick={updateLocation} className="w-full rounded-xl">
+              Save Location
+            </Button>
+          </CardContent>
+        </Card>
 
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Phone</p>
-                    <p className="font-semibold">{profile.phone}</p>
-                  </div>
-                </div>
-              </div>
+        <Card className="rounded-2xl border-border/50 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Settings className="h-4 w-4 text-primary" />
+              Profile Type
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Choose whether you want to be a donor, receiver, or both
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Select value={userType} onValueChange={updateUserType}>
+              <SelectTrigger className="rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="donor">Donor Only</SelectItem>
+                <SelectItem value="receiver">Receiver Only</SelectItem>
+                <SelectItem value="both">Both Donor & Receiver</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {userType === 'donor' && "You will be visible in the donor list"}
+              {userType === 'receiver' && "You will NOT be visible in the donor list"}
+              {userType === 'both' && "You will be visible in the donor list"}
+            </p>
+          </CardContent>
+        </Card>
 
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Location</p>
-                    <p className="font-semibold">
-                      {profile.atoll && profile.island
-                        ? `${profile.atoll} - ${profile.island}`
-                        : profile.district || "Not set"}
-                    </p>
-                    {profile.address && (
-                      <p className="text-sm text-muted-foreground">{profile.address}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4 p-4 border rounded-lg">
-              <div>
-                <Label className="text-base font-semibold">Update Location</Label>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Select your atoll and island
-                </p>
-              </div>
-              
-              <LocationSelector
-                selectedAtoll={selectedAtoll}
-                selectedIsland={selectedIsland}
-                onAtollChange={setSelectedAtoll}
-                onIslandChange={setSelectedIsland}
-              />
-              
-              <Button onClick={updateLocation} className="w-full">
-                Save Location
-              </Button>
-            </div>
-
-            <div className="space-y-4 p-4 border rounded-lg">
-              <div>
-                <Label className="text-base font-semibold">Profile Type</Label>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Choose whether you want to be a donor, receiver, or both
-                </p>
-              </div>
-              
-              <Select value={userType} onValueChange={updateUserType}>
-                <SelectTrigger>
+        {(userType === 'donor' || userType === 'both') && (
+          <Card className="rounded-2xl border-border/50 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Droplet className="h-4 w-4 text-primary" />
+                Availability Status
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                {!canSetAvailable() 
+                  ? `You must wait ${getDaysUntilAvailable()} more days from your last donation to set available`
+                  : "Update your availability status"
+                }
+              </p>
+            </CardHeader>
+            <CardContent>
+              <Select value={availabilityStatus} onValueChange={updateAvailability}>
+                <SelectTrigger className="rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="donor">Donor Only</SelectItem>
-                  <SelectItem value="receiver">Receiver Only</SelectItem>
-                  <SelectItem value="both">Both Donor & Receiver</SelectItem>
+                  <SelectItem value="available" disabled={!canSetAvailable()}>
+                    Available
+                  </SelectItem>
+                  <SelectItem value="unavailable">Unavailable</SelectItem>
+                  <SelectItem value="reserved">Reserved</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                {userType === 'donor' && "You will be visible in the donor list"}
-                {userType === 'receiver' && "You will NOT be visible in the donor list"}
-                {userType === 'both' && "You will be visible in the donor list"}
-              </p>
-            </div>
-
-            {(userType === 'donor' || userType === 'both') && (
-              <>
-                <div className="space-y-4 p-4 border rounded-lg">
-                  <div>
-                    <Label className="text-base font-semibold">Availability Status</Label>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {!canSetAvailable() 
-                        ? `You must wait ${getDaysUntilAvailable()} more days from your last donation to set available`
-                        : "Update your availability status"
-                      }
-                    </p>
-                  </div>
-                  
-                  <Select value={availabilityStatus} onValueChange={updateAvailability}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="available" disabled={!canSetAvailable()}>
-                        Available
-                      </SelectItem>
-                      <SelectItem value="unavailable">Unavailable</SelectItem>
-                      <SelectItem value="reserved">Reserved</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-
-              </>
-            )}
-
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         <CheckAdminButton />
       </main>
