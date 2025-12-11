@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Droplet, LogOut, LogIn } from "lucide-react";
 import { TopDonorBadge, getTopDonorRank } from "@/components/TopDonorBadge";
 import { useDonor } from "@/contexts/DonorContext";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface Profile {
   id: string;
@@ -37,9 +38,10 @@ export const AppHeader = () => {
           </div>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {isLoggedIn && profile ? (
             <>
+              <NotificationBell />
               <Button
                 variant="ghost"
                 size="icon"

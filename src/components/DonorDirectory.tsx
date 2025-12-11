@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Phone, MapPin, Droplet, Search, Users, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Phone, MapPin, Droplet, Search, Users, Loader2, X } from "lucide-react";
 
 const BLOOD_GROUPS = ["All", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const DISTRICTS = ["All", "Dhaka", "Chittagong", "Rajshahi", "Khulna", "Barisal", "Sylhet", "Rangpur", "Mymensingh"];
@@ -27,6 +28,8 @@ const DonorDirectory = () => {
   const [selectedBloodGroup, setSelectedBloodGroup] = useState("All");
   const [selectedDistrict, setSelectedDistrict] = useState("All");
   const [loading, setLoading] = useState(true);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchDonors();
@@ -35,6 +38,12 @@ const DonorDirectory = () => {
   useEffect(() => {
     filterDonors();
   }, [donors, searchTerm, selectedBloodGroup, selectedDistrict]);
+
+  useEffect(() => {
+    if (isSearchExpanded && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isSearchExpanded]);
 
   const fetchDonors = async () => {
     const { data, error } = await supabase
@@ -126,6 +135,13 @@ const DonorDirectory = () => {
     return <Badge variant="outline" className="text-muted-foreground text-xs">Unavailable</Badge>;
   };
 
+  const toggleSearch = () => {
+    if (isSearchExpanded && searchTerm) {
+      setSearchTerm("");
+    }
+    setIsSearchExpanded(!isSearchExpanded);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -136,61 +152,80 @@ const DonorDirectory = () => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Sticky Search & Filters */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md pb-4 -mx-4 px-4 pt-1">
-        <div className="space-y-3">
-          {/* Search Bar */}
-          <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 p-1.5 bg-primary/10 rounded-lg">
-              <Search className="h-4 w-4 text-primary" />
-            </div>
-            <Input
-              placeholder="Search donors..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-14 h-12 rounded-2xl border-border/30 bg-card/80 shadow-sm focus:shadow-md transition-shadow"
-            />
-            {/* Results count badge */}
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <Badge variant="secondary" className="text-xs font-medium">
-                {filteredDonors.length}
-              </Badge>
-            </div>
+      {/* Sticky Header with Filters */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md pb-3 -mx-4 px-4 pt-1">
+        <div className="flex items-center gap-2">
+          {/* Search Icon / Expanded Search */}
+          <div className={`transition-all duration-300 ${isSearchExpanded ? 'flex-1' : 'flex-none'}`}>
+            {isSearchExpanded ? (
+              <div className="relative flex items-center">
+                <Input
+                  ref={searchInputRef}
+                  placeholder="Search donors..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-10 rounded-xl border-border/30 bg-card/80 pr-8 text-sm"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 h-10 w-10"
+                  onClick={toggleSearch}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 rounded-xl border-border/30 bg-card/80"
+                onClick={toggleSearch}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           
           {/* Filter Pills */}
-          <div className="flex gap-2">
-            <Select value={selectedBloodGroup} onValueChange={setSelectedBloodGroup}>
-              <SelectTrigger className="flex-1 h-10 rounded-xl border-border/30 bg-card/80 shadow-sm text-sm">
-                <Droplet className="h-3.5 w-3.5 mr-2 text-primary" />
-                <SelectValue placeholder="Blood" />
-              </SelectTrigger>
-              <SelectContent>
-                {BLOOD_GROUPS.map((group) => (
-                  <SelectItem key={group} value={group}>
-                    {group === "All" ? "All Groups" : group}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Select value={selectedBloodGroup} onValueChange={setSelectedBloodGroup}>
+            <SelectTrigger className={`h-10 rounded-xl border-border/30 bg-card/80 shadow-sm text-sm ${isSearchExpanded ? 'w-24' : 'flex-1'}`}>
+              <Droplet className="h-3.5 w-3.5 mr-1 text-primary flex-shrink-0" />
+              <SelectValue placeholder="Blood" />
+            </SelectTrigger>
+            <SelectContent>
+              {BLOOD_GROUPS.map((group) => (
+                <SelectItem key={group} value={group}>
+                  {group === "All" ? "All" : group}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {!isSearchExpanded && (
             <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
               <SelectTrigger className="flex-1 h-10 rounded-xl border-border/30 bg-card/80 shadow-sm text-sm">
-                <MapPin className="h-3.5 w-3.5 mr-2 text-primary" />
+                <MapPin className="h-3.5 w-3.5 mr-1 text-primary flex-shrink-0" />
                 <SelectValue placeholder="District" />
               </SelectTrigger>
               <SelectContent>
                 {DISTRICTS.map((district) => (
                   <SelectItem key={district} value={district}>
-                    {district === "All" ? "All Districts" : district}
+                    {district === "All" ? "All" : district}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          )}
+          
+          {/* Results Badge */}
+          <Badge variant="secondary" className="text-xs font-medium h-6 px-2">
+            {filteredDonors.length}
+          </Badge>
         </div>
         
         {/* Separator line */}
-        <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent mt-4" />
+        <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent mt-3" />
       </div>
 
       {/* Donor List */}
