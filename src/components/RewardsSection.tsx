@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, QrCode, Trophy, Clock, CheckCircle, Award, Star, Crown } from "lucide-react";
+import { Gift, QrCode, Trophy, Clock, CheckCircle, Award, Star, Crown, ChevronDown, ChevronUp } from "lucide-react";
 import QRCode from "qrcode";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getUserTier, TierInfo } from "@/lib/tierSystem";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface RewardsSectionProps {
   userId: string;
@@ -51,6 +52,8 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
   const [selectedRedemption, setSelectedRedemption] = useState<Redemption | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [userTier, setUserTier] = useState<TierInfo | null>(null);
+  const [rewardsOpen, setRewardsOpen] = useState(false);
+  const [vouchersOpen, setVouchersOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -302,9 +305,10 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
       });
     }
   };
+
   const getStatusBadge = (status: string, expiresAt: string) => {
     if (status === "verified") {
-      return <Badge className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Verified</Badge>;
+      return <Badge className="bg-green-500 text-white"><CheckCircle className="h-3 w-3 mr-1" />Verified</Badge>;
     }
     if (new Date(expiresAt) < new Date() || status === "expired") {
       return <Badge variant="destructive">Expired</Badge>;
@@ -316,14 +320,16 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
   };
 
   if (loading) {
-    return <div className="text-center p-4">Loading rewards...</div>;
+    return <div className="text-center p-4 text-muted-foreground">Loading rewards...</div>;
   }
 
   // Show empty state only if user has never earned points AND has no redemptions
   if ((!points || points.lifetime_points === 0) && redemptions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
-        <Gift className="h-16 w-16 text-muted-foreground/50" />
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <Gift className="h-8 w-8 text-primary" />
+        </div>
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">No Rewards Yet</h3>
           <p className="text-sm text-muted-foreground max-w-md">
@@ -351,42 +357,40 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
   const TierIcon = getTierIcon();
 
   return (
-    <div className="space-y-6">
-      {/* Points Summary with Tier */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <TierIcon className={`h-8 w-8 ${userTier?.color || "text-primary"}`} />
-              <div>
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-2xl">{currentPoints} Points</CardTitle>
-                  {userTier && (
-                    <Badge className={userTier.color} variant="outline">
-                      {userTier.name}
-                    </Badge>
-                  )}
-                </div>
-                <CardDescription>Lifetime earned: {lifetimePoints} points</CardDescription>
+    <div className="space-y-4">
+      {/* Points Summary with Tier - Leyhadhiya themed */}
+      <Card className="rounded-2xl overflow-hidden border-0 shadow-lg bg-gradient-to-br from-primary/5 via-background to-primary/10">
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-4">
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/60 shadow-lg`}>
+              <TierIcon className="h-7 w-7 text-primary-foreground" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <CardTitle className="text-2xl font-bold">{currentPoints}</CardTitle>
+                <span className="text-muted-foreground">points</span>
+                {userTier && (
+                  <Badge className={`${userTier.color} bg-opacity-20 border`} variant="outline">
+                    {userTier.name}
+                  </Badge>
+                )}
               </div>
+              <CardDescription className="text-sm">Lifetime: {lifetimePoints} pts</CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Earn 100 points for every blood donation. Use your points to redeem rewards from our partners.
-          </p>
+        <CardContent className="pt-0">
           {userTier && (
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm font-semibold mb-1">
-                🎉 {userTier.name} Member Benefits:
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Merchants will apply <strong>{userTier.discount}% discount</strong> when you redeem rewards!
+            <div className="p-3 bg-muted/50 rounded-xl mt-2">
+              <p className="text-sm">
+                <span className="font-medium">🎉 {userTier.name} Benefits:</span>{" "}
+                <span className="text-muted-foreground">
+                  {userTier.discount}% merchant discount on rewards
+                </span>
               </p>
               {userTier.maxPoints && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Points range: {userTier.minPoints} - {userTier.maxPoints} pts
+                  Tier range: {userTier.minPoints} - {userTier.maxPoints} pts
                 </p>
               )}
             </div>
@@ -394,115 +398,138 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
         </CardContent>
       </Card>
 
-      {/* Available Rewards */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gift className="h-5 w-5" />
-            Available Rewards
-          </CardTitle>
-          <CardDescription>Redeem your points for exclusive rewards</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {rewards.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No rewards available at the moment</p>
-          ) : (
-            <div className="space-y-4">
-              {rewards.map((reward) => {
-                return (
-                  <div key={reward.id} className="p-4 border rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{reward.title}</h3>
-                          <Badge variant="outline">{reward.category}</Badge>
+      {/* Available Rewards - Collapsible */}
+      <Collapsible open={rewardsOpen} onOpenChange={setRewardsOpen}>
+        <Card className="rounded-2xl border-0 shadow-md">
+          <CollapsibleTrigger className="w-full">
+            <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Gift className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <CardTitle className="text-base">Available Rewards</CardTitle>
+                    <CardDescription className="text-xs">{rewards.length} rewards available</CardDescription>
+                  </div>
+                </div>
+                {rewardsOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              {rewards.length === 0 ? (
+                <p className="text-center text-muted-foreground py-6 text-sm">No rewards available at the moment</p>
+              ) : (
+                <div className="space-y-3">
+                  {rewards.map((reward) => (
+                    <div key={reward.id} className="p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="font-semibold text-sm">{reward.title}</h3>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">{reward.category}</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-1 line-clamp-2">{reward.description}</p>
+                          <p className="text-[10px] text-muted-foreground">Partner: {reward.partner_name}</p>
+                          {userTier && userTier.discount > 0 && (
+                            <Badge variant="secondary" className="text-[10px] mt-2 bg-green-500/10 text-green-600 border-0">
+                              🎁 {userTier.discount}% discount
+                            </Badge>
+                          )}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">{reward.description}</p>
-                        <p className="text-xs text-muted-foreground">Partner: {reward.partner_name}</p>
-                        {userTier && userTier.discount > 0 && (
-                          <Badge variant="secondary" className="text-xs mt-2">
-                            🎁 {userTier.discount}% merchant discount applies
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="text-right ml-4">
-                        <p className="text-lg font-bold text-primary">{reward.points_required} pts</p>
-                        <Button
-                          size="sm"
-                          onClick={() => handleRedeem(reward)}
-                          disabled={currentPoints < reward.points_required || isRedeeming}
-                          className="mt-2"
-                        >
-                          {isRedeeming ? "Processing..." : "Redeem"}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Redemption History */}
-      {redemptions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <QrCode className="h-5 w-5" />
-              My Vouchers
-            </CardTitle>
-            <CardDescription>Your redeemed rewards and QR codes</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {redemptions.map((redemption) => {
-                const isExpired = new Date(redemption.expires_at) < new Date() || redemption.status === "expired";
-                const isUsed = redemption.status === "verified";
-                const canDelete = redemption.status !== "verified";
-                
-                return (
-                  <div key={redemption.id} className="p-3 border rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{redemption.reward_catalog.title}</h4>
-                        <p className="text-xs text-muted-foreground">{redemption.reward_catalog.partner_name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Expires: {new Date(redemption.expires_at).toLocaleString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(redemption.status, redemption.expires_at)}
-                        {redemption.status === "pending" && !isExpired && (
-                          <Button size="sm" variant="outline" onClick={() => showQRCode(redemption)}>
-                            <QrCode className="h-4 w-4 mr-1" />
-                            Show QR
-                          </Button>
-                        )}
-                        {canDelete && (
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            onClick={() => handleDeleteVoucher(redemption.id, redemption.points_spent)}
-                            className="text-destructive hover:text-destructive"
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-lg font-bold text-primary">{reward.points_required}</p>
+                          <p className="text-[10px] text-muted-foreground">points</p>
+                          <Button
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); handleRedeem(reward); }}
+                            disabled={currentPoints < reward.points_required || isRedeeming}
+                            className="mt-2 h-7 text-xs rounded-lg"
                           >
-                            Delete
+                            {isRedeeming ? "..." : "Redeem"}
                           </Button>
-                        )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </CollapsibleContent>
         </Card>
+      </Collapsible>
+
+      {/* My Vouchers - Collapsible */}
+      {redemptions.length > 0 && (
+        <Collapsible open={vouchersOpen} onOpenChange={setVouchersOpen}>
+          <Card className="rounded-2xl border-0 shadow-md">
+            <CollapsibleTrigger className="w-full">
+              <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-full bg-secondary/50 flex items-center justify-center">
+                      <QrCode className="h-4 w-4 text-foreground" />
+                    </div>
+                    <div className="text-left">
+                      <CardTitle className="text-base">My Vouchers</CardTitle>
+                      <CardDescription className="text-xs">{redemptions.length} voucher(s)</CardDescription>
+                    </div>
+                  </div>
+                  {vouchersOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <div className="space-y-2">
+                  {redemptions.map((redemption) => {
+                    const isExpired = new Date(redemption.expires_at) < new Date() || redemption.status === "expired";
+                    const canDelete = redemption.status !== "verified";
+                    
+                    return (
+                      <div key={redemption.id} className="p-3 bg-muted/30 rounded-xl">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm truncate">{redemption.reward_catalog.title}</h4>
+                            <p className="text-[10px] text-muted-foreground">{redemption.reward_catalog.partner_name}</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                              Expires: {new Date(redemption.expires_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {getStatusBadge(redemption.status, redemption.expires_at)}
+                            {redemption.status === "pending" && !isExpired && (
+                              <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => showQRCode(redemption)}>
+                                <QrCode className="h-3 w-3" />
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-7 text-xs text-destructive hover:text-destructive rounded-lg"
+                                onClick={() => handleDeleteVoucher(redemption.id, redemption.points_spent)}
+                              >
+                                Delete
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       )}
 
       {/* QR Code Dialog */}
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle>Your Reward QR Code</DialogTitle>
             <DialogDescription>
@@ -511,7 +538,9 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
             {qrCodeUrl && (
-              <img src={qrCodeUrl} alt="QR Code" className="w-64 h-64" />
+              <div className="p-4 bg-white rounded-xl shadow-inner">
+                <img src={qrCodeUrl} alt="QR Code" className="w-56 h-56" />
+              </div>
             )}
             {selectedRedemption && (
               <div className="text-center space-y-2 w-full">
@@ -519,14 +548,14 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
                 <p className="text-sm text-muted-foreground">
                   {selectedRedemption.reward_catalog.partner_name}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Voucher: {selectedRedemption.voucher_code}
+                <p className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
+                  {selectedRedemption.voucher_code}
                 </p>
                 <p className="text-xs text-destructive">
                   Expires: {new Date(selectedRedemption.expires_at).toLocaleString()}
                 </p>
                 {selectedRedemption.status === "verified" && (
-                  <Badge className="bg-green-500 mt-2">
+                  <Badge className="bg-green-500 mt-2 text-white">
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Already Used
                   </Badge>
