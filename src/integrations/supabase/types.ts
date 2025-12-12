@@ -449,6 +449,7 @@ export type Database = {
           is_available: boolean | null
           island: string | null
           last_donation_date: string | null
+          notification_preferences: Json | null
           phone: string
           title: string | null
           title_color: string | null
@@ -470,6 +471,7 @@ export type Database = {
           is_available?: boolean | null
           island?: string | null
           last_donation_date?: string | null
+          notification_preferences?: Json | null
           phone: string
           title?: string | null
           title_color?: string | null
@@ -491,6 +493,7 @@ export type Database = {
           is_available?: boolean | null
           island?: string | null
           last_donation_date?: string | null
+          notification_preferences?: Json | null
           phone?: string
           title?: string | null
           title_color?: string | null
