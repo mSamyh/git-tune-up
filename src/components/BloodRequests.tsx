@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -43,9 +43,10 @@ interface Response {
 
 interface BloodRequestsProps {
   status?: string;
+  highlightId?: string | null;
 }
 
-const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
+const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) => {
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
@@ -53,7 +54,17 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
   const [responses, setResponses] = useState<Response[]>([]);
   const [showResponseDialog, setShowResponseDialog] = useState(false);
   const [responseMessage, setResponseMessage] = useState("");
+  const highlightRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Scroll to highlighted request
+  useEffect(() => {
+    if (highlightId && highlightRef.current) {
+      setTimeout(() => {
+        highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  }, [highlightId, requests]);
 
   useEffect(() => {
     getCurrentUser();
@@ -288,13 +299,19 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
     return acc;
   }, {} as Record<string, BloodRequest[]>);
 
-  const renderRequestCard = (request: BloodRequest) => (
+  const renderRequestCard = (request: BloodRequest) => {
+    const isHighlighted = highlightId === request.id;
+    
+    return (
     <div 
-      key={request.id} 
+      key={request.id}
+      ref={isHighlighted ? highlightRef : null}
       className={`p-4 rounded-xl border transition-all hover:shadow-md ${
-        request.urgency === 'urgent' 
-          ? 'border-destructive/50 bg-destructive/5' 
-          : 'border-border bg-muted/30'
+        isHighlighted
+          ? 'border-primary bg-primary/10 ring-2 ring-primary/50 animate-pulse'
+          : request.urgency === 'urgent' 
+            ? 'border-destructive/50 bg-destructive/5' 
+            : 'border-border bg-muted/30'
       }`}
     >
       <div className="flex items-start justify-between mb-3">
@@ -382,7 +399,8 @@ const BloodRequests = ({ status = "active" }: BloodRequestsProps) => {
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const groupsWithRequests = bloodGroups.filter(group => requestsByBloodGroup[group].length > 0);
 

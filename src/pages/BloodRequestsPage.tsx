@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, Heart, CheckCircle } from "lucide-react";
 import BloodRequests from "@/components/BloodRequests";
 import { BottomNav } from "@/components/BottomNav";
@@ -9,7 +9,19 @@ import { AppHeader } from "@/components/AppHeader";
 
 const BloodRequestsPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
   const [filter, setFilter] = useState("active");
+
+  // Clear highlight from URL after mounting
+  useEffect(() => {
+    if (highlightId) {
+      const timer = setTimeout(() => {
+        navigate("/blood-requests", { replace: true });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightId, navigate]);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -48,10 +60,10 @@ const BloodRequestsPage = () => {
         <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <Tabs value={filter} onValueChange={setFilter}>
             <TabsContent value="active" className="mt-0">
-              <BloodRequests status="active" />
+              <BloodRequests status="active" highlightId={highlightId} />
             </TabsContent>
             <TabsContent value="fulfilled" className="mt-0">
-              <BloodRequests status="fulfilled" />
+              <BloodRequests status="fulfilled" highlightId={highlightId} />
             </TabsContent>
           </Tabs>
         </div>
