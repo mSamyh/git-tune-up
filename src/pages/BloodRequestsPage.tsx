@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Plus, Heart, CheckCircle } from "lucide-react";
+import { Plus, Heart, CheckCircle, XCircle } from "lucide-react";
 import BloodRequests from "@/components/BloodRequests";
 import { BottomNav } from "@/components/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,14 +43,18 @@ const BloodRequestsPage = () => {
           </div>
           
           <Tabs value={filter} onValueChange={setFilter} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 rounded-xl h-10">
-              <TabsTrigger value="active" className="rounded-lg gap-1.5 text-xs">
+            <TabsList className="grid w-full grid-cols-3 rounded-xl h-10">
+              <TabsTrigger value="active" className="rounded-lg gap-1 text-xs">
                 <Heart className="h-3.5 w-3.5" />
                 Open
               </TabsTrigger>
-              <TabsTrigger value="fulfilled" className="rounded-lg gap-1.5 text-xs">
+              <TabsTrigger value="fulfilled" className="rounded-lg gap-1 text-xs">
                 <CheckCircle className="h-3.5 w-3.5" />
-                Fulfilled
+                Done
+              </TabsTrigger>
+              <TabsTrigger value="expired" className="rounded-lg gap-1 text-xs">
+                <XCircle className="h-3.5 w-3.5" />
+                Expired
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -64,6 +68,9 @@ const BloodRequestsPage = () => {
             </TabsContent>
             <TabsContent value="fulfilled" className="mt-0">
               <BloodRequests status="fulfilled" highlightId={highlightId} />
+            </TabsContent>
+            <TabsContent value="expired" className="mt-0">
+              <BloodRequests status="expired" highlightId={highlightId} />
             </TabsContent>
           </Tabs>
         </div>
