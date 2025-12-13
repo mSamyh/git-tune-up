@@ -3,13 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Droplet, MapPin, Phone, User, MessageSquare, Edit, Trash, CheckCircle } from "lucide-react";
+import { Clock, Droplet, MapPin, Phone, User, MessageSquare, Edit, Trash, CheckCircle, Share2, XCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { CountdownTimer } from "@/components/CountdownTimer";
+import { BloodRequestShareCard } from "@/components/BloodRequestShareCard";
 
 interface BloodRequest {
   id: string;
@@ -25,6 +27,7 @@ interface BloodRequest {
   status: string;
   created_at: string;
   requested_by: string | null;
+  needed_before: string | null;
   poster_name?: string;
 }
 
@@ -50,10 +53,12 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<BloodRequest | null>(null);
   const [responses, setResponses] = useState<Response[]>([]);
   const [showResponseDialog, setShowResponseDialog] = useState(false);
   const [responseMessage, setResponseMessage] = useState("");
+  const [shareRequest, setShareRequest] = useState<BloodRequest | null>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -69,6 +74,7 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
   useEffect(() => {
     getCurrentUser();
     fetchRequests();
+    checkAndExpireRequests();
 
     const channel = supabase
       .channel('blood_requests_changes')
@@ -85,14 +91,39 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
       )
       .subscribe();
 
+    // Check for expired requests every minute
+    const expiryInterval = setInterval(checkAndExpireRequests, 60000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(expiryInterval);
     };
   }, [status]);
 
   const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setCurrentUser(user?.id || null);
+    
+    if (user) {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .single();
+      setIsAdmin(!!roleData);
+    }
+  };
+
+  // Auto-expire check
+  const checkAndExpireRequests = async () => {
+    const now = new Date().toISOString();
+    await supabase
+      .from("blood_requests")
+      .update({ status: "expired" })
+      .eq("status", "active")
+      .lt("needed_before", now)
+      .not("needed_before", "is", null);
   };
 
   const fetchRequests = async () => {
@@ -262,7 +293,6 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
       .eq("id", requestId);
 
     if (!error) {
-      // Send Telegram notification for fulfilled request
       if (request) {
         const { notifyBloodRequestFulfilled } = await import("@/lib/telegramNotifications");
         await notifyBloodRequestFulfilled({
@@ -275,6 +305,20 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
 
       toast({
         title: "Request marked as fulfilled",
+      });
+      fetchRequests();
+    }
+  };
+
+  const markAsExpired = async (requestId: string) => {
+    const { error } = await supabase
+      .from("blood_requests")
+      .update({ status: "expired" })
+      .eq("id", requestId);
+
+    if (!error) {
+      toast({
+        title: "Request marked as expired",
       });
       fetchRequests();
     }
@@ -301,6 +345,7 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
 
   const renderRequestCard = (request: BloodRequest) => {
     const isHighlighted = highlightId === request.id;
+    const canManage = isRequestor(request) || isAdmin;
     
     return (
     <div 
@@ -317,6 +362,10 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-sm truncate">{request.patient_name}</h3>
+          {/* Countdown Timer */}
+          {request.needed_before && status === "active" && (
+            <CountdownTimer neededBefore={request.needed_before} compact className="mt-1" />
+          )}
         </div>
         <div className="flex items-center gap-1.5 ml-2">
           <Badge className="bg-primary/10 text-primary border-0 text-xs px-2 py-0.5">
@@ -360,18 +409,32 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
 
       <div className="mt-3 flex items-center justify-between flex-wrap gap-2">
         <div className="flex gap-2 flex-wrap">
-          {isRequestor(request) ? (
+          {/* Share button - available to all */}
+          <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => setShareRequest(request)}>
+            <Share2 className="h-3 w-3 mr-1" />
+            Share
+          </Button>
+          
+          {canManage ? (
             <>
-              <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => viewResponses(request)}>
-                <MessageSquare className="h-3 w-3 mr-1" />
-                Responses
-              </Button>
+              {isRequestor(request) && (
+                <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => viewResponses(request)}>
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  Responses
+                </Button>
+              )}
               {status === "active" && (
                 <>
-                  <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => markAsFulfilled(request.id)}>
+                  <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-green-600 border-green-600/30 hover:bg-green-50" onClick={() => markAsFulfilled(request.id)}>
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Fulfilled
                   </Button>
+                  {isAdmin && (
+                    <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-orange-600 border-orange-600/30 hover:bg-orange-50" onClick={() => markAsExpired(request.id)}>
+                      <XCircle className="h-3 w-3 mr-1" />
+                      Expired
+                    </Button>
+                  )}
                   <Button size="sm" variant="destructive" className="h-7 text-xs rounded-lg" onClick={() => deleteRequest(request.id)}>
                     <Trash className="h-3 w-3 mr-1" />
                     Delete
@@ -515,6 +578,15 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Share Card Dialog */}
+      {shareRequest && (
+        <BloodRequestShareCard
+          request={shareRequest}
+          open={!!shareRequest}
+          onOpenChange={(open) => !open && setShareRequest(null)}
+        />
+      )}
     </>
   );
 };

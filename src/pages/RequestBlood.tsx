@@ -8,16 +8,29 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, X } from "lucide-react";
+import { Heart, X, Clock } from "lucide-react";
 import { LocationSelector } from "@/components/LocationSelector";
 import { AppHeader } from "@/components/AppHeader";
+import { format, addHours } from "date-fns";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+const NEEDED_BEFORE_OPTIONS = [
+  { value: "2", label: "2 hours" },
+  { value: "4", label: "4 hours" },
+  { value: "6", label: "6 hours" },
+  { value: "12", label: "12 hours" },
+  { value: "24", label: "24 hours" },
+  { value: "48", label: "48 hours" },
+  { value: "custom", label: "Custom time" },
+];
 
 const RequestBlood = () => {
   const [loading, setLoading] = useState(false);
   const [selectedAtoll, setSelectedAtoll] = useState("");
   const [selectedIsland, setSelectedIsland] = useState("");
+  const [neededBeforeOption, setNeededBeforeOption] = useState("");
+  const [customDateTime, setCustomDateTime] = useState("");
   const [formData, setFormData] = useState({
     patientName: "",
     bloodGroup: "",
@@ -54,6 +67,14 @@ const RequestBlood = () => {
 
       const district = `${selectedAtoll} - ${selectedIsland}`;
 
+      // Calculate needed_before timestamp
+      let neededBefore: string | null = null;
+      if (neededBeforeOption && neededBeforeOption !== "custom") {
+        neededBefore = addHours(new Date(), parseInt(neededBeforeOption)).toISOString();
+      } else if (neededBeforeOption === "custom" && customDateTime) {
+        neededBefore = new Date(customDateTime).toISOString();
+      }
+
       const { data: request, error: requestError } = await supabase
         .from("blood_requests")
         .insert({
@@ -67,6 +88,7 @@ const RequestBlood = () => {
           emergency_type: emergencyTypeValue,
           notes: formData.notes || null,
           requested_by: user.id,
+          needed_before: neededBefore,
         })
         .select()
         .single();
@@ -272,6 +294,41 @@ const RequestBlood = () => {
                     <Label htmlFor="urgent" className="font-normal">Urgent</Label>
                   </div>
                 </RadioGroup>
+              </div>
+
+              {/* Needed Before - Countdown Timer */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Needed Within
+                </Label>
+                <Select
+                  value={neededBeforeOption}
+                  onValueChange={setNeededBeforeOption}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select timeframe (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {NEEDED_BEFORE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {neededBeforeOption === "custom" && (
+                  <Input
+                    type="datetime-local"
+                    value={customDateTime}
+                    onChange={(e) => setCustomDateTime(e.target.value)}
+                    min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
+                    className="mt-2"
+                  />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Setting a deadline helps donors prioritize urgent requests
+                </p>
               </div>
 
               <div className="space-y-2">

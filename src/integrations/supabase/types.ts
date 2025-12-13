@@ -41,6 +41,7 @@ export type Database = {
           emergency_type: string | null
           hospital_name: string
           id: string
+          needed_before: string | null
           notes: string | null
           patient_name: string
           requested_by: string | null
@@ -57,6 +58,7 @@ export type Database = {
           emergency_type?: string | null
           hospital_name: string
           id?: string
+          needed_before?: string | null
           notes?: string | null
           patient_name: string
           requested_by?: string | null
@@ -73,6 +75,7 @@ export type Database = {
           emergency_type?: string | null
           hospital_name?: string
           id?: string
+          needed_before?: string | null
           notes?: string | null
           patient_name?: string
           requested_by?: string | null
