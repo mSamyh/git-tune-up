@@ -30,16 +30,16 @@ interface Donor {
 
 interface DonorTableProps {
   bloodGroupFilter?: string;
+  searchTerm?: string;
 }
 
 const ITEMS_PER_PAGE = 20;
 
-export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
+export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorTableProps) => {
   const [donors, setDonors] = useState<Donor[]>([]);
   const [filteredDonors, setFilteredDonors] = useState<Donor[]>([]);
   const [paginatedDonors, setPaginatedDonors] = useState<Donor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalDonors, setTotalDonors] = useState(0);
@@ -53,10 +53,6 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
   useEffect(() => {
     filterAndSortDonors();
   }, [donors, searchTerm, bloodGroupFilter]);
-
-  useEffect(() => {
-    filterAndSortDonors();
-  }, [bloodGroupFilter]);
 
   useEffect(() => {
     paginateDonors();
@@ -216,20 +212,15 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <Input
-          placeholder="Search by name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1"
-        />
-        <div className="text-sm text-muted-foreground whitespace-nowrap">
-          Total Donors: <span className="font-semibold text-foreground">{totalDonors}</span>
-        </div>
+    <div>
+      {/* Header with count */}
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
+        <span className="text-sm text-muted-foreground">
+          Showing <span className="font-semibold text-foreground">{totalDonors}</span> donors
+        </span>
       </div>
 
-      <div className="rounded-lg border overflow-hidden">
+      <div className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -282,24 +273,26 @@ export const DonorTable = ({ bloodGroupFilter = "all" }: DonorTableProps) => {
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-2 p-4">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
+            className="rounded-xl"
           >
             <ChevronLeft className="h-4 w-4" />
             Previous
           </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages}
+          <span className="text-sm text-muted-foreground px-2">
+            {currentPage} / {totalPages}
           </span>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
+            className="rounded-xl"
           >
             Next
             <ChevronRight className="h-4 w-4" />

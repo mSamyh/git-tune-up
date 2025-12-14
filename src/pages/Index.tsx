@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Droplet, Search, Heart, UserCheck } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Droplet, Search, Heart, UserCheck, X, Users } from "lucide-react";
 import { DonorTable } from "@/components/DonorTable";
 import { BottomNav } from "@/components/BottomNav";
 import { BloodGroupFilter } from "@/components/BloodGroupFilter";
@@ -12,7 +13,19 @@ const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [selectedBloodGroup, setSelectedBloodGroup] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  const toggleSearch = () => {
+    setIsSearchExpanded(!isSearchExpanded);
+    if (!isSearchExpanded) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    } else {
+      setSearchTerm("");
+    }
+  };
   useEffect(() => {
     const {
       data: {
@@ -101,14 +114,60 @@ const Index = () => {
       <AppHeader />
 
       <main className="container mx-auto px-4 py-6">
-        {/* Blood Group Filter */}
-        <div className="mb-6">
+        {/* Search and Filter Header */}
+        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md -mx-4 px-4 pb-4 pt-2">
+          <div className="flex items-center gap-3 mb-4">
+            {/* Expandable Search */}
+            <div className={`transition-all duration-300 ${isSearchExpanded ? 'flex-1' : 'flex-none'}`}>
+              {isSearchExpanded ? (
+                <div className="relative flex items-center">
+                  <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    ref={searchInputRef}
+                    placeholder="Search donors..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="h-10 rounded-xl border-border/30 bg-card/80 pl-9 pr-9 text-sm"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 h-10 w-10"
+                    onClick={toggleSearch}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 rounded-xl border-border/30 bg-card/80 hover:bg-primary/10"
+                  onClick={toggleSearch}
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            {/* Title */}
+            {!isSearchExpanded && (
+              <div className="flex-1">
+                <h1 className="text-lg font-semibold flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  Donor Directory
+                </h1>
+              </div>
+            )}
+          </div>
+
+          {/* Blood Group Filter */}
           <BloodGroupFilter selectedGroup={selectedBloodGroup} onSelectGroup={setSelectedBloodGroup} />
         </div>
 
         {/* Donor Table */}
-        <div className="bg-card rounded-2xl border overflow-hidden">
-          <DonorTable bloodGroupFilter={selectedBloodGroup} />
+        <div className="bg-card rounded-2xl border overflow-hidden mt-4">
+          <DonorTable bloodGroupFilter={selectedBloodGroup} searchTerm={searchTerm} />
         </div>
 
         {/* Footer */}
