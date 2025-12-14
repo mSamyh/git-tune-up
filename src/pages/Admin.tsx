@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CSVImporter } from "@/components/CSVImporter";
 import { UserRoleManager } from "@/components/UserRoleManager";
 import { TelegramConfigManager } from "@/components/TelegramConfigManager";
+import { TelegramBroadcast } from "@/components/TelegramBroadcast";
 import { RewardsAdminPanel } from "@/components/RewardsAdminPanel";
 import { Textarea } from "@/components/ui/textarea";
 import { AppHeader } from "@/components/AppHeader";
@@ -1095,6 +1096,8 @@ const Admin = () => {
             </Card>
 
             <TelegramConfigManager />
+
+            <TelegramBroadcast />
           </TabsContent>
 
           <TabsContent value="rewards">
