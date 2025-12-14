@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, X, Save, Power, PowerOff } from "lucide-react";
+import { Plus, X, Save, Power, PowerOff, Bot, Link } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 
@@ -148,6 +148,47 @@ export const TelegramConfigManager = () => {
     }
   };
 
+  const setupWebhook = async () => {
+    if (!botToken.trim()) {
+      toast({
+        title: "Error",
+        description: "Please save the bot token first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-bot-webhook`;
+      
+      const response = await fetch(
+        `https://api.telegram.org/bot${botToken.trim()}/setWebhook`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: webhookUrl })
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.ok) {
+        toast({
+          title: "Webhook Set",
+          description: "Bot webhook configured successfully. Use /start in Telegram to test.",
+        });
+      } else {
+        throw new Error(result.description || "Failed to set webhook");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -242,29 +283,48 @@ export const TelegramConfigManager = () => {
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button onClick={saveConfig} disabled={loading} className="gap-2">
             <Save className="h-4 w-4" />
             {loading ? "Saving..." : "Save Configuration"}
           </Button>
           {config && (
-            <Button onClick={testNotification} variant="outline" className="gap-2">
-              <Power className="h-4 w-4" />
-              Send Test Notification
-            </Button>
+            <>
+              <Button onClick={testNotification} variant="outline" className="gap-2">
+                <Power className="h-4 w-4" />
+                Test Notification
+              </Button>
+              <Button onClick={setupWebhook} variant="outline" className="gap-2">
+                <Link className="h-4 w-4" />
+                Setup Bot Webhook
+              </Button>
+            </>
           )}
         </div>
 
-        <div className="rounded-lg bg-muted p-4 text-sm">
-          <p className="font-medium mb-2">Notification Events:</p>
-          <ul className="space-y-1 text-muted-foreground">
-            <li>• New user registrations</li>
-            <li>• New blood requests</li>
-            <li>• Blood request status updates</li>
-            <li>• User profile updates</li>
-            <li>• Donation history changes</li>
-            <li>• Admin role assignments</li>
-          </ul>
+        <div className="rounded-lg bg-muted p-4 text-sm space-y-3">
+          <div>
+            <p className="font-medium mb-2">Notification Events:</p>
+            <ul className="space-y-1 text-muted-foreground">
+              <li>• New user registrations</li>
+              <li>• New blood requests</li>
+              <li>• Blood request status updates</li>
+              <li>• User profile updates</li>
+              <li>• Donation history changes</li>
+              <li>• Admin role assignments</li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-medium mb-2 flex items-center gap-2">
+              <Bot className="h-4 w-4" />
+              Bot Commands:
+            </p>
+            <ul className="space-y-1 text-muted-foreground">
+              <li>• <code>/broadcast</code> - Send SMS to donor groups</li>
+              <li>• <code>/stats</code> - View donor statistics</li>
+              <li>• <code>/help</code> - Show available commands</li>
+            </ul>
+          </div>
         </div>
       </CardContent>
     </Card>
