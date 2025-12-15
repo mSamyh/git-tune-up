@@ -750,6 +750,33 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_broadcast_sessions: {
+        Row: {
+          chat_id: string
+          created_at: string
+          groups: string[]
+          id: string
+          step: string
+          updated_at: string
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          groups?: string[]
+          id?: string
+          step?: string
+          updated_at?: string
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          groups?: string[]
+          id?: string
+          step?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       telegram_config: {
         Row: {
           admin_chat_ids: string[]
