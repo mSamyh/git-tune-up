@@ -258,13 +258,37 @@ serve(async (req) => {
         const result = await sendSMSBroadcast(supabase, groups, broadcastMessage);
 
         if (result.success) {
+          // Build recipients list (limit to 20 to avoid message too long)
+          const recipientsList = result.sentNumbers || [];
+          const displayList = recipientsList.slice(0, 20);
+          const moreCount = recipientsList.length - 20;
+          
+          let recipientsText = displayList.join('\n');
+          if (moreCount > 0) {
+            recipientsText += `\n... and ${moreCount} more`;
+          }
+          
           await sendTelegramMessage(botToken, chatId,
             `✅ *Broadcast Sent Successfully!*\n\n` +
-            `📱 SMS sent to *${result.sentCount}* donors\n` +
+            `📱 SMS sent to *${result.sentCount}* donors:\n\n` +
+            `${recipientsText}\n\n` +
             `⏰ ${new Date().toLocaleString('en-US', { timeZone: 'Indian/Maldives', dateStyle: 'medium', timeStyle: 'medium' })} (MVT)`
           );
         } else {
-          await sendTelegramMessage(botToken, chatId, `❌ *Broadcast Failed*\n\n${result.error}`);
+          // Build failed list if available
+          let failedText = '';
+          if (result.failedNumbers && result.failedNumbers.length > 0) {
+            const displayFailed = result.failedNumbers.slice(0, 20);
+            const moreCount = result.failedNumbers.length - 20;
+            failedText = '\n\n*Failed recipients:*\n' + displayFailed.join('\n');
+            if (moreCount > 0) {
+              failedText += `\n... and ${moreCount} more`;
+            }
+          }
+          
+          await sendTelegramMessage(botToken, chatId, 
+            `❌ *Broadcast Failed*\n\n${result.error}${failedText}`
+          );
         }
 
         return new Response(JSON.stringify({ ok: true }), {
@@ -398,7 +422,7 @@ async function updateGroupSelectionMessage(botToken: string, chatId: string, mes
   console.log('Update group selection result:', result);
 }
 
-async function sendSMSBroadcast(supabase: any, groups: string[], message: string): Promise<{ success: boolean; sentCount?: number; error?: string }> {
+async function sendSMSBroadcast(supabase: any, groups: string[], message: string): Promise<{ success: boolean; sentCount?: number; failedCount?: number; sentNumbers?: string[]; failedNumbers?: string[]; error?: string }> {
   try {
     console.log('Starting SMS broadcast to groups:', groups, 'message:', message);
     
@@ -435,17 +459,25 @@ async function sendSMSBroadcast(supabase: any, groups: string[], message: string
     }
 
     // Format phone numbers - add +960 prefix if not present
-    const phoneNumbers = donors.map((d: any) => {
-      const phone = d.phone.toString().replace(/\D/g, ''); // Remove non-digits
+    const donorPhoneMap = donors.map((d: any) => {
+      const originalPhone = d.phone.toString();
+      const phone = originalPhone.replace(/\D/g, ''); // Remove non-digits
+      let formattedPhone: string;
       if (phone.startsWith('960')) {
-        return '+' + phone;
+        formattedPhone = '+' + phone;
       } else if (phone.startsWith('+960')) {
-        return phone;
+        formattedPhone = phone;
       } else {
-        return '+960' + phone;
+        formattedPhone = '+960' + phone;
       }
+      return { 
+        original: originalPhone, 
+        formatted: formattedPhone, 
+        name: d.full_name 
+      };
     });
 
+    const phoneNumbers = donorPhoneMap.map((d: any) => d.formatted);
     console.log('Phone numbers to send SMS:', phoneNumbers);
 
     // Log SMS attempts
@@ -495,7 +527,13 @@ async function sendSMSBroadcast(supabase: any, groups: string[], message: string
           .eq('status', 'pending');
       }
       
-      return { success: false, error: 'SMS service error: ' + responseText };
+      const failedNumbers = donorPhoneMap.map((d: any) => `${d.name}: ${d.original}`);
+      return { 
+        success: false, 
+        error: 'SMS service error: ' + responseText,
+        failedCount: phoneNumbers.length,
+        failedNumbers: failedNumbers
+      };
     }
 
     // Update SMS logs to sent status
@@ -512,7 +550,12 @@ async function sendSMSBroadcast(supabase: any, groups: string[], message: string
 
     console.log(`SMS broadcast sent to ${phoneNumbers.length} donors`);
 
-    return { success: true, sentCount: phoneNumbers.length };
+    const sentNumbers = donorPhoneMap.map((d: any) => `${d.name}: ${d.original}`);
+    return { 
+      success: true, 
+      sentCount: phoneNumbers.length,
+      sentNumbers: sentNumbers
+    };
   } catch (error) {
     console.error('Error sending SMS broadcast:', error);
     return { success: false, error: 'Failed to send broadcast: ' + String(error) };
