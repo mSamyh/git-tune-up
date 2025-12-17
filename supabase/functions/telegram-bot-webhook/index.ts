@@ -354,6 +354,7 @@ async function sendGroupSelectionMessage(botToken: string, chatId: string, supab
   }
 
   const available = profiles?.filter((p: any) => p.availability_status === 'available').length || 0;
+  const availableSoon = profiles?.filter((p: any) => p.availability_status === 'available_soon').length || 0;
   const unavailable = profiles?.filter((p: any) => p.availability_status === 'unavailable').length || 0;
   const reserved = profiles?.filter((p: any) => p.availability_status === 'reserved').length || 0;
   const total = profiles?.length || 0;
@@ -361,8 +362,9 @@ async function sendGroupSelectionMessage(botToken: string, chatId: string, supab
   const keyboard = {
     inline_keyboard: [
       [{ text: `📢 All Donors (${total})`, callback_data: 'group_all' }],
-      [{ text: `✅ Available (${available})`, callback_data: 'group_available' }],
-      [{ text: `⏳ Unavailable (${unavailable})`, callback_data: 'group_unavailable' }],
+      [{ text: `✅ Available - Can donate (${available})`, callback_data: 'group_available' }],
+      [{ text: `⏳ Available Soon - Waiting (${availableSoon})`, callback_data: 'group_available_soon' }],
+      [{ text: `❌ Unavailable Only (${unavailable})`, callback_data: 'group_unavailable' }],
       [{ text: `🔒 Reserved (${reserved})`, callback_data: 'group_reserved' }],
       [
         { text: '✅ Confirm', callback_data: 'confirm_groups' },
@@ -376,7 +378,12 @@ async function sendGroupSelectionMessage(botToken: string, chatId: string, supab
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
-      text: "📢 *SMS Broadcast*\n\nSelect donor groups to send SMS to:\n\n_Tap groups to select/deselect, then confirm_",
+      text: "📢 *SMS Broadcast*\n\nSelect donor groups to send SMS to:\n\n" +
+        "• *Available* - Can donate now (90+ days)\n" +
+        "• *Available Soon* - In waiting period\n" +
+        "• *Unavailable* - Marked as not available\n" +
+        "• *Reserved* - Reserved for requests\n\n" +
+        "_Tap groups to select/deselect, then confirm_",
       parse_mode: 'Markdown',
       reply_markup: keyboard
     })
@@ -389,11 +396,20 @@ async function sendGroupSelectionMessage(botToken: string, chatId: string, supab
 async function updateGroupSelectionMessage(botToken: string, chatId: string, messageId: number, selectedGroups: string[]) {
   const checkMark = (group: string) => selectedGroups.includes(group) || selectedGroups.includes('all') ? '☑️' : '⬜';
 
+  const groupLabels: Record<string, string> = {
+    'all': 'All Donors',
+    'available': 'Available',
+    'available_soon': 'Available Soon',
+    'unavailable': 'Unavailable',
+    'reserved': 'Reserved'
+  };
+
   const keyboard = {
     inline_keyboard: [
       [{ text: `${checkMark('all')} All Donors`, callback_data: 'group_all' }],
-      [{ text: `${checkMark('available')} Available`, callback_data: 'group_available' }],
-      [{ text: `${checkMark('unavailable')} Unavailable`, callback_data: 'group_unavailable' }],
+      [{ text: `${checkMark('available')} Available (Can donate now)`, callback_data: 'group_available' }],
+      [{ text: `${checkMark('available_soon')} Available Soon (Waiting period)`, callback_data: 'group_available_soon' }],
+      [{ text: `${checkMark('unavailable')} Unavailable (Not available)`, callback_data: 'group_unavailable' }],
       [{ text: `${checkMark('reserved')} Reserved`, callback_data: 'group_reserved' }],
       [
         { text: '✅ Confirm', callback_data: 'confirm_groups' },
@@ -403,7 +419,7 @@ async function updateGroupSelectionMessage(botToken: string, chatId: string, mes
   };
 
   const selectedText = selectedGroups.length > 0 
-    ? `\n\n✅ Selected: ${selectedGroups.includes('all') ? 'All Donors' : selectedGroups.join(', ')}`
+    ? `\n\n✅ Selected: ${selectedGroups.includes('all') ? 'All Donors' : selectedGroups.map(g => groupLabels[g] || g).join(', ')}`
     : '';
 
   const response = await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
@@ -412,7 +428,11 @@ async function updateGroupSelectionMessage(botToken: string, chatId: string, mes
     body: JSON.stringify({
       chat_id: chatId,
       message_id: messageId,
-      text: `📢 *SMS Broadcast*\n\nSelect donor groups to send SMS to:${selectedText}`,
+      text: `📢 *SMS Broadcast*\n\nSelect donor groups to send SMS to:\n\n` +
+        `• *Available* - Can donate now (90+ days since last donation)\n` +
+        `• *Available Soon* - In waiting period (<90 days)\n` +
+        `• *Unavailable* - Marked as not available\n` +
+        `• *Reserved* - Reserved for specific requests${selectedText}`,
       parse_mode: 'Markdown',
       reply_markup: keyboard
     })
