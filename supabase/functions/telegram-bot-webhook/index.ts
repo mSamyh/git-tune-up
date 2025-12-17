@@ -343,7 +343,7 @@ async function answerCallbackQuery(botToken: string, callbackQueryId: string, te
 }
 
 async function sendGroupSelectionMessage(botToken: string, chatId: string, supabase: any) {
-  // Get counts
+  // Get registered donor counts
   const { data: profiles, error } = await supabase
     .from('profiles')
     .select('availability_status, available_date')
@@ -353,26 +353,36 @@ async function sendGroupSelectionMessage(botToken: string, chatId: string, supab
     console.error('Error fetching profiles for stats:', error);
   }
 
+  // Get unregistered donor count from donor_directory
+  const { data: unregisteredDonors, error: dirError } = await supabase
+    .from('donor_directory')
+    .select('id')
+    .eq('is_registered', false);
+
+  if (dirError) {
+    console.error('Error fetching donor directory for stats:', dirError);
+  }
+
   const now = new Date().toISOString().split('T')[0]; // Today's date
   const available = profiles?.filter((p: any) => p.availability_status === 'available').length || 0;
-  // Waiting period: unavailable but available_date is in the future
   const waitingPeriod = profiles?.filter((p: any) => 
     p.availability_status === 'unavailable' && p.available_date && p.available_date > now
   ).length || 0;
-  // Truly unavailable: unavailable and no future available_date
   const unavailable = profiles?.filter((p: any) => 
     p.availability_status === 'unavailable' && (!p.available_date || p.available_date <= now)
   ).length || 0;
   const reserved = profiles?.filter((p: any) => p.availability_status === 'reserved').length || 0;
   const total = profiles?.length || 0;
+  const unregistered = unregisteredDonors?.length || 0;
 
   const keyboard = {
     inline_keyboard: [
-      [{ text: `📢 All Donors (${total})`, callback_data: 'group_all' }],
+      [{ text: `📢 All Registered (${total})`, callback_data: 'group_all' }],
       [{ text: `✅ Available - Can donate (${available})`, callback_data: 'group_available' }],
       [{ text: `⏳ Waiting Period (${waitingPeriod})`, callback_data: 'group_waiting' }],
       [{ text: `❌ Unavailable Only (${unavailable})`, callback_data: 'group_unavailable' }],
       [{ text: `🔒 Reserved (${reserved})`, callback_data: 'group_reserved' }],
+      [{ text: `📋 Unregistered Donors (${unregistered})`, callback_data: 'group_unregistered' }],
       [
         { text: '✅ Confirm', callback_data: 'confirm_groups' },
         { text: '❌ Cancel', callback_data: 'cancel_broadcast' }
@@ -386,10 +396,13 @@ async function sendGroupSelectionMessage(botToken: string, chatId: string, supab
     body: JSON.stringify({
       chat_id: chatId,
       text: "📢 *SMS Broadcast*\n\nSelect donor groups to send SMS to:\n\n" +
+        "*Registered Donors:*\n" +
         "• *Available* - Can donate now (90+ days)\n" +
         "• *Waiting Period* - Within 90-day wait\n" +
         "• *Unavailable* - Not available\n" +
         "• *Reserved* - Reserved for requests\n\n" +
+        "*Directory:*\n" +
+        "• *Unregistered* - Not yet registered\n\n" +
         "_Tap groups to select/deselect, then confirm_",
       parse_mode: 'Markdown',
       reply_markup: keyboard
@@ -404,20 +417,22 @@ async function updateGroupSelectionMessage(botToken: string, chatId: string, mes
   const checkMark = (group: string) => selectedGroups.includes(group) || selectedGroups.includes('all') ? '☑️' : '⬜';
 
   const groupLabels: Record<string, string> = {
-    'all': 'All Donors',
+    'all': 'All Registered',
     'available': 'Available',
     'waiting': 'Waiting Period',
     'unavailable': 'Unavailable',
-    'reserved': 'Reserved'
+    'reserved': 'Reserved',
+    'unregistered': 'Unregistered'
   };
 
   const keyboard = {
     inline_keyboard: [
-      [{ text: `${checkMark('all')} All Donors`, callback_data: 'group_all' }],
+      [{ text: `${checkMark('all')} All Registered`, callback_data: 'group_all' }],
       [{ text: `${checkMark('available')} Available - Can donate`, callback_data: 'group_available' }],
       [{ text: `${checkMark('waiting')} Waiting Period`, callback_data: 'group_waiting' }],
       [{ text: `${checkMark('unavailable')} Unavailable Only`, callback_data: 'group_unavailable' }],
       [{ text: `${checkMark('reserved')} Reserved`, callback_data: 'group_reserved' }],
+      [{ text: `${checkMark('unregistered')} Unregistered Donors`, callback_data: 'group_unregistered' }],
       [
         { text: '✅ Confirm', callback_data: 'confirm_groups' },
         { text: '❌ Cancel', callback_data: 'cancel_broadcast' }
@@ -426,7 +441,7 @@ async function updateGroupSelectionMessage(botToken: string, chatId: string, mes
   };
 
   const selectedText = selectedGroups.length > 0 
-    ? `\n\n✅ Selected: ${selectedGroups.includes('all') ? 'All Donors' : selectedGroups.map(g => groupLabels[g] || g).join(', ')}`
+    ? `\n\n✅ Selected: ${selectedGroups.includes('all') ? 'All Registered' : selectedGroups.map(g => groupLabels[g] || g).join(', ')}`
     : '';
 
   const response = await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
@@ -436,10 +451,13 @@ async function updateGroupSelectionMessage(botToken: string, chatId: string, mes
       chat_id: chatId,
       message_id: messageId,
       text: `📢 *SMS Broadcast*\n\nSelect donor groups to send SMS to:\n\n` +
+        `*Registered Donors:*\n` +
         `• *Available* - Can donate now (90+ days)\n` +
         `• *Waiting Period* - Within 90-day wait\n` +
         `• *Unavailable* - Not available\n` +
-        `• *Reserved* - Reserved for requests${selectedText}`,
+        `• *Reserved* - Reserved for requests\n\n` +
+        `*Directory:*\n` +
+        `• *Unregistered* - Not yet registered${selectedText}`,
       parse_mode: 'Markdown',
       reply_markup: keyboard
     })
@@ -453,29 +471,52 @@ async function sendSMSBroadcast(supabase: any, groups: string[], message: string
   try {
     console.log('Starting SMS broadcast to groups:', groups, 'message:', message);
     
-    // Fetch all donors with necessary fields
-    const { data: allDonors, error: fetchError } = await supabase
-      .from('profiles')
-      .select('phone, full_name, availability_status, available_date')
-      .in('user_type', ['donor', 'both']);
-
-    if (fetchError) {
-      console.error('Database error fetching donors:', fetchError);
-      return { success: false, error: 'Failed to fetch donors: ' + fetchError.message };
-    }
-
+    let donors: any[] = [];
     const now = new Date().toISOString().split('T')[0]; // Today's date
     
-    // Filter donors based on selected groups
-    let donors = allDonors || [];
-    if (!groups.includes('all')) {
-      donors = donors.filter((d: any) => {
-        if (groups.includes('available') && d.availability_status === 'available') return true;
-        if (groups.includes('waiting') && d.availability_status === 'unavailable' && d.available_date && d.available_date > now) return true;
-        if (groups.includes('unavailable') && d.availability_status === 'unavailable' && (!d.available_date || d.available_date <= now)) return true;
-        if (groups.includes('reserved') && d.availability_status === 'reserved') return true;
-        return false;
-      });
+    // Check if we need registered donors (any group except only 'unregistered')
+    const needsRegistered = groups.includes('all') || groups.includes('available') || 
+                           groups.includes('waiting') || groups.includes('unavailable') || 
+                           groups.includes('reserved');
+    
+    if (needsRegistered) {
+      // Fetch registered donors from profiles
+      const { data: allDonors, error: fetchError } = await supabase
+        .from('profiles')
+        .select('phone, full_name, availability_status, available_date')
+        .in('user_type', ['donor', 'both']);
+
+      if (fetchError) {
+        console.error('Database error fetching donors:', fetchError);
+        return { success: false, error: 'Failed to fetch donors: ' + fetchError.message };
+      }
+
+      // Filter registered donors based on selected groups
+      let filteredDonors = allDonors || [];
+      if (!groups.includes('all')) {
+        filteredDonors = filteredDonors.filter((d: any) => {
+          if (groups.includes('available') && d.availability_status === 'available') return true;
+          if (groups.includes('waiting') && d.availability_status === 'unavailable' && d.available_date && d.available_date > now) return true;
+          if (groups.includes('unavailable') && d.availability_status === 'unavailable' && (!d.available_date || d.available_date <= now)) return true;
+          if (groups.includes('reserved') && d.availability_status === 'reserved') return true;
+          return false;
+        });
+      }
+      donors = [...donors, ...filteredDonors];
+    }
+    
+    // Check if we need unregistered donors from directory
+    if (groups.includes('unregistered')) {
+      const { data: unregisteredDonors, error: dirError } = await supabase
+        .from('donor_directory')
+        .select('phone, full_name')
+        .eq('is_registered', false);
+
+      if (dirError) {
+        console.error('Database error fetching unregistered donors:', dirError);
+      } else if (unregisteredDonors) {
+        donors = [...donors, ...unregisteredDonors];
+      }
     }
 
     console.log('Found donors:', donors?.length || 0);
