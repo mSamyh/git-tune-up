@@ -346,16 +346,23 @@ async function sendGroupSelectionMessage(botToken: string, chatId: string, supab
   // Get counts
   const { data: profiles, error } = await supabase
     .from('profiles')
-    .select('availability_status')
+    .select('availability_status, available_date')
     .in('user_type', ['donor', 'both']);
 
   if (error) {
     console.error('Error fetching profiles for stats:', error);
   }
 
+  const now = new Date().toISOString().split('T')[0]; // Today's date
   const available = profiles?.filter((p: any) => p.availability_status === 'available').length || 0;
-  const availableSoon = profiles?.filter((p: any) => p.availability_status === 'available_soon').length || 0;
-  const unavailable = profiles?.filter((p: any) => p.availability_status === 'unavailable').length || 0;
+  // Waiting period: unavailable but available_date is in the future
+  const waitingPeriod = profiles?.filter((p: any) => 
+    p.availability_status === 'unavailable' && p.available_date && p.available_date > now
+  ).length || 0;
+  // Truly unavailable: unavailable and no future available_date
+  const unavailable = profiles?.filter((p: any) => 
+    p.availability_status === 'unavailable' && (!p.available_date || p.available_date <= now)
+  ).length || 0;
   const reserved = profiles?.filter((p: any) => p.availability_status === 'reserved').length || 0;
   const total = profiles?.length || 0;
 
@@ -363,7 +370,7 @@ async function sendGroupSelectionMessage(botToken: string, chatId: string, supab
     inline_keyboard: [
       [{ text: `📢 All Donors (${total})`, callback_data: 'group_all' }],
       [{ text: `✅ Available - Can donate (${available})`, callback_data: 'group_available' }],
-      [{ text: `⏳ Available Soon - Waiting (${availableSoon})`, callback_data: 'group_available_soon' }],
+      [{ text: `⏳ Waiting Period (${waitingPeriod})`, callback_data: 'group_waiting' }],
       [{ text: `❌ Unavailable Only (${unavailable})`, callback_data: 'group_unavailable' }],
       [{ text: `🔒 Reserved (${reserved})`, callback_data: 'group_reserved' }],
       [
@@ -380,8 +387,8 @@ async function sendGroupSelectionMessage(botToken: string, chatId: string, supab
       chat_id: chatId,
       text: "📢 *SMS Broadcast*\n\nSelect donor groups to send SMS to:\n\n" +
         "• *Available* - Can donate now (90+ days)\n" +
-        "• *Available Soon* - In waiting period\n" +
-        "• *Unavailable* - Marked as not available\n" +
+        "• *Waiting Period* - Within 90-day wait\n" +
+        "• *Unavailable* - Not available\n" +
         "• *Reserved* - Reserved for requests\n\n" +
         "_Tap groups to select/deselect, then confirm_",
       parse_mode: 'Markdown',
@@ -399,7 +406,7 @@ async function updateGroupSelectionMessage(botToken: string, chatId: string, mes
   const groupLabels: Record<string, string> = {
     'all': 'All Donors',
     'available': 'Available',
-    'available_soon': 'Available Soon',
+    'waiting': 'Waiting Period',
     'unavailable': 'Unavailable',
     'reserved': 'Reserved'
   };
@@ -407,9 +414,9 @@ async function updateGroupSelectionMessage(botToken: string, chatId: string, mes
   const keyboard = {
     inline_keyboard: [
       [{ text: `${checkMark('all')} All Donors`, callback_data: 'group_all' }],
-      [{ text: `${checkMark('available')} Available (Can donate now)`, callback_data: 'group_available' }],
-      [{ text: `${checkMark('available_soon')} Available Soon (Waiting period)`, callback_data: 'group_available_soon' }],
-      [{ text: `${checkMark('unavailable')} Unavailable (Not available)`, callback_data: 'group_unavailable' }],
+      [{ text: `${checkMark('available')} Available - Can donate`, callback_data: 'group_available' }],
+      [{ text: `${checkMark('waiting')} Waiting Period`, callback_data: 'group_waiting' }],
+      [{ text: `${checkMark('unavailable')} Unavailable Only`, callback_data: 'group_unavailable' }],
       [{ text: `${checkMark('reserved')} Reserved`, callback_data: 'group_reserved' }],
       [
         { text: '✅ Confirm', callback_data: 'confirm_groups' },
@@ -429,10 +436,10 @@ async function updateGroupSelectionMessage(botToken: string, chatId: string, mes
       chat_id: chatId,
       message_id: messageId,
       text: `📢 *SMS Broadcast*\n\nSelect donor groups to send SMS to:\n\n` +
-        `• *Available* - Can donate now (90+ days since last donation)\n` +
-        `• *Available Soon* - In waiting period (<90 days)\n` +
-        `• *Unavailable* - Marked as not available\n` +
-        `• *Reserved* - Reserved for specific requests${selectedText}`,
+        `• *Available* - Can donate now (90+ days)\n` +
+        `• *Waiting Period* - Within 90-day wait\n` +
+        `• *Unavailable* - Not available\n` +
+        `• *Reserved* - Reserved for requests${selectedText}`,
       parse_mode: 'Markdown',
       reply_markup: keyboard
     })
@@ -446,21 +453,29 @@ async function sendSMSBroadcast(supabase: any, groups: string[], message: string
   try {
     console.log('Starting SMS broadcast to groups:', groups, 'message:', message);
     
-    // Build query based on selected groups
-    let query = supabase
+    // Fetch all donors with necessary fields
+    const { data: allDonors, error: fetchError } = await supabase
       .from('profiles')
-      .select('phone, full_name, availability_status')
+      .select('phone, full_name, availability_status, available_date')
       .in('user_type', ['donor', 'both']);
-
-    if (!groups.includes('all')) {
-      query = query.in('availability_status', groups);
-    }
-
-    const { data: donors, error: fetchError } = await query;
 
     if (fetchError) {
       console.error('Database error fetching donors:', fetchError);
       return { success: false, error: 'Failed to fetch donors: ' + fetchError.message };
+    }
+
+    const now = new Date().toISOString().split('T')[0]; // Today's date
+    
+    // Filter donors based on selected groups
+    let donors = allDonors || [];
+    if (!groups.includes('all')) {
+      donors = donors.filter((d: any) => {
+        if (groups.includes('available') && d.availability_status === 'available') return true;
+        if (groups.includes('waiting') && d.availability_status === 'unavailable' && d.available_date && d.available_date > now) return true;
+        if (groups.includes('unavailable') && d.availability_status === 'unavailable' && (!d.available_date || d.available_date <= now)) return true;
+        if (groups.includes('reserved') && d.availability_status === 'reserved') return true;
+        return false;
+      });
     }
 
     console.log('Found donors:', donors?.length || 0);
