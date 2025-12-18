@@ -16,6 +16,7 @@ import { LocationSelector } from "@/components/LocationSelector";
 import { AppHeader } from "@/components/AppHeader";
 import { TopDonorBadge } from "@/components/TopDonorBadge";
 import { RewardsSection } from "@/components/RewardsSection";
+import { AvailabilityToggle } from "@/components/AvailabilityToggle";
 import { DonorQRCard } from "@/components/DonorQRCard";
 
 
@@ -520,26 +521,14 @@ const Profile = () => {
                 <Droplet className="h-4 w-4 text-primary" />
                 Availability Status
               </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                {!canSetAvailable() 
-                  ? `You must wait ${getDaysUntilAvailable()} more days from your last donation to set available`
-                  : "Update your availability status"
-                }
-              </p>
             </CardHeader>
             <CardContent>
-              <Select value={availabilityStatus} onValueChange={updateAvailability}>
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="available" disabled={!canSetAvailable()}>
-                    Available
-                  </SelectItem>
-                  <SelectItem value="unavailable">Unavailable</SelectItem>
-                  <SelectItem value="reserved">Reserved</SelectItem>
-                </SelectContent>
-              </Select>
+              <AvailabilityToggle
+                value={availabilityStatus}
+                onChange={updateAvailability}
+                canSetAvailable={canSetAvailable()}
+                daysUntilAvailable={getDaysUntilAvailable()}
+              />
             </CardContent>
           </Card>
         )}
