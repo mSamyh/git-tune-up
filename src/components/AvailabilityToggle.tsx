@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, Clock, Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,12 +16,28 @@ export const AvailabilityToggle = ({
   canSetAvailable,
   daysUntilAvailable = 0,
 }: AvailabilityToggleProps) => {
+  const [animatingStatus, setAnimatingStatus] = useState<string | null>(null);
+
+  const handleClick = (status: string) => {
+    if (status === value) return;
+    setAnimatingStatus(status);
+    onChange(status);
+  };
+
+  useEffect(() => {
+    if (animatingStatus) {
+      const timer = setTimeout(() => setAnimatingStatus(null), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [animatingStatus]);
+
   const statuses = [
     {
       value: "available",
       label: "Available",
       icon: Check,
       activeClass: "bg-green-500 hover:bg-green-600 text-white border-green-500",
+      pulseClass: "ring-4 ring-green-400/50",
       disabled: !canSetAvailable,
     },
     {
@@ -28,6 +45,7 @@ export const AvailabilityToggle = ({
       label: "Unavailable",
       icon: Ban,
       activeClass: "bg-red-500 hover:bg-red-600 text-white border-red-500",
+      pulseClass: "ring-4 ring-red-400/50",
       disabled: false,
     },
     {
@@ -35,6 +53,7 @@ export const AvailabilityToggle = ({
       label: "Reserved",
       icon: Clock,
       activeClass: "bg-orange-500 hover:bg-orange-600 text-white border-orange-500",
+      pulseClass: "ring-4 ring-orange-400/50",
       disabled: false,
     },
   ];
@@ -45,6 +64,7 @@ export const AvailabilityToggle = ({
         {statuses.map((status) => {
           const Icon = status.icon;
           const isActive = value === status.value;
+          const isAnimating = animatingStatus === status.value;
           
           return (
             <Button
@@ -52,14 +72,19 @@ export const AvailabilityToggle = ({
               variant="outline"
               size="sm"
               disabled={status.disabled}
-              onClick={() => onChange(status.value)}
+              onClick={() => handleClick(status.value)}
               className={cn(
-                "flex-1 gap-1.5 transition-all",
+                "flex-1 gap-1.5 transition-all duration-200",
                 isActive && status.activeClass,
+                isAnimating && status.pulseClass,
+                isAnimating && "animate-scale-in",
                 status.disabled && "opacity-50 cursor-not-allowed"
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className={cn(
+                "h-4 w-4 transition-transform",
+                isAnimating && "animate-[spin_0.3s_ease-out]"
+              )} />
               <span className="hidden sm:inline">{status.label}</span>
             </Button>
           );
