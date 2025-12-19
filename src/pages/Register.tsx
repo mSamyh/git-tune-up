@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Droplet, ArrowLeft, CheckCircle2, Phone, Mail, Lock } from "lucide-react";
 import { LocationSelector } from "@/components/LocationSelector";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { OTPResendTimer } from "@/components/OTPResendTimer";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -48,6 +49,16 @@ const Register = () => {
                      selectedIsland;
 
   const handleSendOTP = async () => {
+    // Prevent resend if timer is active
+    if (resendTimer > 0) {
+      toast({
+        variant: "destructive",
+        title: "Please wait",
+        description: `You can resend OTP in ${resendTimer} seconds`,
+      });
+      return;
+    }
+
     if (!canSendOtp) {
       toast({
         variant: "destructive",
@@ -433,23 +444,26 @@ const Register = () => {
                 {loading ? "Verifying..." : "Verify OTP"}
               </Button>
 
-              <p className="text-center text-sm text-muted-foreground">
-                Didn't receive the code?{" "}
+              <div className="text-center">
                 {resendTimer > 0 ? (
-                  <span className="text-muted-foreground font-medium">
-                    Resend in {resendTimer}s
-                  </span>
+                  <div className="flex flex-col items-center gap-2">
+                    <p className="text-sm text-muted-foreground">Didn't receive the code?</p>
+                    <OTPResendTimer seconds={resendTimer} totalSeconds={60} />
+                  </div>
                 ) : (
-                  <button 
-                    type="button" 
-                    onClick={handleSendOTP} 
-                    disabled={loading}
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Resend
-                  </button>
+                  <p className="text-sm text-muted-foreground">
+                    Didn't receive the code?{" "}
+                    <button 
+                      type="button" 
+                      onClick={handleSendOTP} 
+                      disabled={loading}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Resend
+                    </button>
+                  </p>
                 )}
-              </p>
+              </div>
             </form>
           </div>
         )}
