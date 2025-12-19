@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
@@ -28,6 +29,16 @@ const Register = () => {
   const [selectedIsland, setSelectedIsland] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [resendTimer]);
 
   // Check if all required fields are filled for sending OTP
   const canSendOtp = formData.fullName.trim() && 
@@ -84,6 +95,7 @@ const Register = () => {
       }
 
       setOtpSent(true);
+      setResendTimer(60); // Start 60 second countdown
       toast({
         title: "OTP sent",
         description: "Please check your phone for the verification code",
@@ -423,14 +435,20 @@ const Register = () => {
 
               <p className="text-center text-sm text-muted-foreground">
                 Didn't receive the code?{" "}
-                <button 
-                  type="button" 
-                  onClick={handleSendOTP} 
-                  disabled={loading}
-                  className="text-primary hover:underline font-medium"
-                >
-                  Resend
-                </button>
+                {resendTimer > 0 ? (
+                  <span className="text-muted-foreground font-medium">
+                    Resend in {resendTimer}s
+                  </span>
+                ) : (
+                  <button 
+                    type="button" 
+                    onClick={handleSendOTP} 
+                    disabled={loading}
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Resend
+                  </button>
+                )}
               </p>
             </form>
           </div>
