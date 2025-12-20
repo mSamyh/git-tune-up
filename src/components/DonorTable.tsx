@@ -237,7 +237,7 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
               return (
                 <TableRow 
                   key={donor.id} 
-                  className={`cursor-pointer transition-colors ${isEvenRow ? 'bg-muted/30' : 'bg-background'} hover:bg-primary/10`}
+                  className={`cursor-pointer transition-colors ${isEvenRow ? 'bg-primary/5 dark:bg-primary/10' : 'bg-background'} hover:bg-primary/15`}
                 >
                   <TableCell 
                     className="flex items-center gap-3"
