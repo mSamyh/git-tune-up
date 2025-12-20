@@ -171,6 +171,11 @@ const Register = () => {
         },
       });
 
+      // Check if there was a function error or if response indicates failure
+      if (verifyError) {
+        throw new Error(verifyData?.error || "Failed to verify OTP");
+      }
+
       // Handle lockout response
       if (verifyData?.locked) {
         const minutes = verifyData.remainingMinutes || 15;
@@ -190,10 +195,9 @@ const Register = () => {
         setRemainingAttempts(verifyData.remainingAttempts);
       }
 
-      if (verifyError || !verifyData?.success) {
-        const message =
-          (verifyData as any)?.error ||
-          (verifyError instanceof Error ? verifyError.message : "Failed to verify OTP");
+      // Check if verification failed
+      if (!verifyData?.success) {
+        const message = verifyData?.error || "Invalid OTP code";
         throw new Error(message);
       }
 
