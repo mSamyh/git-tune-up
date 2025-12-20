@@ -18,6 +18,8 @@ const Register = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const [lockoutTimer, setLockoutTimer] = useState(0);
+  const [remainingAttempts, setRemainingAttempts] = useState(3);
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
@@ -40,6 +42,19 @@ const Register = () => {
       return () => clearInterval(interval);
     }
   }, [resendTimer]);
+
+  // Countdown timer for lockout
+  useEffect(() => {
+    if (lockoutTimer > 0) {
+      const interval = setInterval(() => {
+        setLockoutTimer((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    } else if (lockoutTimer === 0 && remainingAttempts === 0) {
+      // Reset attempts when lockout expires
+      setRemainingAttempts(3);
+    }
+  }, [lockoutTimer, remainingAttempts]);
 
   // Check if all required fields are filled for sending OTP
   const canSendOtp = formData.fullName.trim() && 
@@ -127,6 +142,17 @@ const Register = () => {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if locked out
+    if (lockoutTimer > 0) {
+      toast({
+        variant: "destructive",
+        title: "Too many attempts",
+        description: `Please wait ${Math.ceil(lockoutTimer / 60)} minute${Math.ceil(lockoutTimer / 60) > 1 ? 's' : ''} before trying again`,
+      });
+      return;
+    }
+
     if (formData.otp.length !== 6) {
       toast({
         variant: "destructive",
@@ -145,6 +171,25 @@ const Register = () => {
         },
       });
 
+      // Handle lockout response
+      if (verifyData?.locked) {
+        const minutes = verifyData.remainingMinutes || 15;
+        setLockoutTimer(minutes * 60);
+        setRemainingAttempts(0);
+        toast({
+          variant: "destructive",
+          title: "Account temporarily locked",
+          description: `Too many failed attempts. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`,
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Handle remaining attempts
+      if (verifyData?.remainingAttempts !== undefined) {
+        setRemainingAttempts(verifyData.remainingAttempts);
+      }
+
       if (verifyError || !verifyData?.success) {
         const message =
           (verifyData as any)?.error ||
@@ -153,6 +198,7 @@ const Register = () => {
       }
 
       setOtpVerified(true);
+      setRemainingAttempts(3); // Reset on success
       toast({
         title: "OTP verified!",
         description: "Please create your login credentials",
@@ -418,12 +464,37 @@ const Register = () => {
               </div>
             </div>
 
+            {/* Lockout Warning */}
+            {lockoutTimer > 0 && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-center">
+                <p className="text-sm font-medium text-destructive">
+                  Too many failed attempts
+                </p>
+                <p className="text-2xl font-bold text-destructive mt-1">
+                  {Math.floor(lockoutTimer / 60)}:{(lockoutTimer % 60).toString().padStart(2, '0')}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Please wait before trying again
+                </p>
+              </div>
+            )}
+
+            {/* Attempts remaining warning */}
+            {lockoutTimer === 0 && remainingAttempts < 3 && remainingAttempts > 0 && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  ⚠️ {remainingAttempts} attempt{remainingAttempts > 1 ? 's' : ''} remaining
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleVerifyOtp} className="space-y-6">
               <div className="flex justify-center">
                 <InputOTP 
                   value={formData.otp} 
                   onChange={(value) => setFormData({ ...formData, otp: value })}
                   maxLength={6}
+                  disabled={lockoutTimer > 0}
                 >
                   <InputOTPGroup>
                     <InputOTPSlot index={0} />
@@ -439,9 +510,9 @@ const Register = () => {
               <Button 
                 type="submit" 
                 className="w-full rounded-xl h-12" 
-                disabled={loading || formData.otp.length !== 6}
+                disabled={loading || formData.otp.length !== 6 || lockoutTimer > 0}
               >
-                {loading ? "Verifying..." : "Verify OTP"}
+                {loading ? "Verifying..." : lockoutTimer > 0 ? "Locked" : "Verify OTP"}
               </Button>
 
               <div className="text-center">
