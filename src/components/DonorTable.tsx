@@ -232,9 +232,13 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
           <TableBody>
             {paginatedDonors.map((donor, index) => {
               const topDonorRank = getTopDonorRank(donor.id, topDonors);
+              const isEvenRow = index % 2 === 0;
               
               return (
-                <TableRow key={donor.id} className="cursor-pointer hover:bg-muted/50">
+                <TableRow 
+                  key={donor.id} 
+                  className={`cursor-pointer transition-colors ${isEvenRow ? 'bg-muted/30' : 'bg-background'} hover:bg-primary/10`}
+                >
                   <TableCell 
                     className="flex items-center gap-3"
                     onClick={() => setSelectedDonor(donor)}
