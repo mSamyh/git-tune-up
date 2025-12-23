@@ -105,17 +105,17 @@ const Auth = () => {
   if (showForgotPassword) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary">
+        <Card className="w-full max-w-md rounded-2xl border-border/50 shadow-xl animate-fade-in">
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/25">
               <Droplet className="h-8 w-8 text-primary-foreground" />
             </div>
-            <CardTitle className="text-2xl">Reset Password</CardTitle>
+            <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
             <CardDescription>
               Enter your email to receive a password reset link
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="reset-email">Email</Label>
@@ -126,16 +126,17 @@ const Auth = () => {
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
                   required
+                  className="rounded-xl h-11 transition-all focus:ring-2 focus:ring-primary/20"
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={resetLoading}>
+              <Button type="submit" className="w-full rounded-xl h-11 btn-press" disabled={resetLoading}>
                 {resetLoading ? "Sending..." : "Send Reset Link"}
               </Button>
               <div className="text-center mt-4">
                 <button
                   type="button"
                   onClick={() => setShowForgotPassword(false)}
-                  className="text-sm text-primary hover:underline font-medium"
+                  className="text-sm text-primary hover:underline font-medium transition-colors"
                 >
                   Back to Login
                 </button>
@@ -149,17 +150,17 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary">
+      <Card className="w-full max-w-md rounded-2xl border-border/50 shadow-xl animate-fade-in">
+        <CardHeader className="text-center pb-2">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/25">
             <Droplet className="h-8 w-8 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">LeyHadhiya</CardTitle>
+          <CardTitle className="text-2xl font-bold">LeyHadhiya</CardTitle>
           <CardDescription>
             Login with your email and password
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -170,6 +171,7 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="rounded-xl h-11 transition-all focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <div className="space-y-2">
@@ -178,7 +180,7 @@ const Auth = () => {
                 <button
                   type="button"
                   onClick={() => setShowForgotPassword(true)}
-                  className="text-xs text-muted-foreground hover:text-primary hover:underline"
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
                   Forgot Password?
                 </button>
@@ -190,9 +192,10 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="rounded-xl h-11 transition-all focus:ring-2 focus:ring-primary/20"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full rounded-xl h-11 btn-press" disabled={loading}>
               {loading ? "Logging in..." : "Login"}
             </Button>
             <div className="text-center mt-4">
@@ -201,7 +204,7 @@ const Auth = () => {
                 <button
                   type="button"
                   onClick={() => navigate("/register")}
-                  className="text-primary hover:underline font-medium"
+                  className="text-primary hover:underline font-medium transition-colors"
                 >
                   Register here
                 </button>
