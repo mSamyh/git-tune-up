@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Droplet, MapPin, Phone, Edit, Save, Settings, Gift, QrCode } from "lucide-react";
+import { Droplet, MapPin, Phone, Edit, Save, Settings, Gift, QrCode, LogOut } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { LocationSelector } from "@/components/LocationSelector";
@@ -583,17 +583,37 @@ const CheckAdminButton = () => {
     setIsAdmin(!!data);
   };
 
-  if (!isAdmin) return null;
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
 
   return (
-    <Card className="mt-4">
-      <CardContent className="pt-6">
-        <Button onClick={() => navigate("/admin")} className="w-full">
-          <Settings className="h-4 w-4 mr-2" />
-          Admin Panel
-        </Button>
-      </CardContent>
-    </Card>
+    <div className="space-y-3 mt-4">
+      {isAdmin && (
+        <Card className="rounded-2xl border-border/50 shadow-sm">
+          <CardContent className="p-4">
+            <Button onClick={() => navigate("/admin")} variant="outline" className="w-full rounded-xl">
+              <Settings className="h-4 w-4 mr-2" />
+              Admin Panel
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+      
+      <Card className="rounded-2xl border-destructive/30 shadow-sm bg-destructive/5">
+        <CardContent className="p-4">
+          <Button 
+            onClick={handleLogout} 
+            variant="destructive" 
+            className="w-full rounded-xl"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign Out
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
