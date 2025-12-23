@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Medal, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Phone, MessageSquare } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { DonorProfileDialog } from "./DonorProfileDialog";
 import { TopDonorBadge, getTopDonorRank } from "./TopDonorBadge";
 
@@ -227,6 +228,7 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
               <TableHead>Donor</TableHead>
               <TableHead>Blood Group</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="text-right">Quick Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -268,6 +270,36 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
                     ) : (
                       <span className="text-muted-foreground text-sm">-</span>
                     )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = `tel:${donor.phone}`;
+                          toast({ title: "Calling", description: `Calling ${donor.full_name}...` });
+                        }}
+                        title={`Call ${donor.phone}`}
+                      >
+                        <Phone className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = `sms:${donor.phone}`;
+                          toast({ title: "SMS", description: `Opening SMS for ${donor.full_name}...` });
+                        }}
+                        title={`SMS ${donor.phone}`}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               );
