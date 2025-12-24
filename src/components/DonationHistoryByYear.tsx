@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Calendar, Building2, ChevronDown } from "lucide-react";
+import { Calendar, Building2, ChevronDown, Droplets } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DonationRecord {
@@ -36,7 +36,6 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
 
     if (data) {
       setHistory(data);
-      // Auto-expand the most recent year
       if (data.length > 0) {
         const mostRecentYear = new Date(data[0].donation_date).getFullYear().toString();
         setOpenYears([mostRecentYear]);
@@ -53,17 +52,16 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
     const diffYears = Math.floor(diffDays / 365);
 
     if (diffYears > 0) {
-      return `${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
+      return `${diffYears}y ago`;
     } else if (diffMonths > 0) {
-      return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
+      return `${diffMonths}mo ago`;
     } else if (diffDays > 0) {
-      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+      return `${diffDays}d ago`;
     } else {
       return 'Today';
     }
   };
 
-  // Group donations by year and sort within each year by date (newest first)
   const donationsByYear = history.reduce((acc, donation) => {
     const year = new Date(donation.donation_date).getFullYear().toString();
     if (!acc[year]) {
@@ -73,14 +71,12 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
     return acc;
   }, {} as Record<string, DonationRecord[]>);
 
-  // Sort donations within each year by date (newest first within year)
   Object.keys(donationsByYear).forEach(year => {
     donationsByYear[year].sort((a, b) => 
       new Date(b.donation_date).getTime() - new Date(a.donation_date).getTime()
     );
   });
 
-  // Sort years in descending order
   const sortedYears = Object.keys(donationsByYear).sort((a, b) => Number(b) - Number(a));
 
   const toggleYear = (year: string) => {
@@ -94,13 +90,13 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
   if (history.length === 0) {
     if (variant === "standalone") {
       return (
-        <div className="text-center py-8">
-          <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
-            <Calendar className="h-8 w-8 text-muted-foreground/50" />
+        <div className="text-center py-10">
+          <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+            <Droplets className="h-7 w-7 text-muted-foreground/40" />
           </div>
           <p className="text-muted-foreground font-medium mb-1">No donations yet</p>
           <p className="text-sm text-muted-foreground/70">
-            Tap the + button to record your first donation
+            Tap + to record your first donation
           </p>
         </div>
       );
@@ -109,7 +105,7 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
   }
 
   const content = (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {sortedYears.map((year) => {
         const yearDonations = donationsByYear[year];
         const totalUnits = yearDonations.reduce((sum, d) => sum + (d.units_donated || 1), 0);
@@ -117,57 +113,51 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
 
         return (
           <Collapsible key={year} open={isOpen} onOpenChange={() => toggleYear(year)}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors border border-border/50">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/40 hover:bg-muted/60 rounded-xl transition-colors">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Calendar className="h-4 w-4 text-primary" />
                 </div>
-                <span className="font-semibold">{year}</span>
-                <Badge variant="secondary" className="rounded-full text-xs">
-                  {yearDonations.length}
+                <span className="font-semibold text-sm">{year}</span>
+                <Badge variant="secondary" className="rounded-full text-[10px] px-2 h-5">
+                  {yearDonations.length} donation{yearDonations.length !== 1 ? 's' : ''}
                 </Badge>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">{totalUnits} unit{totalUnits !== 1 ? 's' : ''}</span>
+                <span className="text-xs text-muted-foreground font-medium">{totalUnits}u</span>
                 <ChevronDown className={cn(
                   "h-4 w-4 text-muted-foreground transition-transform duration-200",
                   isOpen && "rotate-180"
                 )} />
               </div>
             </CollapsibleTrigger>
-            <CollapsibleContent className="pt-3 animate-accordion-down">
-              <div className="space-y-2 ml-4 pl-4 border-l-2 border-primary/20">
-                {yearDonations.map((donation) => (
+            <CollapsibleContent className="pt-2">
+              <div className="space-y-1.5 ml-3 pl-3 border-l-2 border-primary/20">
+                {yearDonations.map((donation, idx) => (
                   <div 
                     key={donation.id} 
-                    className="p-3 bg-background rounded-xl border border-border/50 hover:border-border transition-colors"
+                    className="flex items-center gap-3 p-2.5 bg-background hover:bg-muted/30 rounded-lg transition-colors"
                   >
-                    <div className="flex justify-between items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <Building2 className="h-3 w-3 text-primary" />
-                          </div>
-                          <p className="font-medium text-sm truncate">{donation.hospital_name}</p>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground ml-8">
-                          <span>
-                            {new Date(donation.donation_date).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric'
-                            })}
-                          </span>
-                          <span className="text-muted-foreground/50">•</span>
-                          <span className="italic">{getTimeAgo(donation.donation_date)}</span>
-                        </div>
-                        {donation.notes && (
-                          <p className="text-xs text-muted-foreground mt-1 ml-8">{donation.notes}</p>
-                        )}
-                      </div>
-                      <Badge variant="secondary" className="rounded-full text-xs flex-shrink-0">
-                        {donation.units_donated || 1}u
-                      </Badge>
+                    {/* Date indicator */}
+                    <div className="flex-shrink-0 w-10 text-center">
+                      <p className="text-lg font-bold text-primary leading-none">
+                        {new Date(donation.donation_date).getDate()}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground uppercase">
+                        {new Date(donation.donation_date).toLocaleDateString('en-US', { month: 'short' })}
+                      </p>
                     </div>
+                    
+                    {/* Hospital info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{donation.hospital_name}</p>
+                      <p className="text-xs text-muted-foreground">{getTimeAgo(donation.donation_date)}</p>
+                    </div>
+                    
+                    {/* Units badge */}
+                    <Badge variant="outline" className="rounded-full text-[10px] px-2 h-5 flex-shrink-0">
+                      {donation.units_donated || 1}u
+                    </Badge>
                   </div>
                 ))}
               </div>

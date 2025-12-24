@@ -234,7 +234,7 @@ const History = () => {
       <div className="min-h-screen bg-background pb-20">
         <AppHeader />
         <main className="container mx-auto px-4 py-6 max-w-lg">
-          <Skeleton className="h-32 w-full rounded-2xl mb-4" />
+          <Skeleton className="h-28 w-full rounded-2xl mb-4" />
           <Skeleton className="h-64 w-full rounded-2xl" />
         </main>
         <BottomNav />
@@ -246,39 +246,34 @@ const History = () => {
     <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-6 max-w-lg space-y-4">
-        {/* Stats Summary Card */}
-        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <h2 className="text-lg font-semibold mb-4">My Donations</h2>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center p-3 bg-primary/10 rounded-xl">
-              <div className="flex items-center justify-center mb-1">
-                <Droplets className="h-5 w-5 text-primary" />
-              </div>
-              <p className="text-2xl font-bold text-primary">{donationCount}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Donations</p>
-            </div>
-            <div className="text-center p-3 bg-amber-500/10 rounded-xl">
-              <div className="flex items-center justify-center mb-1">
-                <Award className="h-5 w-5 text-amber-500" />
-              </div>
-              <p className="text-2xl font-bold text-amber-500">{totalPoints}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Points</p>
-            </div>
-            <div className="text-center p-3 bg-emerald-500/10 rounded-xl">
-              <div className="flex items-center justify-center mb-1">
-                <TrendingUp className="h-5 w-5 text-emerald-500" />
-              </div>
-              <p className="text-2xl font-bold text-emerald-500">{donationCount}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Units</p>
-            </div>
+      <main className="container mx-auto px-4 py-4 max-w-lg space-y-4">
+        {/* Stats Summary - Compact horizontal layout */}
+        <div className="flex gap-2">
+          <div className="flex-1 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-3 text-center">
+            <Droplets className="h-5 w-5 text-primary mx-auto mb-1" />
+            <p className="text-xl font-bold text-primary">{donationCount}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Donations</p>
+          </div>
+          <div className="flex-1 bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/20 rounded-2xl p-3 text-center">
+            <Award className="h-5 w-5 text-amber-500 mx-auto mb-1" />
+            <p className="text-xl font-bold text-amber-500">{totalPoints}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Points</p>
+          </div>
+          <div className="flex-1 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-2xl p-3 text-center">
+            <TrendingUp className="h-5 w-5 text-emerald-500 mx-auto mb-1" />
+            <p className="text-xl font-bold text-emerald-500">{donationCount}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Units</p>
           </div>
         </div>
 
         {/* Donation History */}
-        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <h2 className="text-lg font-semibold mb-4">History by Year</h2>
-          {userId && <DonationHistoryByYear key={refreshKey} donorId={userId} variant="standalone" />}
+        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+          <div className="px-4 py-3 border-b border-border bg-muted/30">
+            <h2 className="text-base font-semibold">Donation History</h2>
+          </div>
+          <div className="p-4">
+            {userId && <DonationHistoryByYear key={refreshKey} donorId={userId} variant="standalone" />}
+          </div>
         </div>
       </main>
 
@@ -286,7 +281,7 @@ const History = () => {
       {isDonorType && (
         <Button
           size="lg"
-          className="fixed bottom-24 right-4 h-14 w-14 rounded-full shadow-xl z-50 bg-primary hover:bg-primary/90"
+          className="fixed bottom-24 right-4 h-14 w-14 rounded-full shadow-xl z-50 bg-primary hover:bg-primary/90 transition-transform hover:scale-105 active:scale-95"
           onClick={() => setShowAddDialog(true)}
         >
           <Plus className="h-6 w-6" />
