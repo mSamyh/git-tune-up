@@ -278,7 +278,7 @@ const Profile = () => {
     <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
-      <main className="container mx-auto max-w-lg">
+      <main className="container mx-auto max-w-md px-4">
         {/* Hero Profile Section */}
         <div className="relative">
           {/* Cover gradient */}
