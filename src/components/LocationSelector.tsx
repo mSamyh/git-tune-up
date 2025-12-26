@@ -43,13 +43,23 @@ export const LocationSelector = ({
     }
   }, [selectedAtoll]);
 
+  // Geographic order from north to south
+  const atollOrder = ['Ha', 'Hdh', 'Sh', 'N', 'R', 'B', 'Lh', 'K', 'Aa', 'Adh', 'V', 'M', 'F', 'Dh', 'Th', 'L', 'Ga', 'Gdh', 'Gn', 'S'];
+
   const fetchAtolls = async () => {
     const { data } = await supabase
       .from("atolls")
-      .select("*")
-      .order("name");
+      .select("*");
     
-    if (data) setAtolls(data);
+    if (data) {
+      // Sort atolls by geographic order (north to south)
+      const sorted = data.sort((a, b) => {
+        const indexA = atollOrder.indexOf(a.name);
+        const indexB = atollOrder.indexOf(b.name);
+        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+      });
+      setAtolls(sorted);
+    }
   };
 
   const fetchIslands = async (atollName: string) => {
