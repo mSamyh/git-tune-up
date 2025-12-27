@@ -47,7 +47,7 @@ const BloodRequestsPage = () => {
     <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
-      <main className="container mx-auto max-w-lg">
+      <main className="container mx-auto max-w-md px-4">
         {/* Hero Section - Like Profile Page */}
         <div className="relative">
           <div className="h-20 bg-gradient-to-br from-destructive via-destructive/80 to-destructive/60 rounded-b-3xl" />

@@ -10,11 +10,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { BottomNav } from "@/components/BottomNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppHeader } from "@/components/AppHeader";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar as CalendarIcon, Droplets, Award, TrendingUp, Building2, RefreshCw, History as HistoryIcon } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Droplets, Award, TrendingUp, Building2, ChevronDown, History as HistoryIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,7 @@ const History = () => {
   const [donationCount, setDonationCount] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
   const [donations, setDonations] = useState<DonationRecord[]>([]);
+  const [openYears, setOpenYears] = useState<string[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -94,11 +96,15 @@ const History = () => {
       .from("donation_history")
       .select("*")
       .eq("donor_id", donorId)
-      .order("donation_date", { ascending: false })
-      .limit(50);
+      .order("donation_date", { ascending: false });
 
     if (data) {
       setDonations(data);
+      // Open the most recent year by default
+      if (data.length > 0) {
+        const mostRecentYear = new Date(data[0].donation_date).getFullYear().toString();
+        setOpenYears([mostRecentYear]);
+      }
     }
   };
 
@@ -267,8 +273,34 @@ const History = () => {
     return 'Today';
   };
 
-  const totalUnits = donations.reduce((sum, d) => sum + (d.units_donated || 1), 0);
+  // Group donations by year
+  const donationsByYear = donations.reduce((acc, donation) => {
+    const year = new Date(donation.donation_date).getFullYear().toString();
+    if (!acc[year]) {
+      acc[year] = [];
+    }
+    acc[year].push(donation);
+    return acc;
+  }, {} as Record<string, DonationRecord[]>);
 
+  // Sort donations within each year
+  Object.keys(donationsByYear).forEach(year => {
+    donationsByYear[year].sort((a, b) => 
+      new Date(b.donation_date).getTime() - new Date(a.donation_date).getTime()
+    );
+  });
+
+  const sortedYears = Object.keys(donationsByYear).sort((a, b) => Number(b) - Number(a));
+
+  const toggleYear = (year: string) => {
+    setOpenYears(prev => 
+      prev.includes(year) 
+        ? prev.filter(y => y !== year)
+        : [...prev, year]
+    );
+  };
+
+  const totalUnits = donations.reduce((sum, d) => sum + (d.units_donated || 1), 0);
   const isDonorType = profile?.user_type === 'donor' || profile?.user_type === 'both';
 
   if (loading) {
@@ -332,32 +364,64 @@ const History = () => {
             ) : (
               <ScrollArea className="h-[320px]">
                 <div className="space-y-2 pr-3">
-                  {donations.map((donation) => (
-                    <div 
-                      key={donation.id} 
-                      className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center flex-shrink-0 shadow-sm">
-                        <Droplets className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <Badge className="bg-green-500/10 text-green-600 border-0 text-xs">Donated</Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground line-clamp-1 flex items-center gap-1">
-                          <Building2 className="h-3 w-3" />
-                          {donation.hospital_name}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                          {format(new Date(donation.donation_date), "MMM d, yyyy")} • {getTimeAgo(donation.donation_date)}
-                        </p>
-                      </div>
-                      <div className="text-right flex-shrink-0 font-bold text-sm text-primary">
-                        {donation.units_donated || 1}
-                        <span className="text-[10px] font-normal text-muted-foreground block">unit{(donation.units_donated || 1) !== 1 ? 's' : ''}</span>
-                      </div>
-                    </div>
-                  ))}
+                  {sortedYears.map((year) => {
+                    const yearDonations = donationsByYear[year];
+                    const yearUnits = yearDonations.reduce((sum, d) => sum + (d.units_donated || 1), 0);
+                    const isOpen = openYears.includes(year);
+
+                    return (
+                      <Collapsible key={year} open={isOpen} onOpenChange={() => toggleYear(year)}>
+                        <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/40 hover:bg-muted/60 rounded-xl transition-colors">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <CalendarIcon className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="font-semibold text-sm">{year}</span>
+                            <Badge variant="secondary" className="rounded-full text-[10px] px-2 h-5">
+                              {yearDonations.length} donation{yearDonations.length !== 1 ? 's' : ''}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground font-medium">{yearUnits}u</span>
+                            <ChevronDown className={cn(
+                              "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                              isOpen && "rotate-180"
+                            )} />
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="pt-2">
+                          <div className="space-y-1.5 ml-3 pl-3 border-l-2 border-primary/20">
+                            {yearDonations.map((donation) => (
+                              <div 
+                                key={donation.id} 
+                                className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                              >
+                                <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center flex-shrink-0 shadow-sm">
+                                  <Droplets className="h-4 w-4 text-primary" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 mb-0.5">
+                                    <Badge className="bg-green-500/10 text-green-600 border-0 text-xs">Donated</Badge>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground line-clamp-1 flex items-center gap-1">
+                                    <Building2 className="h-3 w-3" />
+                                    {donation.hospital_name}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                                    {format(new Date(donation.donation_date), "MMM d, yyyy")} • {getTimeAgo(donation.donation_date)}
+                                  </p>
+                                </div>
+                                <div className="text-right flex-shrink-0 font-bold text-sm text-primary">
+                                  {donation.units_donated || 1}
+                                  <span className="text-[10px] font-normal text-muted-foreground block">unit{(donation.units_donated || 1) !== 1 ? 's' : ''}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    );
+                  })}
                 </div>
               </ScrollArea>
             )}
