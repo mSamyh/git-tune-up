@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, Trash2, Plus, Gift, Settings, Trophy, Award, Users } from "lucide-react";
+import { Edit, Trash2, Plus, Gift, Settings, Trophy, Award, Users, Upload, X, ImageIcon } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { TierManagement } from "./TierManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,10 +52,15 @@ export function RewardsAdminPanel() {
     description: "",
     points_required: 100,
     partner_name: "",
+    partner_logo_url: "",
     category: "",
     is_active: true,
     terms_conditions: "",
   });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [pointsEditDialogOpen, setPointsEditDialogOpen] = useState(false);
   const [editingDonorPoints, setEditingDonorPoints] = useState<any>(null);
   const [pointsFormData, setPointsFormData] = useState({
@@ -202,10 +207,12 @@ export function RewardsAdminPanel() {
         description: reward.description || "",
         points_required: reward.points_required,
         partner_name: reward.partner_name,
+        partner_logo_url: reward.partner_logo_url || "",
         category: reward.category,
         is_active: reward.is_active,
         terms_conditions: reward.terms_conditions || "",
       });
+      setLogoPreview(reward.partner_logo_url || null);
     } else {
       setEditingReward(null);
       setFormData({
@@ -213,12 +220,71 @@ export function RewardsAdminPanel() {
         description: "",
         points_required: 100,
         partner_name: "",
+        partner_logo_url: "",
         category: "",
         is_active: true,
         terms_conditions: "",
       });
+      setLogoPreview(null);
     }
+    setLogoFile(null);
     setDialogOpen(true);
+  };
+
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          variant: "destructive",
+          title: "File too large",
+          description: "Logo must be less than 2MB",
+        });
+        return;
+      }
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setLogoPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadLogo = async (): Promise<string | null> => {
+    if (!logoFile) return formData.partner_logo_url || null;
+
+    setUploadingLogo(true);
+    try {
+      const fileExt = logoFile.name.split(".").pop();
+      const fileName = `partner-logos/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(fileName, logoFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Upload failed",
+        description: error.message,
+      });
+      return null;
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const removeLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+    setFormData({ ...formData, partner_logo_url: "" });
+    if (logoInputRef.current) logoInputRef.current.value = "";
   };
 
   const handleSave = async () => {
@@ -231,10 +297,17 @@ export function RewardsAdminPanel() {
       return;
     }
 
+    // Upload logo if new file selected
+    const logoUrl = await uploadLogo();
+    const saveData = {
+      ...formData,
+      partner_logo_url: logoUrl,
+    };
+
     if (editingReward) {
       const { error } = await supabase
         .from("reward_catalog")
-        .update(formData)
+        .update(saveData)
         .eq("id", editingReward.id);
 
       if (error) {
@@ -251,7 +324,7 @@ export function RewardsAdminPanel() {
     } else {
       const { error } = await supabase
         .from("reward_catalog")
-        .insert(formData);
+        .insert(saveData);
 
       if (error) {
         toast({
@@ -785,6 +858,57 @@ export function RewardsAdminPanel() {
                 />
               </div>
             </div>
+            {/* Partner Logo Upload */}
+            <div className="grid gap-2">
+              <Label>Partner Logo</Label>
+              <div className="flex items-center gap-3">
+                {logoPreview ? (
+                  <div className="relative">
+                    <img 
+                      src={logoPreview} 
+                      alt="Partner logo" 
+                      className="w-16 h-16 rounded-lg object-cover border"
+                    />
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 h-5 w-5 rounded-full"
+                      onClick={removeLogo}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex items-center justify-center bg-muted/30">
+                    <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoSelect}
+                    className="hidden"
+                    id="logo-upload"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={uploadingLogo}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {logoPreview ? "Change" : "Upload"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Max 2MB. JPG, PNG recommended.
+                  </p>
+                </div>
+              </div>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="category">Category *</Label>
               <Select
@@ -823,7 +947,9 @@ export function RewardsAdminPanel() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>Save</Button>
+            <Button onClick={handleSave} disabled={uploadingLogo}>
+              {uploadingLogo ? "Uploading..." : "Save"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { BottomNav } from "@/components/BottomNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppHeader } from "@/components/AppHeader";
-import { DonationHistoryByYear } from "@/components/DonationHistoryByYear";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar as CalendarIcon, Droplets, Award, TrendingUp } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Droplets, Award, TrendingUp, Building2, RefreshCw, History as HistoryIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +23,14 @@ interface Profile {
   full_name: string;
   last_donation_date: string | null;
   user_type: string;
+}
+
+interface DonationRecord {
+  id: string;
+  donation_date: string;
+  hospital_name: string;
+  notes: string | null;
+  units_donated: number;
 }
 
 const History = () => {
@@ -33,7 +43,7 @@ const History = () => {
   const [pointsPerDonation, setPointsPerDonation] = useState(100);
   const [donationCount, setDonationCount] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [donations, setDonations] = useState<DonationRecord[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -73,7 +83,23 @@ const History = () => {
     
     setTotalPoints(pointsData?.total_points || 0);
 
+    // Fetch donation history
+    await fetchDonations(user.id);
+
     setLoading(false);
+  };
+
+  const fetchDonations = async (donorId: string) => {
+    const { data } = await supabase
+      .from("donation_history")
+      .select("*")
+      .eq("donor_id", donorId)
+      .order("donation_date", { ascending: false })
+      .limit(50);
+
+    if (data) {
+      setDonations(data);
+    }
   };
 
   const fetchPointsSettings = async () => {
@@ -219,13 +245,29 @@ const History = () => {
     setHospitalName("");
     setTempDonationDate(undefined);
     setDonationCount(prev => prev + 1);
-    setRefreshKey(prev => prev + 1);
+    await fetchDonations(userId);
 
     toast({
       title: "Donation recorded",
       description: `You earned ${pointsPerDonation} points!`,
     });
   };
+
+  const getTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffMonths = Math.floor(diffDays / 30);
+    const diffYears = Math.floor(diffDays / 365);
+
+    if (diffYears > 0) return `${diffYears}y ago`;
+    if (diffMonths > 0) return `${diffMonths}mo ago`;
+    if (diffDays > 0) return `${diffDays}d ago`;
+    return 'Today';
+  };
+
+  const totalUnits = donations.reduce((sum, d) => sum + (d.units_donated || 1), 0);
 
   const isDonorType = profile?.user_type === 'donor' || profile?.user_type === 'both';
 
@@ -234,8 +276,7 @@ const History = () => {
       <div className="min-h-screen bg-background pb-20">
         <AppHeader />
         <main className="container mx-auto px-4 py-6 max-w-lg">
-          <Skeleton className="h-28 w-full rounded-2xl mb-4" />
-          <Skeleton className="h-64 w-full rounded-2xl" />
+          <Skeleton className="h-[450px] w-full rounded-2xl" />
         </main>
         <BottomNav />
       </div>
@@ -246,35 +287,82 @@ const History = () => {
     <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-4 max-w-lg space-y-4">
-        {/* Stats Summary - Compact horizontal layout */}
-        <div className="flex gap-2">
-          <div className="flex-1 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-3 text-center">
-            <Droplets className="h-5 w-5 text-primary mx-auto mb-1" />
-            <p className="text-xl font-bold text-primary">{donationCount}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Donations</p>
-          </div>
-          <div className="flex-1 bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/20 rounded-2xl p-3 text-center">
-            <Award className="h-5 w-5 text-amber-500 mx-auto mb-1" />
-            <p className="text-xl font-bold text-amber-500">{totalPoints}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Points</p>
-          </div>
-          <div className="flex-1 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-2xl p-3 text-center">
-            <TrendingUp className="h-5 w-5 text-emerald-500 mx-auto mb-1" />
-            <p className="text-xl font-bold text-emerald-500">{donationCount}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Units</p>
-          </div>
-        </div>
+      <main className="container mx-auto px-4 py-4 max-w-lg">
+        <Card className="rounded-2xl border-0 shadow-md overflow-hidden">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                <HistoryIcon className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-base">Donation History</CardTitle>
+                <CardDescription className="text-xs">Your blood donation records</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
 
-        {/* Donation History */}
-        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
-          <div className="px-4 py-3 border-b border-border bg-muted/30">
-            <h2 className="text-base font-semibold">Donation History</h2>
+          {/* Quick Stats */}
+          <div className="px-4 pb-3">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="p-2.5 rounded-xl bg-green-500/10 text-center">
+                <Droplets className="h-4 w-4 text-green-600 mx-auto mb-1" />
+                <p className="text-sm font-bold text-green-600">{donationCount}</p>
+                <p className="text-[10px] text-muted-foreground">Donations</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-orange-500/10 text-center">
+                <Award className="h-4 w-4 text-orange-600 mx-auto mb-1" />
+                <p className="text-sm font-bold text-orange-600">{totalPoints}</p>
+                <p className="text-[10px] text-muted-foreground">Points</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-blue-500/10 text-center">
+                <TrendingUp className="h-4 w-4 text-blue-600 mx-auto mb-1" />
+                <p className="text-sm font-bold text-blue-600">{totalUnits}</p>
+                <p className="text-[10px] text-muted-foreground">Units</p>
+              </div>
+            </div>
           </div>
-          <div className="p-4">
-            {userId && <DonationHistoryByYear key={refreshKey} donorId={userId} variant="standalone" />}
-          </div>
-        </div>
+
+          <CardContent className="pt-0">
+            {donations.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Droplets className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No donations yet</p>
+                <p className="text-xs">Tap + to record your first donation</p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[320px]">
+                <div className="space-y-2 pr-3">
+                  {donations.map((donation) => (
+                    <div 
+                      key={donation.id} 
+                      className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <Droplets className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <Badge className="bg-green-500/10 text-green-600 border-0 text-xs">Donated</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-1 flex items-center gap-1">
+                          <Building2 className="h-3 w-3" />
+                          {donation.hospital_name}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                          {format(new Date(donation.donation_date), "MMM d, yyyy")} • {getTimeAgo(donation.donation_date)}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0 font-bold text-sm text-primary">
+                        {donation.units_donated || 1}
+                        <span className="text-[10px] font-normal text-muted-foreground block">unit{(donation.units_donated || 1) !== 1 ? 's' : ''}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </CardContent>
+        </Card>
       </main>
 
       {/* Floating Add Button */}
