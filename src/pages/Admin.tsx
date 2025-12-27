@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown, Gift, Settings as SettingsIcon } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown, Gift, Settings as SettingsIcon, Shield, Droplet, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
@@ -662,64 +663,117 @@ const Admin = () => {
     <div className="min-h-screen bg-background">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage donors, requests, and system settings</p>
+      <main className="container mx-auto px-4 py-6 max-w-7xl">
+        {/* Hero Header */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
+              <Shield className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+              <p className="text-sm text-muted-foreground">Manage donors, requests, and system settings</p>
+            </div>
+          </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Donors</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{donors.length}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active Requests</CardTitle>
-              <Heart className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {requests.filter((r) => r.status === "active").length}
+        {/* Stats Cards */}
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-4 mb-6">
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-primary/10 to-primary/5">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl font-bold text-primary">{donors.length}</p>
+                  <p className="text-xs text-muted-foreground">Total Donors</p>
+                </div>
+                <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Donations</CardTitle>
-              <History className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{donations.length}</div>
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-destructive/10 to-destructive/5">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl font-bold text-destructive">{requests.filter((r) => r.status === "active").length}</p>
+                  <p className="text-xs text-muted-foreground">Active Requests</p>
+                </div>
+                <div className="h-10 w-10 rounded-xl bg-destructive/20 flex items-center justify-center">
+                  <Heart className="h-5 w-5 text-destructive" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-green-500/10 to-green-500/5">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl font-bold text-green-600">{donations.length}</p>
+                  <p className="text-xs text-muted-foreground">Total Donations</p>
+                </div>
+                <div className="h-10 w-10 rounded-xl bg-green-500/20 flex items-center justify-center">
+                  <Droplet className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-amber-500/10 to-amber-500/5">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl font-bold text-amber-600">{requests.filter((r) => r.status === "fulfilled").length}</p>
+                  <p className="text-xs text-muted-foreground">Fulfilled</p>
+                </div>
+                <div className="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-amber-600" />
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
         <Tabs defaultValue="donors" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="donors">Donors</TabsTrigger>
-            <TabsTrigger value="requests">Requests</TabsTrigger>
-            <TabsTrigger value="donations">Donations</TabsTrigger>
-            <TabsTrigger value="rewards">Rewards</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="admins">Admins</TabsTrigger>
+          <TabsList className="w-full bg-muted/50 p-1 rounded-xl h-auto flex-wrap">
+            <TabsTrigger value="donors" className="flex-1 min-w-[80px] rounded-lg text-xs gap-1 py-2">
+              <Users className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Donors</span>
+            </TabsTrigger>
+            <TabsTrigger value="requests" className="flex-1 min-w-[80px] rounded-lg text-xs gap-1 py-2">
+              <Heart className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Requests</span>
+            </TabsTrigger>
+            <TabsTrigger value="donations" className="flex-1 min-w-[80px] rounded-lg text-xs gap-1 py-2">
+              <Droplet className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Donations</span>
+            </TabsTrigger>
+            <TabsTrigger value="rewards" className="flex-1 min-w-[80px] rounded-lg text-xs gap-1 py-2">
+              <Gift className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Rewards</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex-1 min-w-[80px] rounded-lg text-xs gap-1 py-2">
+              <SettingsIcon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Settings</span>
+            </TabsTrigger>
+            <TabsTrigger value="admins" className="flex-1 min-w-[80px] rounded-lg text-xs gap-1 py-2">
+              <Shield className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Admins</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="donors">
-            <Card>
-              <CardHeader>
-                <CardTitle>Donor Management</CardTitle>
-                <CardDescription>Quick actions for each donor grouped by blood group</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
+            <Card className="rounded-2xl border-0 shadow-sm">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Donor Management</CardTitle>
+                    <CardDescription className="text-xs">Quick actions for each donor grouped by blood group</CardDescription>
+                  </div>
                   <CSVImporter />
                 </div>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px]">
                 {(() => {
                   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
                   const donorsByBloodGroup = bloodGroups.reduce((acc, group) => {
@@ -729,12 +783,12 @@ const Admin = () => {
                   const groupsWithDonors = bloodGroups.filter(g => donorsByBloodGroup[g].length > 0);
 
                   return (
-                    <Accordion type="multiple" defaultValue={['A+', 'B+', 'O+', 'AB+']} className="w-full space-y-2">
+                    <Accordion type="multiple" defaultValue={['A+', 'B+', 'O+', 'AB+']} className="w-full space-y-2 pr-3">
                       {groupsWithDonors.map(group => (
-                        <AccordionItem key={group} value={group} className="border rounded-lg">
+                        <AccordionItem key={group} value={group} className="border rounded-xl bg-muted/20">
                           <AccordionTrigger className="px-4 hover:no-underline">
                             <div className="flex items-center gap-3">
-                              <Badge variant="outline" className="font-bold">{group}</Badge>
+                              <Badge className="bg-primary/10 text-primary border-0 font-bold">{group}</Badge>
                               <span className="text-sm text-muted-foreground">
                                 {donorsByBloodGroup[group].length} {donorsByBloodGroup[group].length === 1 ? 'donor' : 'donors'}
                               </span>
@@ -819,97 +873,103 @@ const Admin = () => {
                     </Accordion>
                   );
                 })()}
+                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="requests">
-            <Card>
-              <CardHeader>
-                <CardTitle>Blood Requests</CardTitle>
-                <CardDescription>Manage all blood donation requests</CardDescription>
+            <Card className="rounded-2xl border-0 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Blood Requests</CardTitle>
+                <CardDescription className="text-xs">Manage all blood donation requests</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Patient</TableHead>
-                      <TableHead>Blood Group</TableHead>
-                      <TableHead>Hospital</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Requested By</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {requests.map((request) => (
-                      <TableRow key={request.id}>
-                        <TableCell className="font-medium">{request.patient_name}</TableCell>
-                        <TableCell>
-                          <Badge>{request.blood_group}</Badge>
-                        </TableCell>
-                        <TableCell>{request.hospital_name}</TableCell>
-                        <TableCell>{request.contact_phone}</TableCell>
-                        <TableCell>
-                          {request.requester_name || 'Unknown'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              request.status === "active"
-                                ? "default"
-                                : request.status === "fulfilled"
-                                ? "outline"
-                                : "destructive"
-                            }
-                          >
-                            {request.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEditRequestDialog(request)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteRequest(request)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                <ScrollArea className="h-[500px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Patient</TableHead>
+                        <TableHead>Blood Group</TableHead>
+                        <TableHead>Hospital</TableHead>
+                        <TableHead>Contact</TableHead>
+                        <TableHead>Requested By</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {requests.map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-medium">{request.patient_name}</TableCell>
+                          <TableCell>
+                            <Badge className="bg-primary/10 text-primary border-0">{request.blood_group}</Badge>
+                          </TableCell>
+                          <TableCell>{request.hospital_name}</TableCell>
+                          <TableCell>{request.contact_phone}</TableCell>
+                          <TableCell>
+                            {request.requester_name || 'Unknown'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={
+                                request.status === "active"
+                                  ? "bg-green-500/10 text-green-600 border-0"
+                                  : request.status === "fulfilled"
+                                  ? "bg-blue-500/10 text-blue-600 border-0"
+                                  : "bg-red-500/10 text-red-600 border-0"
+                              }
+                            >
+                              {request.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                onClick={() => openEditRequestDialog(request)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => handleDeleteRequest(request)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="donations">
-            <Card>
-              <CardHeader>
-                <CardTitle>Donation History</CardTitle>
-                <CardDescription>View all completed donations grouped by donor</CardDescription>
+            <Card className="rounded-2xl border-0 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Donation History</CardTitle>
+                <CardDescription className="text-xs">View all completed donations grouped by donor</CardDescription>
               </CardHeader>
               <CardContent>
+                <ScrollArea className="h-[500px]">
                 {Object.keys(donationsByDonor).length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">No donation records found</p>
                 ) : (
-                  <Accordion type="single" collapsible className="w-full">
+                  <Accordion type="single" collapsible className="w-full space-y-2 pr-3">
                     {Object.entries(donationsByDonor).map(([donorId, data]: [string, any]) => (
-                      <AccordionItem key={donorId} value={donorId}>
-                        <AccordionTrigger className="hover:no-underline">
+                      <AccordionItem key={donorId} value={donorId} className="border rounded-xl bg-muted/20">
+                        <AccordionTrigger className="px-4 hover:no-underline">
                           <div className="flex items-center gap-4 text-left">
                             <div className="font-medium">{data.donor?.full_name || 'Unknown Donor'}</div>
-                            <Badge variant="outline" className="ml-2">
+                            <Badge className="bg-green-500/10 text-green-600 border-0">
                               {data.donations.length} {data.donations.length === 1 ? 'donation' : 'donations'}
                             </Badge>
                           </div>
@@ -972,6 +1032,7 @@ const Admin = () => {
                     ))}
                   </Accordion>
                 )}
+                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>

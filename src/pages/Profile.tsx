@@ -347,7 +347,13 @@ const Profile = () => {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h1 className="text-xl font-bold">{profile.full_name}</h1>
                     {profile.title && (
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge 
+                        className="text-xs border-0"
+                        style={{ 
+                          backgroundColor: profile.title_color ? `${profile.title_color}20` : undefined,
+                          color: profile.title_color || undefined 
+                        }}
+                      >
                         <Sparkles className="h-3 w-3 mr-1" />
                         {profile.title}
                       </Badge>
