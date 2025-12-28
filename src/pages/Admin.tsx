@@ -663,69 +663,69 @@ const Admin = () => {
     <div className="min-h-screen bg-background">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-6 max-w-7xl">
-        {/* Hero Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
-              <Shield className="h-6 w-6 text-primary-foreground" />
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-7xl">
+        {/* Compact Hero Header */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shrink-0">
+              <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Manage donors, requests, and system settings</p>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold truncate">Admin Dashboard</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">Manage donors, requests & settings</p>
             </div>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-3 grid-cols-2 md:grid-cols-4 mb-6">
+        {/* Compact Stats Cards */}
+        <div className="grid gap-2 sm:gap-3 grid-cols-4 mb-4 sm:mb-6">
           <Card className="border-0 shadow-sm bg-gradient-to-br from-primary/10 to-primary/5">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+            <CardContent className="p-2 sm:p-4">
+              <div className="text-center sm:text-left sm:flex sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-primary">{donors.length}</p>
-                  <p className="text-xs text-muted-foreground">Total Donors</p>
+                  <p className="text-lg sm:text-2xl font-bold text-primary">{donors.length}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Donors</p>
                 </div>
-                <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                <div className="hidden sm:flex h-10 w-10 rounded-xl bg-primary/20 items-center justify-center">
                   <Users className="h-5 w-5 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card className="border-0 shadow-sm bg-gradient-to-br from-destructive/10 to-destructive/5">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+            <CardContent className="p-2 sm:p-4">
+              <div className="text-center sm:text-left sm:flex sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-destructive">{requests.filter((r) => r.status === "active").length}</p>
-                  <p className="text-xs text-muted-foreground">Active Requests</p>
+                  <p className="text-lg sm:text-2xl font-bold text-destructive">{requests.filter((r) => r.status === "active").length}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Active</p>
                 </div>
-                <div className="h-10 w-10 rounded-xl bg-destructive/20 flex items-center justify-center">
+                <div className="hidden sm:flex h-10 w-10 rounded-xl bg-destructive/20 items-center justify-center">
                   <Heart className="h-5 w-5 text-destructive" />
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card className="border-0 shadow-sm bg-gradient-to-br from-green-500/10 to-green-500/5">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+            <CardContent className="p-2 sm:p-4">
+              <div className="text-center sm:text-left sm:flex sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-green-600">{donations.length}</p>
-                  <p className="text-xs text-muted-foreground">Total Donations</p>
+                  <p className="text-lg sm:text-2xl font-bold text-green-600">{donations.length}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Donations</p>
                 </div>
-                <div className="h-10 w-10 rounded-xl bg-green-500/20 flex items-center justify-center">
+                <div className="hidden sm:flex h-10 w-10 rounded-xl bg-green-500/20 items-center justify-center">
                   <Droplet className="h-5 w-5 text-green-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card className="border-0 shadow-sm bg-gradient-to-br from-amber-500/10 to-amber-500/5">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+            <CardContent className="p-2 sm:p-4">
+              <div className="text-center sm:text-left sm:flex sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-amber-600">{requests.filter((r) => r.status === "fulfilled").length}</p>
-                  <p className="text-xs text-muted-foreground">Fulfilled</p>
+                  <p className="text-lg sm:text-2xl font-bold text-amber-600">{requests.filter((r) => r.status === "fulfilled").length}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Fulfilled</p>
                 </div>
-                <div className="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                <div className="hidden sm:flex h-10 w-10 rounded-xl bg-amber-500/20 items-center justify-center">
                   <TrendingUp className="h-5 w-5 text-amber-600" />
                 </div>
               </div>
@@ -733,47 +733,50 @@ const Admin = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue="donors" className="space-y-4">
-          <TabsList className="w-full bg-muted/50 p-1 rounded-xl h-auto flex-wrap">
-            <TabsTrigger value="donors" className="flex-1 min-w-[80px] rounded-lg text-xs gap-1 py-2">
-              <Users className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Donors</span>
-            </TabsTrigger>
-            <TabsTrigger value="requests" className="flex-1 min-w-[80px] rounded-lg text-xs gap-1 py-2">
-              <Heart className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Requests</span>
-            </TabsTrigger>
-            <TabsTrigger value="donations" className="flex-1 min-w-[80px] rounded-lg text-xs gap-1 py-2">
-              <Droplet className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Donations</span>
-            </TabsTrigger>
-            <TabsTrigger value="rewards" className="flex-1 min-w-[80px] rounded-lg text-xs gap-1 py-2">
-              <Gift className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Rewards</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1 min-w-[80px] rounded-lg text-xs gap-1 py-2">
-              <SettingsIcon className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Settings</span>
-            </TabsTrigger>
-            <TabsTrigger value="admins" className="flex-1 min-w-[80px] rounded-lg text-xs gap-1 py-2">
-              <Shield className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Admins</span>
-            </TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="donors" className="space-y-3 sm:space-y-4">
+          {/* Scrollable tabs on mobile */}
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <TabsList className="w-max sm:w-full bg-muted/50 p-1 rounded-xl h-auto inline-flex sm:flex">
+              <TabsTrigger value="donors" className="min-w-[70px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
+                <Users className="h-3.5 w-3.5" />
+                <span>Donors</span>
+              </TabsTrigger>
+              <TabsTrigger value="requests" className="min-w-[70px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
+                <Heart className="h-3.5 w-3.5" />
+                <span>Requests</span>
+              </TabsTrigger>
+              <TabsTrigger value="donations" className="min-w-[80px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
+                <Droplet className="h-3.5 w-3.5" />
+                <span>Donations</span>
+              </TabsTrigger>
+              <TabsTrigger value="rewards" className="min-w-[70px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
+                <Gift className="h-3.5 w-3.5" />
+                <span>Rewards</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="min-w-[70px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
+                <SettingsIcon className="h-3.5 w-3.5" />
+                <span>Settings</span>
+              </TabsTrigger>
+              <TabsTrigger value="admins" className="min-w-[70px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
+                <Shield className="h-3.5 w-3.5" />
+                <span>Admins</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="donors">
             <Card className="rounded-2xl border-0 shadow-sm">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Donor Management</CardTitle>
-                    <CardDescription className="text-xs">Quick actions for each donor grouped by blood group</CardDescription>
+              <CardHeader className="pb-3 px-3 sm:px-6">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <CardTitle className="text-base sm:text-lg">Donor Management</CardTitle>
+                    <CardDescription className="text-xs hidden sm:block">Manage donors by blood group</CardDescription>
                   </div>
                   <CSVImporter />
                 </div>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[500px]">
+              <CardContent className="px-2 sm:px-6">
+                <ScrollArea className="h-[60vh] sm:h-[500px]">
                 {(() => {
                   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
                   const donorsByBloodGroup = bloodGroups.reduce((acc, group) => {
@@ -783,99 +786,112 @@ const Admin = () => {
                   const groupsWithDonors = bloodGroups.filter(g => donorsByBloodGroup[g].length > 0);
 
                   return (
-                    <Accordion type="multiple" defaultValue={['A+', 'B+', 'O+', 'AB+']} className="w-full space-y-2 pr-3">
+                    <Accordion type="multiple" defaultValue={['A+', 'B+', 'O+', 'AB+']} className="w-full space-y-2 pr-2 sm:pr-3">
                       {groupsWithDonors.map(group => (
                         <AccordionItem key={group} value={group} className="border rounded-xl bg-muted/20">
-                          <AccordionTrigger className="px-4 hover:no-underline">
-                            <div className="flex items-center gap-3">
-                              <Badge className="bg-primary/10 text-primary border-0 font-bold">{group}</Badge>
-                              <span className="text-sm text-muted-foreground">
-                                {donorsByBloodGroup[group].length} {donorsByBloodGroup[group].length === 1 ? 'donor' : 'donors'}
+                          <AccordionTrigger className="px-3 sm:px-4 hover:no-underline">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <Badge className="bg-primary/10 text-primary border-0 font-bold text-xs sm:text-sm">{group}</Badge>
+                              <span className="text-xs sm:text-sm text-muted-foreground">
+                                {donorsByBloodGroup[group].length} donors
                               </span>
                             </div>
                           </AccordionTrigger>
-                          <AccordionContent className="px-2 sm:px-4">
-                            <div className="overflow-x-auto -mx-2 sm:mx-0">
-                              <div className="min-w-[600px] sm:min-w-0">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead className="text-xs">Name</TableHead>
-                                      <TableHead className="text-xs hidden sm:table-cell">Phone</TableHead>
-                                      <TableHead className="text-xs hidden md:table-cell">Location</TableHead>
-                                      <TableHead className="text-xs">Type</TableHead>
-                                      <TableHead className="text-xs">Status</TableHead>
-                                      <TableHead className="text-xs">Actions</TableHead>
+                          <AccordionContent className="px-1 sm:px-4 pb-2">
+                            {/* Mobile card view */}
+                            <div className="sm:hidden space-y-2">
+                              {donorsByBloodGroup[group].map((donor) => (
+                                <div key={donor.id} className="bg-card border rounded-lg p-3">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                      <p className="font-medium text-sm truncate">{donor.full_name}</p>
+                                      <p className="text-xs text-muted-foreground">{donor.phone}</p>
+                                      {donor.district && (
+                                        <p className="text-xs text-muted-foreground mt-0.5">{donor.district}</p>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <Badge variant="secondary" className="text-[10px] px-1.5">
+                                        {donor.user_type === 'both' ? 'Both' : donor.user_type === 'receiver' ? 'Rcvr' : 'Donor'}
+                                      </Badge>
+                                      {donor.availability_status === 'available' ? (
+                                        <span className="h-2 w-2 rounded-full bg-green-500" />
+                                      ) : donor.availability_status === 'reserved' ? (
+                                        <span className="h-2 w-2 rounded-full bg-orange-500" />
+                                      ) : (
+                                        <span className="h-2 w-2 rounded-full bg-red-500" />
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-1 mt-2 pt-2 border-t">
+                                    <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => openEditDialog(donor)}>
+                                      <Edit className="h-3 w-3 mr-1" /> Edit
+                                    </Button>
+                                    <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => openHistoryDialog(donor)}>
+                                      <Plus className="h-3 w-3 mr-1" /> History
+                                    </Button>
+                                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={() => handleDeleteDonor(donor)}>
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Desktop table view */}
+                            <div className="hidden sm:block">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead className="text-xs">Name</TableHead>
+                                    <TableHead className="text-xs">Phone</TableHead>
+                                    <TableHead className="text-xs hidden md:table-cell">Location</TableHead>
+                                    <TableHead className="text-xs">Type</TableHead>
+                                    <TableHead className="text-xs">Status</TableHead>
+                                    <TableHead className="text-xs">Actions</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {donorsByBloodGroup[group].map((donor) => (
+                                    <TableRow key={donor.id}>
+                                      <TableCell className="py-2">
+                                        <p className="font-medium text-sm">{donor.full_name}</p>
+                                      </TableCell>
+                                      <TableCell className="text-sm">{donor.phone}</TableCell>
+                                      <TableCell className="hidden md:table-cell text-sm">{donor.district || donor.atoll || '-'}</TableCell>
+                                      <TableCell>
+                                        <Badge variant="secondary" className="text-[10px] px-1.5">
+                                          {donor.user_type === 'both' ? 'Both' : donor.user_type === 'receiver' ? 'Rcvr' : 'Donor'}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell>
+                                        {donor.availability_status === 'available' ? (
+                                          <Badge variant="outline" className="text-green-600 border-green-600 text-[10px] px-1.5">✓</Badge>
+                                        ) : donor.availability_status === 'available_soon' ? (
+                                          <Badge variant="outline" className="text-blue-600 border-blue-600 text-[10px] px-1.5">Soon</Badge>
+                                        ) : donor.availability_status === 'reserved' ? (
+                                          <Badge variant="outline" className="text-orange-600 border-orange-600 text-[10px] px-1.5">Rsv</Badge>
+                                        ) : (
+                                          <Badge variant="outline" className="text-red-600 border-red-600 text-[10px] px-1.5">✗</Badge>
+                                        )}
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditDialog(donor)}>
+                                            <Edit className="h-3.5 w-3.5" />
+                                          </Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openHistoryDialog(donor)}>
+                                            <Plus className="h-3.5 w-3.5" />
+                                          </Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDeleteDonor(donor)}>
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </div>
+                                      </TableCell>
                                     </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {donorsByBloodGroup[group].map((donor) => (
-                                      <TableRow key={donor.id}>
-                                        <TableCell className="py-2">
-                                          <div>
-                                            <p className="font-medium text-sm">{donor.full_name}</p>
-                                            <p className="text-xs text-muted-foreground sm:hidden">{donor.phone}</p>
-                                          </div>
-                                        </TableCell>
-                                        <TableCell className="hidden sm:table-cell text-sm">{donor.phone}</TableCell>
-                                        <TableCell className="hidden md:table-cell text-sm">{donor.district || donor.atoll || '-'}</TableCell>
-                                        <TableCell>
-                                          <Badge variant="secondary" className="text-[10px] px-1.5">
-                                            {donor.user_type === 'both' ? 'Both' : donor.user_type === 'receiver' ? 'Rcvr' : 'Donor'}
-                                          </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                          {donor.availability_status === 'available' ? (
-                                            <Badge variant="outline" className="text-green-600 border-green-600 text-[10px] px-1.5">
-                                              ✓
-                                            </Badge>
-                                          ) : donor.availability_status === 'available_soon' ? (
-                                            <Badge variant="outline" className="text-blue-600 border-blue-600 text-[10px] px-1.5">
-                                              Soon
-                                            </Badge>
-                                          ) : donor.availability_status === 'reserved' ? (
-                                            <Badge variant="outline" className="text-orange-600 border-orange-600 text-[10px] px-1.5">
-                                              Rsv
-                                            </Badge>
-                                          ) : (
-                                            <Badge variant="outline" className="text-red-600 border-red-600 text-[10px] px-1.5">
-                                              ✗
-                                            </Badge>
-                                          )}
-                                        </TableCell>
-                                        <TableCell>
-                                          <div className="flex gap-1">
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-7 w-7 p-0"
-                                              onClick={() => openEditDialog(donor)}
-                                            >
-                                              <Edit className="h-3.5 w-3.5" />
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-7 w-7 p-0"
-                                              onClick={() => openHistoryDialog(donor)}
-                                            >
-                                              <Plus className="h-3.5 w-3.5" />
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                              onClick={() => handleDeleteDonor(donor)}
-                                            >
-                                              <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
-                                          </div>
-                                        </TableCell>
-                                      </TableRow>
-                                    ))}
-                                  </TableBody>
-                                </Table>
-                              </div>
+                                  ))}
+                                </TableBody>
+                              </Table>
                             </div>
                           </AccordionContent>
                         </AccordionItem>
@@ -890,73 +906,92 @@ const Admin = () => {
 
           <TabsContent value="requests">
             <Card className="rounded-2xl border-0 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Blood Requests</CardTitle>
+              <CardHeader className="pb-3 px-3 sm:px-6">
+                <CardTitle className="text-base sm:text-lg">Blood Requests</CardTitle>
                 <CardDescription className="text-xs">Manage all blood donation requests</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[500px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Patient</TableHead>
-                        <TableHead>Blood Group</TableHead>
-                        <TableHead>Hospital</TableHead>
-                        <TableHead>Contact</TableHead>
-                        <TableHead>Requested By</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {requests.map((request) => (
-                        <TableRow key={request.id}>
-                          <TableCell className="font-medium">{request.patient_name}</TableCell>
-                          <TableCell>
-                            <Badge className="bg-primary/10 text-primary border-0">{request.blood_group}</Badge>
-                          </TableCell>
-                          <TableCell>{request.hospital_name}</TableCell>
-                          <TableCell>{request.contact_phone}</TableCell>
-                          <TableCell>
-                            {request.requester_name || 'Unknown'}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              className={
-                                request.status === "active"
-                                  ? "bg-green-500/10 text-green-600 border-0"
-                                  : request.status === "fulfilled"
-                                  ? "bg-blue-500/10 text-blue-600 border-0"
-                                  : "bg-red-500/10 text-red-600 border-0"
-                              }
-                            >
-                              {request.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                onClick={() => openEditRequestDialog(request)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                onClick={() => handleDeleteRequest(request)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
+              <CardContent className="px-2 sm:px-6">
+                <ScrollArea className="h-[60vh] sm:h-[500px]">
+                  {/* Mobile card view */}
+                  <div className="sm:hidden space-y-2 pr-2">
+                    {requests.map((request) => (
+                      <div key={request.id} className="bg-card border rounded-lg p-3">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm">{request.patient_name}</p>
+                            <p className="text-xs text-muted-foreground">{request.hospital_name}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Badge className="bg-primary/10 text-primary border-0 text-xs">{request.blood_group}</Badge>
+                            <Badge className={
+                              request.status === "active" ? "bg-green-500/10 text-green-600 border-0 text-xs" :
+                              request.status === "fulfilled" ? "bg-blue-500/10 text-blue-600 border-0 text-xs" :
+                              "bg-red-500/10 text-red-600 border-0 text-xs"
+                            }>{request.status}</Badge>
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground mb-2">
+                          <p>Contact: {request.contact_phone}</p>
+                          <p>By: {request.requester_name || 'Unknown'}</p>
+                        </div>
+                        <div className="flex gap-1 pt-2 border-t">
+                          <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => openEditRequestDialog(request)}>
+                            <Edit className="h-3 w-3 mr-1" /> Edit
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={() => handleDeleteRequest(request)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Desktop table view */}
+                  <div className="hidden sm:block pr-3">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">Patient</TableHead>
+                          <TableHead className="text-xs">Blood</TableHead>
+                          <TableHead className="text-xs hidden md:table-cell">Hospital</TableHead>
+                          <TableHead className="text-xs hidden lg:table-cell">Contact</TableHead>
+                          <TableHead className="text-xs hidden lg:table-cell">By</TableHead>
+                          <TableHead className="text-xs">Status</TableHead>
+                          <TableHead className="text-xs">Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {requests.map((request) => (
+                          <TableRow key={request.id}>
+                            <TableCell className="font-medium text-sm py-2">{request.patient_name}</TableCell>
+                            <TableCell>
+                              <Badge className="bg-primary/10 text-primary border-0 text-xs">{request.blood_group}</Badge>
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell text-sm">{request.hospital_name}</TableCell>
+                            <TableCell className="hidden lg:table-cell text-sm">{request.contact_phone}</TableCell>
+                            <TableCell className="hidden lg:table-cell text-sm">{request.requester_name || 'Unknown'}</TableCell>
+                            <TableCell>
+                              <Badge className={
+                                request.status === "active" ? "bg-green-500/10 text-green-600 border-0 text-[10px]" :
+                                request.status === "fulfilled" ? "bg-blue-500/10 text-blue-600 border-0 text-[10px]" :
+                                "bg-red-500/10 text-red-600 border-0 text-[10px]"
+                              }>{request.status}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditRequestDialog(request)}>
+                                  <Edit className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteRequest(request)}>
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </ScrollArea>
               </CardContent>
             </Card>
@@ -964,79 +999,95 @@ const Admin = () => {
 
           <TabsContent value="donations">
             <Card className="rounded-2xl border-0 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Donation History</CardTitle>
+              <CardHeader className="pb-3 px-3 sm:px-6">
+                <CardTitle className="text-base sm:text-lg">Donation History</CardTitle>
                 <CardDescription className="text-xs">View all completed donations grouped by donor</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[500px]">
+              <CardContent className="px-2 sm:px-6">
+                <ScrollArea className="h-[60vh] sm:h-[500px]">
                 {Object.keys(donationsByDonor).length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">No donation records found</p>
                 ) : (
-                  <Accordion type="single" collapsible className="w-full space-y-2 pr-3">
+                  <Accordion type="single" collapsible className="w-full space-y-2 pr-2 sm:pr-3">
                     {Object.entries(donationsByDonor).map(([donorId, data]: [string, any]) => (
                       <AccordionItem key={donorId} value={donorId} className="border rounded-xl bg-muted/20">
-                        <AccordionTrigger className="px-4 hover:no-underline">
-                          <div className="flex items-center gap-4 text-left">
-                            <div className="font-medium">{data.donor?.full_name || 'Unknown Donor'}</div>
-                            <Badge className="bg-green-500/10 text-green-600 border-0">
-                              {data.donations.length} {data.donations.length === 1 ? 'donation' : 'donations'}
+                        <AccordionTrigger className="px-3 sm:px-4 hover:no-underline">
+                          <div className="flex items-center gap-2 sm:gap-4 text-left">
+                            <div className="font-medium text-sm sm:text-base truncate">{data.donor?.full_name || 'Unknown Donor'}</div>
+                            <Badge className="bg-green-500/10 text-green-600 border-0 text-xs shrink-0">
+                              {data.donations.length} donations
                             </Badge>
                           </div>
                         </AccordionTrigger>
-                        <AccordionContent>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Hospital</TableHead>
-                                <TableHead>Units</TableHead>
-                                <TableHead>Notes</TableHead>
-                                <TableHead>Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {data.donations.map((donation: any) => (
-                                <TableRow key={donation.id}>
-                                  <TableCell>
-                                    {new Date(donation.donation_date).toLocaleDateString('en-US', {
-                                      year: 'numeric',
-                                      month: 'short',
-                                      day: 'numeric',
-                                    })}
-                                  </TableCell>
-                                  <TableCell>{donation.hospital_name}</TableCell>
-                                  <TableCell>{donation.units_donated || 1}</TableCell>
-                                  <TableCell className="max-w-xs truncate">
-                                    {donation.notes || '-'}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => openEditDonationDialog(donation)}
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        onClick={() =>
-                                          handleDeleteDonation(
-                                            donation.id,
-                                            data.donor?.full_name || 'Unknown'
-                                          )
-                                        }
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
+                        <AccordionContent className="px-1 sm:px-4 pb-2">
+                          {/* Mobile card view */}
+                          <div className="sm:hidden space-y-2">
+                            {data.donations.map((donation: any) => (
+                              <div key={donation.id} className="bg-card border rounded-lg p-3">
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <div>
+                                    <p className="font-medium text-sm">
+                                      {new Date(donation.donation_date).toLocaleDateString('en-US', {
+                                        year: 'numeric', month: 'short', day: 'numeric',
+                                      })}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">{donation.hospital_name}</p>
+                                  </div>
+                                  <Badge variant="secondary" className="text-xs">{donation.units_donated || 1} unit</Badge>
+                                </div>
+                                {donation.notes && (
+                                  <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{donation.notes}</p>
+                                )}
+                                <div className="flex gap-1 pt-2 border-t">
+                                  <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => openEditDonationDialog(donation)}>
+                                    <Edit className="h-3 w-3 mr-1" /> Edit
+                                  </Button>
+                                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={() => handleDeleteDonation(donation.id, data.donor?.full_name || 'Unknown')}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Desktop table view */}
+                          <div className="hidden sm:block">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-xs">Date</TableHead>
+                                  <TableHead className="text-xs">Hospital</TableHead>
+                                  <TableHead className="text-xs">Units</TableHead>
+                                  <TableHead className="text-xs hidden md:table-cell">Notes</TableHead>
+                                  <TableHead className="text-xs">Actions</TableHead>
                                 </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
+                              </TableHeader>
+                              <TableBody>
+                                {data.donations.map((donation: any) => (
+                                  <TableRow key={donation.id}>
+                                    <TableCell className="text-sm py-2">
+                                      {new Date(donation.donation_date).toLocaleDateString('en-US', {
+                                        year: 'numeric', month: 'short', day: 'numeric',
+                                      })}
+                                    </TableCell>
+                                    <TableCell className="text-sm">{donation.hospital_name}</TableCell>
+                                    <TableCell className="text-sm">{donation.units_donated || 1}</TableCell>
+                                    <TableCell className="hidden md:table-cell text-sm max-w-xs truncate">{donation.notes || '-'}</TableCell>
+                                    <TableCell>
+                                      <div className="flex gap-1">
+                                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditDonationDialog(donation)}>
+                                          <Edit className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDeleteDonation(donation.id, data.donor?.full_name || 'Unknown')}>
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
                         </AccordionContent>
                       </AccordionItem>
                     ))}
@@ -1251,26 +1302,27 @@ const Admin = () => {
                 <Label>Title Badge Color</Label>
                 <div className="grid grid-cols-6 gap-2 mt-2">
                   {[
-                    { name: "Default", value: "", className: "bg-secondary" },
-                    { name: "Red", value: "bg-red-500 text-white", className: "bg-red-500" },
-                    { name: "Blue", value: "bg-blue-500 text-white", className: "bg-blue-500" },
-                    { name: "Green", value: "bg-green-500 text-white", className: "bg-green-500" },
-                    { name: "Yellow", value: "bg-yellow-500 text-black", className: "bg-yellow-500" },
-                    { name: "Purple", value: "bg-purple-500 text-white", className: "bg-purple-500" },
-                    { name: "Pink", value: "bg-pink-500 text-white", className: "bg-pink-500" },
-                    { name: "Orange", value: "bg-orange-500 text-white", className: "bg-orange-500" },
-                    { name: "Teal", value: "bg-teal-500 text-white", className: "bg-teal-500" },
-                    { name: "Indigo", value: "bg-indigo-500 text-white", className: "bg-indigo-500" },
-                    { name: "Rose", value: "bg-rose-500 text-white", className: "bg-rose-500" },
-                    { name: "Gold", value: "bg-yellow-600 text-white", className: "bg-yellow-600" },
+                    { name: "Default", value: "", hex: "#6b7280" },
+                    { name: "Red", value: "#ef4444", hex: "#ef4444" },
+                    { name: "Blue", value: "#3b82f6", hex: "#3b82f6" },
+                    { name: "Green", value: "#22c55e", hex: "#22c55e" },
+                    { name: "Yellow", value: "#eab308", hex: "#eab308" },
+                    { name: "Purple", value: "#a855f7", hex: "#a855f7" },
+                    { name: "Pink", value: "#ec4899", hex: "#ec4899" },
+                    { name: "Orange", value: "#f97316", hex: "#f97316" },
+                    { name: "Teal", value: "#14b8a6", hex: "#14b8a6" },
+                    { name: "Indigo", value: "#6366f1", hex: "#6366f1" },
+                    { name: "Rose", value: "#f43f5e", hex: "#f43f5e" },
+                    { name: "Gold", value: "#ca8a04", hex: "#ca8a04" },
                   ].map((color) => (
                     <button
                       key={color.name}
                       type="button"
                       onClick={() => setEditForm({ ...editForm, title_color: color.value })}
-                      className={`w-8 h-8 rounded-full ${color.className} border-2 ${
+                      className={`w-8 h-8 rounded-full border-2 ${
                         editForm.title_color === color.value ? "border-foreground ring-2 ring-offset-2 ring-primary" : "border-transparent"
                       } transition-all`}
+                      style={{ backgroundColor: color.hex }}
                       title={color.name}
                     />
                   ))}
@@ -1278,7 +1330,13 @@ const Admin = () => {
                 {editForm.title && (
                   <div className="mt-3">
                     <span className="text-sm text-muted-foreground mr-2">Preview:</span>
-                    <Badge className={editForm.title_color || "bg-secondary text-secondary-foreground"}>
+                    <Badge 
+                      className="border-0"
+                      style={{ 
+                        backgroundColor: editForm.title_color ? `${editForm.title_color}20` : undefined,
+                        color: editForm.title_color || undefined 
+                      }}
+                    >
                       {editForm.title}
                     </Badge>
                   </div>
