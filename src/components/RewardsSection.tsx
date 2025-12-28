@@ -14,6 +14,7 @@ import { getUserTier, TierInfo } from "@/lib/tierSystem";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PointsHistoryPanel } from "./PointsHistoryPanel";
 import { Progress } from "@/components/ui/progress";
+import { DonorMilestones } from "./DonorMilestones";
 
 interface RewardsSectionProps {
   userId: string;
@@ -62,6 +63,8 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
   const [rewardsOpen, setRewardsOpen] = useState(false);
   const [vouchersOpen, setVouchersOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [milestonesOpen, setMilestonesOpen] = useState(false);
+  const [totalDonations, setTotalDonations] = useState(0);
   const { toast } = useToast();
   const [isRedeeming, setIsRedeeming] = useState(false);
 
@@ -142,6 +145,14 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
       .limit(10);
     
     setRedemptions(redemptionsData || []);
+    
+    // Fetch total donations count
+    const { count } = await supabase
+      .from("donation_history")
+      .select("*", { count: "exact", head: true })
+      .eq("donor_id", userId);
+    
+    setTotalDonations(count || 0);
     setLoading(false);
   };
 
@@ -441,6 +452,38 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Achievements & Milestones */}
+      <Collapsible open={milestonesOpen} onOpenChange={setMilestonesOpen}>
+        <Card className="rounded-2xl border-0 shadow-md overflow-hidden">
+          <CollapsibleTrigger className="w-full">
+            <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+                    <Trophy className="h-5 w-5 text-amber-500" />
+                  </div>
+                  <div className="text-left">
+                    <CardTitle className="text-base">Achievements</CardTitle>
+                    <CardDescription className="text-xs">Track your milestones & badges</CardDescription>
+                  </div>
+                </div>
+                {milestonesOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              <DonorMilestones 
+                donorId={userId}
+                totalDonations={totalDonations}
+                currentPoints={currentPoints}
+                lifetimePoints={lifetimePoints}
+              />
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       {/* Available Rewards */}
       <Collapsible open={rewardsOpen} onOpenChange={setRewardsOpen}>

@@ -794,79 +794,89 @@ const Admin = () => {
                               </span>
                             </div>
                           </AccordionTrigger>
-                          <AccordionContent className="px-4">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Name</TableHead>
-                                  <TableHead>Phone</TableHead>
-                                  <TableHead>Location</TableHead>
-                                  <TableHead>User Type</TableHead>
-                                  <TableHead>Availability</TableHead>
-                                  <TableHead>Actions</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {donorsByBloodGroup[group].map((donor) => (
-                                  <TableRow key={donor.id}>
-                                    <TableCell className="font-medium">{donor.full_name}</TableCell>
-                                    <TableCell>{donor.phone}</TableCell>
-                                    <TableCell>{donor.district || donor.atoll || '-'}</TableCell>
-                                    <TableCell>
-                                      <Badge variant="secondary">
-                                        {donor.user_type === 'both' ? 'Donor & Receiver' : donor.user_type === 'receiver' ? 'Receiver' : 'Donor'}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                      {donor.availability_status === 'available' ? (
-                                        <Badge variant="outline" className="text-green-600 border-green-600">
-                                          Available
-                                        </Badge>
-                                      ) : donor.availability_status === 'available_soon' ? (
-                                        <Badge variant="outline" className="text-blue-600 border-blue-600">
-                                          Available Soon
-                                        </Badge>
-                                      ) : donor.availability_status === 'reserved' ? (
-                                        <Badge variant="outline" className="text-orange-600 border-orange-600">
-                                          Reserved
-                                        </Badge>
-                                      ) : (
-                                        <Badge variant="outline" className="text-red-600 border-red-600">
-                                          Unavailable
-                                        </Badge>
-                                      )}
-                                    </TableCell>
-                                    <TableCell>
-                                      <div className="flex gap-2">
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={() => openEditDialog(donor)}
-                                        >
-                                          <Edit className="h-4 w-4 mr-1" />
-                                          Edit
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={() => openHistoryDialog(donor)}
-                                        >
-                                          <Plus className="h-4 w-4 mr-1" />
-                                          History
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="destructive"
-                                          onClick={() => handleDeleteDonor(donor)}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
+                          <AccordionContent className="px-2 sm:px-4">
+                            <div className="overflow-x-auto -mx-2 sm:mx-0">
+                              <div className="min-w-[600px] sm:min-w-0">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead className="text-xs">Name</TableHead>
+                                      <TableHead className="text-xs hidden sm:table-cell">Phone</TableHead>
+                                      <TableHead className="text-xs hidden md:table-cell">Location</TableHead>
+                                      <TableHead className="text-xs">Type</TableHead>
+                                      <TableHead className="text-xs">Status</TableHead>
+                                      <TableHead className="text-xs">Actions</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {donorsByBloodGroup[group].map((donor) => (
+                                      <TableRow key={donor.id}>
+                                        <TableCell className="py-2">
+                                          <div>
+                                            <p className="font-medium text-sm">{donor.full_name}</p>
+                                            <p className="text-xs text-muted-foreground sm:hidden">{donor.phone}</p>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="hidden sm:table-cell text-sm">{donor.phone}</TableCell>
+                                        <TableCell className="hidden md:table-cell text-sm">{donor.district || donor.atoll || '-'}</TableCell>
+                                        <TableCell>
+                                          <Badge variant="secondary" className="text-[10px] px-1.5">
+                                            {donor.user_type === 'both' ? 'Both' : donor.user_type === 'receiver' ? 'Rcvr' : 'Donor'}
+                                          </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                          {donor.availability_status === 'available' ? (
+                                            <Badge variant="outline" className="text-green-600 border-green-600 text-[10px] px-1.5">
+                                              ✓
+                                            </Badge>
+                                          ) : donor.availability_status === 'available_soon' ? (
+                                            <Badge variant="outline" className="text-blue-600 border-blue-600 text-[10px] px-1.5">
+                                              Soon
+                                            </Badge>
+                                          ) : donor.availability_status === 'reserved' ? (
+                                            <Badge variant="outline" className="text-orange-600 border-orange-600 text-[10px] px-1.5">
+                                              Rsv
+                                            </Badge>
+                                          ) : (
+                                            <Badge variant="outline" className="text-red-600 border-red-600 text-[10px] px-1.5">
+                                              ✗
+                                            </Badge>
+                                          )}
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex gap-1">
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-7 w-7 p-0"
+                                              onClick={() => openEditDialog(donor)}
+                                            >
+                                              <Edit className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-7 w-7 p-0"
+                                              onClick={() => openHistoryDialog(donor)}
+                                            >
+                                              <Plus className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                              onClick={() => handleDeleteDonor(donor)}
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5" />
+                                            </Button>
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            </div>
                           </AccordionContent>
                         </AccordionItem>
                       ))}
