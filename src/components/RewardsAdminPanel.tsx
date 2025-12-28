@@ -506,12 +506,12 @@ export function RewardsAdminPanel() {
       <TierManagement />
 
       <Tabs defaultValue="settings" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-          <TabsTrigger value="rewards">Rewards</TabsTrigger>
-          <TabsTrigger value="redemptions">Redemptions</TabsTrigger>
-          <TabsTrigger value="users">All Users</TabsTrigger>
-          <TabsTrigger value="audit">Security Audit</TabsTrigger>
+        <TabsList className="w-full h-auto flex flex-wrap gap-1 bg-muted/50 p-1 rounded-xl">
+          <TabsTrigger value="settings" className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 py-1.5">Settings</TabsTrigger>
+          <TabsTrigger value="rewards" className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 py-1.5">Rewards</TabsTrigger>
+          <TabsTrigger value="redemptions" className="flex-1 min-w-[70px] text-xs sm:text-sm px-2 py-1.5">Redemptions</TabsTrigger>
+          <TabsTrigger value="users" className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 py-1.5">Users</TabsTrigger>
+          <TabsTrigger value="audit" className="flex-1 min-w-[50px] text-xs sm:text-sm px-2 py-1.5">Audit</TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings">
@@ -592,47 +592,70 @@ export function RewardsAdminPanel() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Partner</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Points</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rewards.map((reward) => (
-                <TableRow key={reward.id}>
-                  <TableCell className="font-medium">{reward.title}</TableCell>
-                  <TableCell>{reward.partner_name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{reward.category}</Badge>
-                  </TableCell>
-                  <TableCell>{reward.points_required} pts</TableCell>
-                  <TableCell>
-                    {reward.is_active ? (
-                      <Badge className="bg-green-500">Active</Badge>
-                    ) : (
-                      <Badge variant="secondary">Inactive</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openDialog(reward)}>
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleDelete(reward.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="min-w-[500px] sm:min-w-0 px-4 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Logo</TableHead>
+                    <TableHead className="text-xs">Title</TableHead>
+                    <TableHead className="text-xs hidden sm:table-cell">Partner</TableHead>
+                    <TableHead className="text-xs">Category</TableHead>
+                    <TableHead className="text-xs">Points</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rewards.map((reward) => (
+                    <TableRow key={reward.id}>
+                      <TableCell className="py-2">
+                        {reward.partner_logo_url ? (
+                          <img 
+                            src={reward.partner_logo_url} 
+                            alt={reward.partner_name}
+                            className="w-8 h-8 rounded-lg object-cover border"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-sm">{reward.title}</p>
+                          <p className="text-xs text-muted-foreground sm:hidden">{reward.partner_name}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-sm">{reward.partner_name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px]">{reward.category}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm font-mono">{reward.points_required}</TableCell>
+                      <TableCell>
+                        {reward.is_active ? (
+                          <Badge className="bg-green-500 text-[10px]">Active</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-[10px]">Off</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openDialog(reward)}>
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(reward.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         </CardContent>
           </Card>
         </TabsContent>
@@ -648,77 +671,80 @@ export function RewardsAdminPanel() {
           <CardDescription>Complete audit trail of all reward redemptions ({redemptions.length} total)</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 flex gap-2">
-            <Badge variant="outline">Pending: {redemptions.filter(r => r.status === 'pending').length}</Badge>
-            <Badge variant="outline" className="bg-green-50">Verified: {redemptions.filter(r => r.status === 'verified').length}</Badge>
-            <Badge variant="outline" className="bg-red-50">Expired: {redemptions.filter(r => r.status === 'expired').length}</Badge>
-            <Badge variant="outline">Cancelled: {redemptions.filter(r => r.status === 'cancelled').length}</Badge>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <Badge variant="outline" className="text-xs">Pending: {redemptions.filter(r => r.status === 'pending').length}</Badge>
+            <Badge variant="outline" className="bg-green-50 text-xs">Verified: {redemptions.filter(r => r.status === 'verified').length}</Badge>
+            <Badge variant="outline" className="bg-red-50 text-xs">Expired: {redemptions.filter(r => r.status === 'expired').length}</Badge>
+            <Badge variant="outline" className="text-xs">Cancelled: {redemptions.filter(r => r.status === 'cancelled').length}</Badge>
           </div>
-          <div className="max-h-[600px] overflow-y-auto">
-            <Table>
-              <TableHeader className="sticky top-0 bg-background">
-                <TableRow>
-                  <TableHead>Date/Time</TableHead>
-                  <TableHead>Donor</TableHead>
-                  <TableHead>Reward</TableHead>
-                  <TableHead>Points</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Verified At</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {redemptions.map((redemption) => (
-                  <TableRow key={redemption.id}>
-                    <TableCell className="text-xs whitespace-nowrap">
-                      {new Date(redemption.created_at).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">{redemption.profiles?.full_name}</p>
-                        <p className="text-xs text-muted-foreground">{redemption.profiles?.phone}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">{redemption.reward_catalog?.title}</p>
-                        <p className="text-xs text-muted-foreground">{redemption.reward_catalog?.partner_name}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{redemption.points_spent} pts</TableCell>
-                    <TableCell>
-                      {redemption.status === "verified" ? (
-                        <Badge className="bg-green-500">Verified</Badge>
-                      ) : redemption.status === "cancelled" ? (
-                        <Badge variant="outline">Cancelled</Badge>
-                      ) : redemption.status === "expired" ? (
-                        <Badge variant="destructive">Expired</Badge>
-                      ) : (
-                        <Badge variant="secondary">Pending</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs whitespace-nowrap">
-                      {redemption.verified_at ? new Date(redemption.verified_at).toLocaleString() : "-"}
-                    </TableCell>
-                    <TableCell className="text-xs whitespace-nowrap">
-                      {new Date(redemption.expires_at).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      {redemption.status === "pending" && (
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => cancelRedemption(redemption.id)}
-                        >
-                          Cancel
-                        </Button>
-                      )}
-                    </TableCell>
+          <div className="max-h-[600px] overflow-y-auto overflow-x-auto -mx-4 sm:mx-0">
+            <div className="min-w-[600px] sm:min-w-0 px-4 sm:px-0">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background">
+                  <TableRow>
+                    <TableHead className="text-xs">Date</TableHead>
+                    <TableHead className="text-xs">Donor</TableHead>
+                    <TableHead className="text-xs">Reward</TableHead>
+                    <TableHead className="text-xs">Pts</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs hidden md:table-cell">Verified</TableHead>
+                    <TableHead className="text-xs hidden sm:table-cell">Expires</TableHead>
+                    <TableHead className="text-xs">Action</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {redemptions.map((redemption) => (
+                    <TableRow key={redemption.id}>
+                      <TableCell className="text-xs whitespace-nowrap py-2">
+                        {new Date(redemption.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-xs sm:text-sm">{redemption.profiles?.full_name}</p>
+                          <p className="text-[10px] text-muted-foreground hidden sm:block">{redemption.profiles?.phone}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-xs sm:text-sm">{redemption.reward_catalog?.title}</p>
+                          <p className="text-[10px] text-muted-foreground hidden sm:block">{redemption.reward_catalog?.partner_name}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{redemption.points_spent}</TableCell>
+                      <TableCell>
+                        {redemption.status === "verified" ? (
+                          <Badge className="bg-green-500 text-[10px]">✓</Badge>
+                        ) : redemption.status === "cancelled" ? (
+                          <Badge variant="outline" className="text-[10px]">Canc</Badge>
+                        ) : redemption.status === "expired" ? (
+                          <Badge variant="destructive" className="text-[10px]">Exp</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-[10px]">Pend</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs whitespace-nowrap hidden md:table-cell">
+                        {redemption.verified_at ? new Date(redemption.verified_at).toLocaleDateString() : "-"}
+                      </TableCell>
+                      <TableCell className="text-xs whitespace-nowrap hidden sm:table-cell">
+                        {new Date(redemption.expires_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {redemption.status === "pending" && (
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                            onClick={() => cancelRedemption(redemption.id)}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </CardContent>
           </Card>
@@ -748,57 +774,61 @@ export function RewardsAdminPanel() {
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Donor</TableHead>
-                              <TableHead>Current Points</TableHead>
-                              <TableHead>Lifetime Points</TableHead>
-                              <TableHead>Tier</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {groupDonors.map((donor) => (
-                              <TableRow key={donor.id}>
-                                <TableCell>
-                                  <div>
-                                    <p className="font-medium">{donor.profiles?.full_name}</p>
-                                    <p className="text-xs text-muted-foreground">{donor.profiles?.phone}</p>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <span className="font-semibold">{donor.total_points}</span> pts
-                                </TableCell>
-                                <TableCell>
-                                  <span className="font-semibold">{donor.lifetime_points}</span> pts
-                                </TableCell>
-                                <TableCell>
-                                  <Badge 
-                                    className={
-                                      donor.tier?.name === "Platinum" ? "bg-purple-500" :
-                                      donor.tier?.name === "Gold" ? "bg-yellow-500" :
-                                      donor.tier?.name === "Silver" ? "bg-gray-400" :
-                                      "bg-orange-500"
-                                    }
-                                  >
-                                    {donor.tier?.name} ({donor.tier?.discount}% off)
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    onClick={() => openPointsEditDialog(donor)}
-                                  >
-                                    <Edit className="h-3 w-3 mr-1" />
-                                    Edit
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                        <div className="overflow-x-auto -mx-4 sm:mx-0">
+                          <div className="min-w-[450px] sm:min-w-0 px-4 sm:px-0">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-xs">Donor</TableHead>
+                                  <TableHead className="text-xs">Current</TableHead>
+                                  <TableHead className="text-xs hidden sm:table-cell">Lifetime</TableHead>
+                                  <TableHead className="text-xs">Tier</TableHead>
+                                  <TableHead className="text-xs">Action</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {groupDonors.map((donor) => (
+                                  <TableRow key={donor.id}>
+                                    <TableCell className="py-2">
+                                      <div>
+                                        <p className="font-medium text-sm">{donor.profiles?.full_name}</p>
+                                        <p className="text-[10px] text-muted-foreground hidden sm:block">{donor.profiles?.phone}</p>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <span className="font-semibold text-sm">{donor.total_points}</span>
+                                    </TableCell>
+                                    <TableCell className="hidden sm:table-cell">
+                                      <span className="text-sm text-muted-foreground">{donor.lifetime_points}</span>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge 
+                                        className={`text-[10px] ${
+                                          donor.tier?.name === "Platinum" ? "bg-purple-500" :
+                                          donor.tier?.name === "Gold" ? "bg-yellow-500" :
+                                          donor.tier?.name === "Silver" ? "bg-gray-400" :
+                                          "bg-orange-500"
+                                        }`}
+                                      >
+                                        {donor.tier?.name}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Button 
+                                        size="sm" 
+                                        variant="ghost" 
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => openPointsEditDialog(donor)}
+                                      >
+                                        <Edit className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </div>
                       </AccordionContent>
                     </AccordionItem>
                   );
