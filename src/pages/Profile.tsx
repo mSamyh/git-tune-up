@@ -348,10 +348,14 @@ const Profile = () => {
                     <h1 className="text-xl font-bold">{profile.full_name}</h1>
                     {profile.title && (
                       <Badge 
-                        className="text-xs border-0"
+                        className="text-xs border-0 font-medium"
                         style={{ 
-                          backgroundColor: profile.title_color ? `${profile.title_color}20` : undefined,
-                          color: profile.title_color || undefined 
+                          backgroundColor: profile.title_color && profile.title_color.startsWith('#') 
+                            ? `${profile.title_color}20` 
+                            : 'hsl(var(--secondary))',
+                          color: profile.title_color && profile.title_color.startsWith('#') 
+                            ? profile.title_color 
+                            : 'hsl(var(--secondary-foreground))'
                         }}
                       >
                         <Sparkles className="h-3 w-3 mr-1" />
