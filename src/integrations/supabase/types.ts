@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          color: string
+          created_at: string
+          description: string
+          icon_name: string
+          id: string
+          is_active: boolean
+          requirement_type: string
+          requirement_value: number
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description: string
+          icon_name?: string
+          id?: string
+          is_active?: boolean
+          requirement_type: string
+          requirement_value: number
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string
+          icon_name?: string
+          id?: string
+          is_active?: boolean
+          requirement_type?: string
+          requirement_value?: number
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       atolls: {
         Row: {
           created_at: string

@@ -18,6 +18,7 @@ import { UserRoleManager } from "@/components/UserRoleManager";
 import { TelegramConfigManager } from "@/components/TelegramConfigManager";
 
 import { RewardsAdminPanel } from "@/components/RewardsAdminPanel";
+import { AchievementsAdminPanel } from "@/components/AchievementsAdminPanel";
 import { Textarea } from "@/components/ui/textarea";
 import { AppHeader } from "@/components/AppHeader";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -1249,8 +1250,9 @@ const Admin = () => {
             
           </TabsContent>
 
-          <TabsContent value="rewards">
+          <TabsContent value="rewards" className="space-y-4">
             <RewardsAdminPanel />
+            <AchievementsAdminPanel />
           </TabsContent>
 
           <TabsContent value="admins">
