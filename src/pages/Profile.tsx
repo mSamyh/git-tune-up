@@ -344,25 +344,23 @@ const Profile = () => {
 
                 {/* Name and info */}
                 <div className="mt-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-xl font-bold">{profile.full_name}</h1>
-                    {profile.title && (
-                      <Badge 
-                        className="text-xs border-0 font-medium"
-                        style={{ 
-                          backgroundColor: profile.title_color && profile.title_color.startsWith('#') 
-                            ? `${profile.title_color}20` 
-                            : 'hsl(var(--secondary))',
-                          color: profile.title_color && profile.title_color.startsWith('#') 
-                            ? profile.title_color 
-                            : 'hsl(var(--secondary-foreground))'
-                        }}
-                      >
-                        <Sparkles className="h-3 w-3 mr-1" />
-                        {profile.title}
-                      </Badge>
-                    )}
-                  </div>
+                  <h1 className="text-xl font-bold">{profile.full_name}</h1>
+                  {profile.title && (
+                    <Badge 
+                      className="text-xs border-0 font-medium mt-1"
+                      style={{ 
+                        backgroundColor: profile.title_color && profile.title_color.startsWith('#') 
+                          ? `${profile.title_color}20` 
+                          : 'hsl(var(--secondary))',
+                        color: profile.title_color && profile.title_color.startsWith('#') 
+                          ? profile.title_color 
+                          : 'hsl(var(--secondary-foreground))'
+                      }}
+                    >
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      {profile.title}
+                    </Badge>
+                  )}
                   
                   <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-1.5">
                     <span className={`inline-block h-2 w-2 rounded-full ${getStatusColor()}`} />
