@@ -414,6 +414,33 @@ const Admin = () => {
         description: error.message,
       });
     } else {
+      // After deletion, recalculate last_donation_date for this donor
+      if (donation) {
+        const { data: remaining } = await supabase
+          .from("donation_history")
+          .select("donation_date")
+          .eq("donor_id", donation.donor_id)
+          .order("donation_date", { ascending: false })
+          .limit(1);
+
+        if (!remaining || remaining.length === 0) {
+          // No more donations: clear last_donation_date and set available
+          await supabase
+            .from("profiles")
+            .update({ 
+              last_donation_date: null,
+              availability_status: 'available'
+            })
+            .eq("id", donation.donor_id);
+        } else {
+          // Still has donations: set last_donation_date to most recent
+          await supabase
+            .from("profiles")
+            .update({ last_donation_date: remaining[0].donation_date })
+            .eq("id", donation.donor_id);
+        }
+      }
+      
       toast({ title: "Donation deleted successfully" });
       fetchData();
     }

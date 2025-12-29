@@ -269,15 +269,23 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center justify-center gap-2 flex-wrap">
-                      <h1 className="text-xl font-bold">{donor.full_name}</h1>
-                      {donor.title && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          {donor.title}
-                        </Badge>
-                      )}
-                    </div>
+                    <h1 className="text-xl font-bold">{donor.full_name}</h1>
+                    {donor.title && (
+                      <Badge 
+                        className="text-xs border-0 font-medium mt-1"
+                        style={{ 
+                          backgroundColor: donor.title_color && donor.title_color.startsWith('#') 
+                            ? `${donor.title_color}20` 
+                            : 'hsl(var(--secondary))',
+                          color: donor.title_color && donor.title_color.startsWith('#') 
+                            ? donor.title_color 
+                            : 'hsl(var(--secondary-foreground))'
+                        }}
+                      >
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        {donor.title}
+                      </Badge>
+                    )}
                     
                     <p className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-1.5">
                       <span className={`inline-block h-2 w-2 rounded-full ${getStatusColor()}`} />
