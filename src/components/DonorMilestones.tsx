@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Trophy, Target, Flame, Award, Star, Heart, Zap, Crown, Medal, Sparkles, Share2, icons } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Trophy, Target, Flame, Award, Star, Heart, Zap, Crown, Medal, Sparkles, Share2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface DonorMilestonesProps {
@@ -32,7 +31,6 @@ interface ProcessedAchievement extends Achievement {
   icon: React.ReactNode;
 }
 
-// Icon mapping for dynamic icons
 const iconMap: { [key: string]: React.ComponentType<{ className?: string }> } = {
   Heart, Star, Award, Trophy, Crown, Zap, Target, Medal, Sparkles, Flame
 };
@@ -70,7 +68,7 @@ export function DonorMilestones({ donorId, totalDonations, currentPoints, lifeti
           ...a,
           requirement_type: reqType,
           unlocked,
-          icon: <IconComponent className="h-5 w-5" />
+          icon: <IconComponent className="h-4 w-4" />
         };
       });
       setAchievements(processed);
@@ -155,170 +153,166 @@ export function DonorMilestones({ donorId, totalDonations, currentPoints, lifeti
   };
 
   return (
-    <Card className="border-0 shadow-md bg-gradient-to-br from-background to-muted/20 overflow-hidden">
-      <CardHeader className="pb-2 pt-3 px-3">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-sm">
-            <Trophy className="h-4 w-4 text-white" />
-          </div>
-          <div>
-            <CardTitle className="text-base">Achievements</CardTitle>
-            <CardDescription className="text-[10px]">Track your milestones</CardDescription>
-          </div>
+    <div className="space-y-4">
+      {/* Streak Banner - Instagram Stories Style */}
+      <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-orange-500/10 via-red-500/10 to-pink-500/10 border border-orange-500/20">
+        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+          <Flame className="h-6 w-6 text-white" />
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3 px-3 pb-3">
-        {/* Compact Streak */}
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center flex-shrink-0">
-            <Flame className="h-4 w-4 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm">{donationStreak} Donations</p>
-            <p className="text-[10px] text-muted-foreground">This year</p>
-          </div>
-          {donationStreak >= 4 && (
-            <Badge className="bg-gradient-to-r from-orange-500 to-red-500 border-0 text-[10px] px-1.5 py-0.5">
-              🔥
-            </Badge>
-          )}
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-lg">{donationStreak}</p>
+          <p className="text-xs text-muted-foreground">Donations this year</p>
         </div>
-
-        {/* Progress to Next - Compact */}
-        {nextAchievement && (
-          <div className="p-2 rounded-lg bg-muted/50 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <div 
-                  className="h-6 w-6 rounded-md flex items-center justify-center opacity-60"
-                  style={{ backgroundColor: nextAchievement.color }}
-                >
-                  <span className="text-white scale-75">{nextAchievement.icon}</span>
-                </div>
-                <div>
-                  <p className="text-xs font-medium leading-tight">{nextAchievement.title}</p>
-                  <p className="text-[10px] text-muted-foreground">{nextAchievement.description}</p>
-                </div>
-              </div>
-              <span className="text-xs font-mono">
-                {nextAchievement.requirement_type === "donations" ? totalDonations : lifetimePoints}/{nextAchievement.requirement_value}
-              </span>
-            </div>
-            <Progress value={getProgressValue()} className="h-1.5" />
-          </div>
+        {donationStreak >= 4 && (
+          <Badge className="bg-gradient-to-r from-orange-500 to-red-500 border-0 text-xs px-2 py-0.5">
+            🔥 On Fire
+          </Badge>
         )}
+      </div>
 
-        {/* Earned Badges - Compact Grid */}
-        <div className="space-y-1.5">
-          <p className="text-xs font-medium flex items-center gap-1">
-            <Award className="h-3 w-3 text-amber-500" />
-            Earned ({unlockedAchievements.length})
-            <span className="text-[10px] text-muted-foreground">• Tap to share</span>
+      {/* Progress to Next Achievement */}
+      {nextAchievement && (
+        <div className="p-3 rounded-xl bg-muted/50 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div 
+                className="h-8 w-8 rounded-full flex items-center justify-center opacity-70"
+                style={{ backgroundColor: nextAchievement.color }}
+              >
+                <span className="text-white">{nextAchievement.icon}</span>
+              </div>
+              <div>
+                <p className="text-sm font-medium">{nextAchievement.title}</p>
+                <p className="text-xs text-muted-foreground">{nextAchievement.description}</p>
+              </div>
+            </div>
+            <span className="text-xs font-mono text-muted-foreground">
+              {nextAchievement.requirement_type === "donations" ? totalDonations : lifetimePoints}/{nextAchievement.requirement_value}
+            </span>
+          </div>
+          <Progress value={getProgressValue()} className="h-1.5" />
+        </div>
+      )}
+
+      {/* Earned Badges - Instagram Highlights Style */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold flex items-center gap-1.5">
+            <Award className="h-4 w-4 text-amber-500" />
+            Badges ({unlockedAchievements.length})
           </p>
-          <div className="flex flex-wrap gap-1.5">
+          <span className="text-xs text-muted-foreground">Tap to share</span>
+        </div>
+        
+        {unlockedAchievements.length > 0 ? (
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
             {unlockedAchievements.map(achievement => (
               <button
                 key={achievement.id}
                 onClick={() => handleShareBadge(achievement)}
-                className="h-8 w-8 rounded-full flex items-center justify-center shadow-sm hover:scale-110 transition-transform relative group"
-                style={{ backgroundColor: achievement.color }}
-                title={achievement.title}
+                className="flex flex-col items-center gap-1.5 flex-shrink-0 group"
               >
-                <span className="text-white scale-90">{achievement.icon}</span>
-                <div className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Share2 className="h-2 w-2 text-primary-foreground" />
+                <div 
+                  className="h-14 w-14 rounded-full flex items-center justify-center shadow-md ring-2 ring-offset-2 ring-offset-background transition-all group-hover:scale-105 group-hover:shadow-lg"
+                  style={{ 
+                    backgroundColor: achievement.color,
+                    boxShadow: `0 0 0 2px ${achievement.color}`
+                  }}
+                >
+                  <span className="text-white scale-110">{achievement.icon}</span>
                 </div>
+                <span className="text-[10px] font-medium text-center max-w-[60px] truncate">
+                  {achievement.title}
+                </span>
               </button>
             ))}
-            {unlockedAchievements.length === 0 && (
-              <p className="text-[10px] text-muted-foreground italic">Complete milestones to earn badges!</p>
-            )}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground italic py-2">
+            Complete milestones to earn badges!
+          </p>
+        )}
+      </div>
+
+      {/* Locked Badges Preview */}
+      {lockedAchievements.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">Upcoming</p>
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+            {lockedAchievements.slice(0, 5).map(achievement => (
+              <div
+                key={achievement.id}
+                className="flex flex-col items-center gap-1 flex-shrink-0 opacity-40"
+              >
+                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground/30">
+                  <span className="scale-90">{achievement.icon}</span>
+                </div>
+                <span className="text-[9px] text-muted-foreground text-center max-w-[50px] truncate">
+                  {achievement.requirement_type === "donations" 
+                    ? `${achievement.requirement_value} don.`
+                    : `${achievement.requirement_value} pts`
+                  }
+                </span>
+              </div>
+            ))}
           </div>
         </div>
+      )}
 
-        {/* Locked Preview - Horizontal Scroll */}
-        {lockedAchievements.length > 0 && (
-          <div className="space-y-1">
-            <p className="text-[10px] font-medium text-muted-foreground">Upcoming</p>
-            <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-              {lockedAchievements.slice(0, 4).map(achievement => (
-                <div
-                  key={achievement.id}
-                  className="flex-shrink-0 flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30 border border-dashed border-muted-foreground/20 opacity-50"
-                >
-                  <div className="h-5 w-5 rounded bg-muted flex items-center justify-center">
-                    <span className="scale-75">{achievement.icon}</span>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-medium leading-tight">{achievement.title}</p>
-                    <p className="text-[8px] text-muted-foreground">
-                      {achievement.requirement_type === "donations" 
-                        ? `${achievement.requirement_value} donations`
-                        : `${achievement.requirement_value} pts`
-                      }
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </CardContent>
-
-      {/* Snapchat/Strava Style Share Dialog */}
+      {/* Share Dialog - Modern Full-Screen Story Style */}
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-        <DialogContent className="w-[280px] max-w-[90vw] p-0 border-0 bg-transparent shadow-none overflow-visible">
+        <DialogContent className="max-w-[320px] p-0 border-0 bg-transparent shadow-none gap-0">
           {selectedBadge && (
-            <div className="flex flex-col items-center gap-3">
-              {/* Branded Badge Card - Strava/Snapchat Style */}
+            <div className="flex flex-col items-center gap-4">
+              {/* Branded Badge Card */}
               <div 
                 className="w-full rounded-3xl overflow-hidden shadow-2xl"
                 style={{
                   background: `linear-gradient(135deg, ${selectedBadge.color}ee, ${selectedBadge.color}88)`
                 }}
               >
-                {/* Card Content */}
-                <div className="p-5 text-center text-white relative overflow-hidden">
-                  {/* Decorative Circles */}
-                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/2" />
-                  <div className="absolute bottom-0 left-0 w-16 h-16 rounded-full bg-white/10 translate-y-1/2 -translate-x-1/2" />
+                <div className="p-6 text-center text-white relative overflow-hidden">
+                  {/* Decorative elements */}
+                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/2" />
+                  <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full bg-white/10 translate-y-1/2 -translate-x-1/2" />
+                  <div className="absolute top-1/2 left-1/4 w-3 h-3 rounded-full bg-white/20" />
+                  <div className="absolute top-1/3 right-1/4 w-2 h-2 rounded-full bg-white/30" />
                   
-                  {/* Achievement Unlocked Label */}
-                  <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/20 backdrop-blur text-xs font-medium mb-3">
-                    <Sparkles className="h-3 w-3" />
+                  {/* Achievement label */}
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur text-xs font-semibold mb-4 relative">
+                    <Sparkles className="h-3.5 w-3.5" />
                     Achievement Unlocked!
                   </div>
                   
                   {/* Large Badge Icon */}
-                  <div className="h-20 w-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3 ring-4 ring-white/30">
-                    <span className="scale-[2] text-white">{selectedBadge.icon}</span>
+                  <div className="h-24 w-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-4 ring-4 ring-white/30 relative">
+                    <span className="scale-[2.5] text-white">{selectedBadge.icon}</span>
                   </div>
                   
                   {/* Badge Info */}
-                  <h2 className="text-xl font-bold mb-1 drop-shadow-sm">{selectedBadge.title}</h2>
-                  <p className="text-white/80 text-sm mb-3">{selectedBadge.description}</p>
+                  <h2 className="text-2xl font-bold mb-1 drop-shadow-sm">{selectedBadge.title}</h2>
+                  <p className="text-white/80 text-sm mb-4 px-4">{selectedBadge.description}</p>
                   
                   {/* Donor Name */}
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur">
-                    <Heart className="h-3 w-3 fill-current" />
-                    <span className="text-sm font-medium">{donorName}</span>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur relative">
+                    <Heart className="h-4 w-4 fill-current" />
+                    <span className="font-medium">{donorName}</span>
                   </div>
                 </div>
                 
                 {/* Leyhadhiya Branding Footer */}
-                <div className="bg-black/20 backdrop-blur px-4 py-2.5 flex items-center justify-center gap-2">
-                  <div className="h-5 w-5 rounded-full bg-red-500 flex items-center justify-center">
-                    <Heart className="h-3 w-3 text-white fill-white" />
+                <div className="bg-black/20 backdrop-blur px-4 py-3 flex items-center justify-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-red-500 flex items-center justify-center">
+                    <Heart className="h-3.5 w-3.5 text-white fill-white" />
                   </div>
-                  <span className="text-white/90 text-xs font-semibold tracking-wide">Leyhadhiya Blood Bank</span>
+                  <span className="text-white/90 text-sm font-semibold tracking-wide">Leyhadhiya Blood Bank</span>
                 </div>
               </div>
 
               {/* Share Buttons */}
               <div className="flex gap-2 w-full">
                 <Button
-                  size="sm"
-                  className="flex-1 h-11 rounded-xl bg-green-500 hover:bg-green-600 text-white gap-2"
+                  className="flex-1 h-12 rounded-2xl bg-green-500 hover:bg-green-600 text-white gap-2 font-semibold"
                   onClick={shareToWhatsApp}
                 >
                   <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -327,8 +321,7 @@ export function DonorMilestones({ donorId, totalDonations, currentPoints, lifeti
                   WhatsApp
                 </Button>
                 <Button
-                  size="sm"
-                  className="flex-1 h-11 rounded-xl bg-black hover:bg-gray-800 text-white gap-2"
+                  className="flex-1 h-12 rounded-2xl bg-black hover:bg-gray-800 text-white gap-2 font-semibold"
                   onClick={shareToTwitter}
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -337,18 +330,26 @@ export function DonorMilestones({ donorId, totalDonations, currentPoints, lifeti
                   X
                 </Button>
                 <Button
-                  size="sm"
                   variant="secondary"
-                  className="h-11 w-11 rounded-xl p-0"
+                  className="h-12 w-12 rounded-2xl p-0"
                   onClick={handleNativeShare}
                 >
                   <Share2 className="h-5 w-5" />
                 </Button>
               </div>
+              
+              {/* Close button */}
+              <Button
+                variant="ghost"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => setShareDialogOpen(false)}
+              >
+                Close
+              </Button>
             </div>
           )}
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 }

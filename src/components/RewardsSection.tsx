@@ -455,9 +455,9 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
 
       {/* Achievements & Milestones */}
       <Collapsible open={milestonesOpen} onOpenChange={setMilestonesOpen}>
-        <Card className="rounded-2xl border-0 shadow-md overflow-hidden">
+        <Card className="rounded-2xl border-0 shadow-md">
           <CollapsibleTrigger className="w-full">
-            <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors">
+            <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
@@ -473,7 +473,7 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <CardContent className="pt-0">
+            <CardContent className="pt-0 pb-4">
               <DonorMilestones 
                 donorId={userId}
                 totalDonations={totalDonations}

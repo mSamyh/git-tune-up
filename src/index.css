@@ -105,14 +105,25 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
   /* Smooth page transitions */
   .page-transition {
     @apply animate-fade-in;
   }
 
-  /* Glass morphism effect */
+  /* Glass morphism effect - Instagram style */
   .glass {
-    @apply bg-card/80 backdrop-blur-md border border-border/50;
+    @apply bg-card/80 backdrop-blur-lg border border-border/50;
   }
 
   /* Smooth hover scale */
@@ -133,5 +144,21 @@ All colors MUST be HSL.
   /* Gradient text */
   .gradient-text {
     @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
+  }
+
+  /* Instagram-style story ring */
+  .story-ring {
+    @apply ring-2 ring-offset-2 ring-offset-background ring-primary;
+  }
+
+  /* Modern card shadow */
+  .card-shadow {
+    box-shadow: 0 2px 8px -2px hsl(var(--foreground) / 0.08), 
+                0 4px 16px -4px hsl(var(--foreground) / 0.12);
+  }
+
+  /* Floating action button style */
+  .fab-shadow {
+    box-shadow: 0 4px 14px 0 hsl(var(--primary) / 0.39);
   }
 }
