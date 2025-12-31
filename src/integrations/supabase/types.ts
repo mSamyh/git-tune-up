@@ -332,6 +332,50 @@ export type Database = {
           },
         ]
       }
+      merchant_accounts: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          partner_id: string | null
+          phone: string | null
+          pin: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          partner_id?: string | null
+          phone?: string | null
+          pin: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          partner_id?: string | null
+          phone?: string | null
+          pin?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_accounts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "reward_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -558,6 +602,7 @@ export type Database = {
           reward_id: string
           status: string
           verified_at: string | null
+          verified_by_merchant_id: string | null
           voucher_code: string
         }
         Insert: {
@@ -570,6 +615,7 @@ export type Database = {
           reward_id: string
           status?: string
           verified_at?: string | null
+          verified_by_merchant_id?: string | null
           voucher_code: string
         }
         Update: {
@@ -582,6 +628,7 @@ export type Database = {
           reward_id?: string
           status?: string
           verified_at?: string | null
+          verified_by_merchant_id?: string | null
           voucher_code?: string
         }
         Relationships: [
@@ -597,6 +644,13 @@ export type Database = {
             columns: ["reward_id"]
             isOneToOne: false
             referencedRelation: "reward_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "redemption_history_verified_by_merchant_id_fkey"
+            columns: ["verified_by_merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_accounts"
             referencedColumns: ["id"]
           },
         ]

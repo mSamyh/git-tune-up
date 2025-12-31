@@ -17,6 +17,7 @@ import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import VerifyQR from "./pages/VerifyQR";
 import VerifyDonor from "./pages/VerifyDonor";
+import MerchantPortal from "./pages/MerchantPortal";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/about" element={<About />} />
           <Route path="/verify-qr/:voucherCode" element={<VerifyQR />} />
           <Route path="/verify-donor/:donorId" element={<VerifyDonor />} />
+          <Route path="/merchant" element={<MerchantPortal />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

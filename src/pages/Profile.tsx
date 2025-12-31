@@ -10,11 +10,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { 
   Droplet, MapPin, Phone, Edit2, Settings, Gift, QrCode, LogOut, 
   Calendar, Award, Heart, Shield, ChevronRight, X, Check, Clock,
-  User, Activity, Sparkles
+  User, Grid3X3, Bookmark, MoreHorizontal, Sparkles, MessageCircle, Link2
 } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { AvatarUpload } from "@/components/AvatarUpload";
@@ -58,7 +57,7 @@ const Profile = () => {
   const [showQRCard, setShowQRCard] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editBio, setEditBio] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("posts");
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -227,17 +226,17 @@ const Profile = () => {
 
   const getStatusColor = () => {
     switch (availabilityStatus) {
-      case 'available': return 'bg-green-500';
-      case 'reserved': return 'bg-amber-500';
-      default: return 'bg-red-500';
+      case 'available': return 'from-green-400 to-emerald-500';
+      case 'reserved': return 'from-amber-400 to-orange-500';
+      default: return 'from-red-400 to-rose-500';
     }
   };
 
-  const getStatusText = () => {
+  const getStatusRingColor = () => {
     switch (availabilityStatus) {
-      case 'available': return 'Available to donate';
-      case 'reserved': return 'Reserved for donation';
-      default: return 'Currently unavailable';
+      case 'available': return 'ring-green-500';
+      case 'reserved': return 'ring-amber-500';
+      default: return 'ring-red-500';
     }
   };
 
@@ -246,8 +245,14 @@ const Profile = () => {
       <div className="min-h-screen bg-background pb-20">
         <AppHeader />
         <main className="container mx-auto px-4 py-4 max-w-lg">
-          <Skeleton className="h-48 w-full rounded-2xl mb-4" />
-          <Skeleton className="h-24 w-full rounded-2xl" />
+          <div className="flex items-center gap-4 mb-6">
+            <Skeleton className="h-20 w-20 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </div>
+          <Skeleton className="h-16 w-full rounded-xl" />
         </main>
         <BottomNav />
       </div>
@@ -272,334 +277,335 @@ const Profile = () => {
   }
 
   const isDonor = userType === 'donor' || userType === 'both';
-  const isFirstTimeDonor = !profile?.last_donation_date && donationCount === 0;
 
   return (
     <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
-      <main className="container mx-auto max-w-md px-4">
-        {/* Hero Profile Section */}
-        <div className="relative">
-          {/* Cover gradient */}
-          <div className="h-28 bg-gradient-to-br from-primary via-primary/80 to-primary/60 rounded-b-3xl" />
-          
-          {/* Profile card overlapping cover */}
-          <div className="px-4 -mt-16 relative z-10">
-            <div className="bg-card border border-border rounded-2xl shadow-lg overflow-hidden">
-              {/* Avatar and actions */}
-              <div className="px-4 pt-4 pb-3">
-                <div className="flex items-start justify-between">
-                  {/* Avatar with status ring */}
-                  <div className="relative">
-                    <div className={`absolute inset-0 rounded-full ${getStatusColor()} animate-pulse opacity-30 scale-110`} />
-                    <div className={`p-1 rounded-full ${getStatusColor()}`}>
-                      <AvatarUpload
-                        currentAvatarUrl={profile.avatar_url}
-                        userName={profile.full_name}
-                        onUploadComplete={(url) => setProfile(prev => prev ? {...prev, avatar_url: url} : null)}
-                        size="lg"
-                      />
-                    </div>
-                    {/* Status dot */}
-                    <div className={`absolute bottom-1 right-1 h-5 w-5 rounded-full border-3 border-card ${getStatusColor()} flex items-center justify-center`}>
-                      {availabilityStatus === 'available' && <Check className="h-3 w-3 text-white" />}
-                      {availabilityStatus === 'reserved' && <Clock className="h-3 w-3 text-white" />}
-                      {availabilityStatus === 'unavailable' && <X className="h-3 w-3 text-white" />}
-                    </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex items-center gap-2">
-                    {isDonor && (
-                      <>
-                        <Button 
-                          variant="outline" 
-                          size="icon"
-                          className="h-9 w-9 rounded-full"
-                          onClick={() => setShowQRCard(true)}
-                        >
-                          <QrCode className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="icon"
-                          className="h-9 w-9 rounded-full"
-                          onClick={() => setShowRewardsDialog(true)}
-                        >
-                          <Gift className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      className="h-9 w-9 rounded-full"
-                      onClick={() => setShowEditDialog(true)}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Name and info */}
-                <div className="mt-3">
-                  <h1 className="text-xl font-bold">{profile.full_name}</h1>
-                  {profile.title && (
-                    <Badge 
-                      className="text-xs border-0 font-medium mt-1"
-                      style={{ 
-                        backgroundColor: profile.title_color && profile.title_color.startsWith('#') 
-                          ? `${profile.title_color}20` 
-                          : 'hsl(var(--secondary))',
-                        color: profile.title_color && profile.title_color.startsWith('#') 
-                          ? profile.title_color 
-                          : 'hsl(var(--secondary-foreground))'
-                      }}
-                    >
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      {profile.title}
-                    </Badge>
-                  )}
-                  
-                  <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                    <span className={`inline-block h-2 w-2 rounded-full ${getStatusColor()}`} />
-                    {getStatusText()}
-                  </p>
-                  
-                  {profile.bio && (
-                    <p className="text-sm text-foreground/80 mt-2 leading-relaxed">{profile.bio}</p>
-                  )}
-
-                  {/* Quick info pills */}
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                      <Droplet className="h-3 w-3" />
-                      {profile.blood_group}
-                    </div>
-                    {profile.atoll && profile.island && (
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-muted text-muted-foreground rounded-full text-xs">
-                        <MapPin className="h-3 w-3" />
-                        {profile.island}
-                      </div>
-                    )}
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-muted text-muted-foreground rounded-full text-xs">
-                      <Phone className="h-3 w-3" />
-                      {profile.phone}
-                    </div>
-                  </div>
+      <main className="container mx-auto max-w-lg px-4">
+        {/* Instagram-style Profile Header */}
+        <div className="py-4">
+          {/* Top row: Avatar and Stats */}
+          <div className="flex items-center gap-6 mb-4">
+            {/* Avatar with gradient ring */}
+            <div className="relative flex-shrink-0">
+              <div className={`p-[3px] rounded-full bg-gradient-to-tr ${getStatusColor()}`}>
+                <div className="p-[2px] rounded-full bg-background">
+                  <AvatarUpload
+                    currentAvatarUrl={profile.avatar_url}
+                    userName={profile.full_name}
+                    onUploadComplete={(url) => setProfile(prev => prev ? {...prev, avatar_url: url} : null)}
+                    size="lg"
+                  />
                 </div>
               </div>
+              {/* Status indicator */}
+              <div className={`absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-background flex items-center justify-center ${
+                availabilityStatus === 'available' ? 'bg-green-500' : 
+                availabilityStatus === 'reserved' ? 'bg-amber-500' : 'bg-red-500'
+              }`}>
+                {availabilityStatus === 'available' && <Check className="h-3 w-3 text-white" />}
+                {availabilityStatus === 'reserved' && <Clock className="h-3 w-3 text-white" />}
+                {availabilityStatus === 'unavailable' && <X className="h-3 w-3 text-white" />}
+              </div>
+            </div>
 
-              {/* Stats bar */}
-              <div className="grid grid-cols-3 border-t border-border bg-muted/30">
-                <button 
-                  className="py-3 text-center hover:bg-muted/50 transition-colors"
-                  onClick={() => navigate('/history')}
-                >
-                  <p className="text-xl font-bold text-primary">{donationCount}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Donations</p>
-                </button>
-                <button 
-                  className="py-3 text-center border-x border-border hover:bg-muted/50 transition-colors"
-                  onClick={() => setShowRewardsDialog(true)}
-                >
-                  <p className="text-xl font-bold text-amber-500">{totalPoints}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Points</p>
-                </button>
-                <div className="py-3 text-center">
-                  <p className="text-xl font-bold text-emerald-500">{donationCount}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Lives Saved</p>
-                </div>
+            {/* Stats */}
+            <div className="flex-1 flex justify-around">
+              <button onClick={() => navigate('/history')} className="text-center hover:opacity-70 transition-opacity">
+                <p className="text-xl font-bold">{donationCount}</p>
+                <p className="text-xs text-muted-foreground">Donations</p>
+              </button>
+              <button onClick={() => setShowRewardsDialog(true)} className="text-center hover:opacity-70 transition-opacity">
+                <p className="text-xl font-bold">{totalPoints}</p>
+                <p className="text-xs text-muted-foreground">Points</p>
+              </button>
+              <div className="text-center">
+                <p className="text-xl font-bold text-primary">{profile.blood_group}</p>
+                <p className="text-xs text-muted-foreground">Blood</p>
               </div>
             </div>
           </div>
+
+          {/* Name and Bio */}
+          <div className="mb-4">
+            <div className="flex items-center gap-2">
+              <h1 className="text-base font-bold">{profile.full_name}</h1>
+              {profile.title && (
+                <Badge 
+                  className="text-[10px] border-0 font-medium px-2 py-0"
+                  style={{ 
+                    backgroundColor: profile.title_color ? `${profile.title_color}20` : 'hsl(var(--primary) / 0.1)',
+                    color: profile.title_color || 'hsl(var(--primary))'
+                  }}
+                >
+                  {profile.title}
+                </Badge>
+              )}
+            </div>
+            
+            {/* Category/Type badge */}
+            <p className="text-sm text-muted-foreground">
+              {userType === 'both' ? 'Donor & Receiver' : userType === 'donor' ? 'Blood Donor' : 'Blood Receiver'}
+            </p>
+            
+            {profile.bio && (
+              <p className="text-sm mt-1">{profile.bio}</p>
+            )}
+            
+            {/* Location and contact */}
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
+              {profile.island && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {profile.island}
+                </span>
+              )}
+              <span className="flex items-center gap-1">
+                <Phone className="h-3 w-3" />
+                {profile.phone}
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons - Instagram style */}
+          <div className="flex gap-2 mb-4">
+            <Button 
+              variant="secondary" 
+              className="flex-1 rounded-lg h-9 text-sm font-semibold"
+              onClick={() => setShowEditDialog(true)}
+            >
+              Edit profile
+            </Button>
+            <Button 
+              variant="secondary" 
+              className="flex-1 rounded-lg h-9 text-sm font-semibold"
+              onClick={() => setShowRewardsDialog(true)}
+            >
+              <Gift className="h-4 w-4 mr-1" />
+              Rewards
+            </Button>
+            <Button 
+              variant="secondary" 
+              size="icon"
+              className="rounded-lg h-9 w-9"
+              onClick={() => setShowQRCard(true)}
+            >
+              <QrCode className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Highlights / Quick Stats */}
+          {isDonor && (
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex flex-col items-center flex-shrink-0">
+                <div className="h-16 w-16 rounded-full border-2 border-muted flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 mb-1">
+                  <Heart className="h-7 w-7 text-primary" />
+                </div>
+                <span className="text-xs text-center">{donationCount} Saved</span>
+              </div>
+              <div className="flex flex-col items-center flex-shrink-0">
+                <div className="h-16 w-16 rounded-full border-2 border-muted flex items-center justify-center bg-gradient-to-br from-amber-500/20 to-amber-500/5 mb-1">
+                  <Award className="h-7 w-7 text-amber-500" />
+                </div>
+                <span className="text-xs text-center">{totalPoints} Pts</span>
+              </div>
+              <button 
+                onClick={() => navigate('/history')}
+                className="flex flex-col items-center flex-shrink-0"
+              >
+                <div className="h-16 w-16 rounded-full border-2 border-muted flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-blue-500/5 mb-1">
+                  <Calendar className="h-7 w-7 text-blue-500" />
+                </div>
+                <span className="text-xs text-center">History</span>
+              </button>
+              <button 
+                onClick={() => setShowQRCard(true)}
+                className="flex flex-col items-center flex-shrink-0"
+              >
+                <div className="h-16 w-16 rounded-full border-2 border-muted flex items-center justify-center bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 mb-1">
+                  <QrCode className="h-7 w-7 text-emerald-500" />
+                </div>
+                <span className="text-xs text-center">ID Card</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Content Tabs */}
-        <div className="px-4 mt-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full bg-muted/50 p-1 rounded-xl">
-              <TabsTrigger value="overview" className="flex-1 rounded-lg text-xs">
-                <Activity className="h-3.5 w-3.5 mr-1.5" />
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex-1 rounded-lg text-xs">
-                <Settings className="h-3.5 w-3.5 mr-1.5" />
-                Settings
-              </TabsTrigger>
-            </TabsList>
+        {/* Instagram-style Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full bg-transparent border-t border-b border-border rounded-none h-12 p-0">
+            <TabsTrigger 
+              value="posts" 
+              className="flex-1 rounded-none h-full data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              <Grid3X3 className="h-5 w-5" />
+            </TabsTrigger>
+            <TabsTrigger 
+              value="saved" 
+              className="flex-1 rounded-none h-full data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              <Bookmark className="h-5 w-5" />
+            </TabsTrigger>
+            <TabsTrigger 
+              value="settings" 
+              className="flex-1 rounded-none h-full data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              <Settings className="h-5 w-5" />
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="mt-4 space-y-3">
-              {/* Achievement Cards */}
+          {/* Posts/Overview Tab */}
+          <TabsContent value="posts" className="mt-4 space-y-3">
+            {/* Achievement Cards Grid - Instagram style */}
+            {isDonor && (
+              <div className="grid grid-cols-3 gap-1">
+                <div className="aspect-square bg-gradient-to-br from-primary/20 to-primary/5 rounded-sm flex flex-col items-center justify-center p-2">
+                  <Heart className="h-8 w-8 text-primary mb-1" />
+                  <p className="text-xs font-semibold text-center">{donationCount}</p>
+                  <p className="text-[10px] text-muted-foreground">Donations</p>
+                </div>
+                <div className="aspect-square bg-gradient-to-br from-amber-500/20 to-amber-500/5 rounded-sm flex flex-col items-center justify-center p-2">
+                  <Award className="h-8 w-8 text-amber-500 mb-1" />
+                  <p className="text-xs font-semibold text-center">{totalPoints}</p>
+                  <p className="text-[10px] text-muted-foreground">Points</p>
+                </div>
+                <div className="aspect-square bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 rounded-sm flex flex-col items-center justify-center p-2">
+                  <Sparkles className="h-8 w-8 text-emerald-500 mb-1" />
+                  <p className="text-xs font-semibold text-center">{donationCount}</p>
+                  <p className="text-[10px] text-muted-foreground">Lives</p>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Actions as list */}
+            <Card className="rounded-xl border-border/50 overflow-hidden">
+              <button 
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                onClick={() => navigate('/history')}
+              >
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <span className="text-sm font-medium">View Donation History</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+              
               {isDonor && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-4">
-                    <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center mb-2">
-                      <Heart className="h-5 w-5 text-primary" />
+                <>
+                  <div className="border-t border-border/50" />
+                  <button 
+                    className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                    onClick={() => setShowRewardsDialog(true)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Gift className="h-5 w-5 text-amber-500" />
+                      <span className="text-sm font-medium">Rewards & Benefits</span>
                     </div>
-                    <p className="font-semibold text-sm">
-                      {isFirstTimeDonor ? 'Ready to Start' : `${donationCount} Donations`}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {isFirstTimeDonor ? 'Make your first donation' : 'Thank you for saving lives'}
-                    </p>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </>
+              )}
+              
+              <div className="border-t border-border/50" />
+              <button 
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                onClick={() => setShowQRCard(true)}
+              >
+                <div className="flex items-center gap-3">
+                  <QrCode className="h-5 w-5 text-blue-500" />
+                  <span className="text-sm font-medium">Donor ID Card</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </Card>
+          </TabsContent>
+
+          {/* Saved Tab */}
+          <TabsContent value="saved" className="mt-4">
+            <Card className="rounded-xl border-border/50">
+              <CardContent className="p-6 text-center">
+                <Bookmark className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <h3 className="font-semibold mb-1">Saved Items</h3>
+                <p className="text-sm text-muted-foreground">Your saved blood requests and donors will appear here</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="mt-4 space-y-3">
+            {/* Availability Section */}
+            {isDonor && (
+              <Card className="rounded-xl border-border/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Droplet className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-medium text-sm">Availability Status</p>
+                      <p className="text-xs text-muted-foreground">Set when you can donate</p>
+                    </div>
                   </div>
-                  
-                  <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/20 rounded-2xl p-4">
-                    <div className="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center mb-2">
-                      <Award className="h-5 w-5 text-amber-500" />
-                    </div>
-                    <p className="font-semibold text-sm">{totalPoints} Points</p>
-                    <p className="text-xs text-muted-foreground">Redeem for rewards</p>
+                  <AvailabilityToggle
+                    value={availabilityStatus}
+                    onChange={updateAvailability}
+                    canSetAvailable={canSetAvailable()}
+                    daysUntilAvailable={getDaysUntilAvailable()}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Profile Type */}
+            <Card className="rounded-xl border-border/50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <User className="h-5 w-5 text-purple-500" />
+                  <div>
+                    <p className="font-medium text-sm">Profile Type</p>
+                    <p className="text-xs text-muted-foreground">Choose your role</p>
                   </div>
                 </div>
-              )}
+                <Select value={userType} onValueChange={updateUserType}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="donor">Donor Only</SelectItem>
+                    <SelectItem value="receiver">Receiver Only</SelectItem>
+                    <SelectItem value="both">Both Donor & Receiver</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
 
-              {/* Quick Actions */}
-              <Card className="rounded-2xl border-border/50">
-                <CardContent className="p-0">
-                  <button 
-                    className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-                    onClick={() => navigate('/history')}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <Calendar className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="text-left">
-                        <p className="font-medium text-sm">Donation History</p>
-                        <p className="text-xs text-muted-foreground">View all your past donations</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </button>
-                  
-                  <Separator />
-                  
-                  {isDonor && (
-                    <>
-                      <button 
-                        className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-                        onClick={() => setShowRewardsDialog(true)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                            <Gift className="h-5 w-5 text-amber-500" />
-                          </div>
-                          <div className="text-left">
-                            <p className="font-medium text-sm">Rewards & Benefits</p>
-                            <p className="text-xs text-muted-foreground">Redeem your points</p>
-                          </div>
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                      </button>
-                      
-                      <Separator />
-                    </>
-                  )}
-                  
-                  <button 
-                    className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-                    onClick={() => setShowQRCard(true)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                        <QrCode className="h-5 w-5 text-blue-500" />
-                      </div>
-                      <div className="text-left">
-                        <p className="font-medium text-sm">Donor ID Card</p>
-                        <p className="text-xs text-muted-foreground">Your digital donor card</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Settings Tab */}
-            <TabsContent value="settings" className="mt-4 space-y-3">
-              {/* Availability Section */}
-              {isDonor && (
-                <Card className="rounded-2xl border-border/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <Droplet className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">Availability Status</p>
-                        <p className="text-xs text-muted-foreground">Set when you can donate</p>
-                      </div>
-                    </div>
-                    <AvailabilityToggle
-                      value={availabilityStatus}
-                      onChange={updateAvailability}
-                      canSetAvailable={canSetAvailable()}
-                      daysUntilAvailable={getDaysUntilAvailable()}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Profile Type */}
-              <Card className="rounded-2xl border-border/50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                      <User className="h-5 w-5 text-purple-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">Profile Type</p>
-                      <p className="text-xs text-muted-foreground">Choose your role</p>
-                    </div>
+            {/* Location */}
+            <Card className="rounded-xl border-border/50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <MapPin className="h-5 w-5 text-emerald-500" />
+                  <div>
+                    <p className="font-medium text-sm">Location</p>
+                    <p className="text-xs text-muted-foreground">Update your location</p>
                   </div>
-                  <Select value={userType} onValueChange={updateUserType}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="donor">Donor Only</SelectItem>
-                      <SelectItem value="receiver">Receiver Only</SelectItem>
-                      <SelectItem value="both">Both Donor & Receiver</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="space-y-3">
+                  <LocationSelector
+                    selectedAtoll={selectedAtoll}
+                    selectedIsland={selectedIsland}
+                    onAtollChange={setSelectedAtoll}
+                    onIslandChange={setSelectedIsland}
+                  />
+                  <Button onClick={updateLocation} className="w-full rounded-xl" size="sm">
+                    Save Location
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-              {/* Location */}
-              <Card className="rounded-2xl border-border/50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                      <MapPin className="h-5 w-5 text-emerald-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">Location</p>
-                      <p className="text-xs text-muted-foreground">Update your location</p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <LocationSelector
-                      selectedAtoll={selectedAtoll}
-                      selectedIsland={selectedIsland}
-                      onAtollChange={setSelectedAtoll}
-                      onIslandChange={setSelectedIsland}
-                    />
-                    <Button onClick={updateLocation} className="w-full rounded-xl" size="sm">
-                      Save Location
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Admin & Logout */}
-              <CheckAdminButton />
-            </TabsContent>
-          </Tabs>
-        </div>
+            {/* Admin & Logout */}
+            <CheckAdminButton />
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Edit Profile Dialog */}
@@ -687,42 +693,28 @@ const CheckAdminButton = () => {
   return (
     <div className="space-y-3">
       {isAdmin && (
-        <Card className="rounded-2xl border-border/50">
-          <CardContent className="p-4">
-            <button 
-              onClick={() => navigate("/admin")} 
-              className="w-full flex items-center justify-between hover:bg-muted/50 -m-4 p-4 rounded-2xl transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-blue-500" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-sm">Admin Panel</p>
-                  <p className="text-xs text-muted-foreground">Manage the platform</p>
-                </div>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </button>
-          </CardContent>
+        <Card className="rounded-xl border-border/50">
+          <button 
+            onClick={() => navigate("/admin")} 
+            className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Shield className="h-5 w-5 text-blue-500" />
+              <span className="text-sm font-medium">Admin Panel</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </button>
         </Card>
       )}
       
-      <Card className="rounded-2xl border-destructive/30 bg-destructive/5">
-        <CardContent className="p-4">
-          <button 
-            onClick={handleLogout} 
-            className="w-full flex items-center gap-3"
-          >
-            <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center">
-              <LogOut className="h-5 w-5 text-destructive" />
-            </div>
-            <div className="text-left">
-              <p className="font-medium text-sm text-destructive">Sign Out</p>
-              <p className="text-xs text-muted-foreground">Log out of your account</p>
-            </div>
-          </button>
-        </CardContent>
+      <Card className="rounded-xl border-destructive/30 bg-destructive/5 overflow-hidden">
+        <button 
+          onClick={handleLogout} 
+          className="w-full flex items-center gap-3 p-4"
+        >
+          <LogOut className="h-5 w-5 text-destructive" />
+          <span className="text-sm font-medium text-destructive">Sign Out</span>
+        </button>
       </Card>
     </div>
   );
