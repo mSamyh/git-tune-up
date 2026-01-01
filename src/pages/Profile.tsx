@@ -329,20 +329,18 @@ const Profile = () => {
 
           {/* Name and Bio */}
           <div className="mb-4">
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold">{profile.full_name}</h1>
-              {profile.title && (
-                <Badge 
-                  className="text-[10px] border-0 font-medium px-2 py-0"
-                  style={{ 
-                    backgroundColor: profile.title_color ? `${profile.title_color}20` : 'hsl(var(--primary) / 0.1)',
-                    color: profile.title_color || 'hsl(var(--primary))'
-                  }}
-                >
-                  {profile.title}
-                </Badge>
-              )}
-            </div>
+            <h1 className="text-base font-bold">{profile.full_name}</h1>
+            {profile.title && (
+              <Badge 
+                className="text-[10px] border-0 font-medium px-2 py-0.5 mt-1"
+                style={{ 
+                  backgroundColor: profile.title_color ? `${profile.title_color}20` : 'hsl(var(--primary) / 0.1)',
+                  color: profile.title_color || 'hsl(var(--primary))'
+                }}
+              >
+                {profile.title}
+              </Badge>
+            )}
             
             {/* Category/Type badge */}
             <p className="text-sm text-muted-foreground">

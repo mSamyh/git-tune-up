@@ -30,6 +30,14 @@ interface Reward {
   terms_conditions: string | null;
 }
 
+interface Merchant {
+  id: string;
+  name: string;
+  pin: string;
+  partner_id: string | null;
+  is_active: boolean;
+}
+
 interface RewardSettings {
   points_per_donation: string;
   qr_expiry_hours: string;
@@ -40,6 +48,7 @@ export function RewardsAdminPanel() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [redemptions, setRedemptions] = useState<any[]>([]);
   const [allDonorPoints, setAllDonorPoints] = useState<any[]>([]);
+  const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [settings, setSettings] = useState<RewardSettings>({
     points_per_donation: "100",
     qr_expiry_hours: "24",
@@ -56,6 +65,7 @@ export function RewardsAdminPanel() {
     category: "",
     is_active: true,
     terms_conditions: "",
+    merchant_id: "",
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -81,6 +91,14 @@ export function RewardsAdminPanel() {
       .order("points_required");
     
     setRewards(rewardsData || []);
+
+    // Fetch merchants
+    const { data: merchantsData } = await supabase
+      .from("merchant_accounts")
+      .select("id, name, pin, partner_id, is_active")
+      .order("name");
+    
+    setMerchants(merchantsData || []);
 
     // Fetch ALL redemptions for complete audit trail
     const { data: redemptionsData, error: redemptionsError } = await supabase
@@ -202,6 +220,8 @@ export function RewardsAdminPanel() {
   const openDialog = (reward?: Reward) => {
     if (reward) {
       setEditingReward(reward);
+      // Find merchant linked to this reward
+      const linkedMerchant = merchants.find(m => m.partner_id === reward.id);
       setFormData({
         title: reward.title,
         description: reward.description || "",
@@ -211,6 +231,7 @@ export function RewardsAdminPanel() {
         category: reward.category,
         is_active: reward.is_active,
         terms_conditions: reward.terms_conditions || "",
+        merchant_id: linkedMerchant?.id || "",
       });
       setLogoPreview(reward.partner_logo_url || null);
     } else {
@@ -224,6 +245,7 @@ export function RewardsAdminPanel() {
         category: "",
         is_active: true,
         terms_conditions: "",
+        merchant_id: "",
       });
       setLogoPreview(null);
     }
@@ -299,10 +321,13 @@ export function RewardsAdminPanel() {
 
     // Upload logo if new file selected
     const logoUrl = await uploadLogo();
+    const { merchant_id, ...rewardData } = formData;
     const saveData = {
-      ...formData,
+      ...rewardData,
       partner_logo_url: logoUrl,
     };
+
+    let rewardId: string | null = null;
 
     if (editingReward) {
       const { error } = await supabase
@@ -316,15 +341,15 @@ export function RewardsAdminPanel() {
           title: "Update failed",
           description: error.message,
         });
-      } else {
-        toast({ title: "Reward updated successfully" });
-        setDialogOpen(false);
-        fetchRewardsData();
+        return;
       }
+      rewardId = editingReward.id;
     } else {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("reward_catalog")
-        .insert(saveData);
+        .insert(saveData)
+        .select("id")
+        .single();
 
       if (error) {
         toast({
@@ -332,12 +357,31 @@ export function RewardsAdminPanel() {
           title: "Creation failed",
           description: error.message,
         });
-      } else {
-        toast({ title: "Reward created successfully" });
-        setDialogOpen(false);
-        fetchRewardsData();
+        return;
+      }
+      rewardId = data.id;
+    }
+
+    // Update merchant association
+    if (rewardId) {
+      // First, unlink any merchants previously linked to this reward
+      await supabase
+        .from("merchant_accounts")
+        .update({ partner_id: null })
+        .eq("partner_id", rewardId);
+
+      // Then link the selected merchant
+      if (merchant_id) {
+        await supabase
+          .from("merchant_accounts")
+          .update({ partner_id: rewardId })
+          .eq("id", merchant_id);
       }
     }
+
+    toast({ title: editingReward ? "Reward updated successfully" : "Reward created successfully" });
+    setDialogOpen(false);
+    fetchRewardsData();
   };
 
   const handleDelete = async (id: string) => {
@@ -958,6 +1002,29 @@ export function RewardsAdminPanel() {
                   <SelectItem value="Education">Education</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            {/* Merchant PIN Selector */}
+            <div className="grid gap-2">
+              <Label htmlFor="merchant">Merchant PIN (for verification)</Label>
+              <Select
+                value={formData.merchant_id}
+                onValueChange={(value) => setFormData({ ...formData, merchant_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select merchant to link" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No merchant</SelectItem>
+                  {merchants.filter(m => m.is_active).map((merchant) => (
+                    <SelectItem key={merchant.id} value={merchant.id}>
+                      {merchant.name} (PIN: {merchant.pin})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Link a merchant PIN that can verify QR codes for this reward
+              </p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="terms">Terms & Conditions</Label>
