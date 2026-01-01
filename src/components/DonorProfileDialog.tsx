@@ -278,20 +278,18 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
 
           {/* Name and Bio */}
           <div className="mb-4">
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold">{donor.full_name}</h1>
-              {donor.title && (
-                <Badge 
-                  className="text-[10px] border-0 font-medium px-2 py-0"
-                  style={{ 
-                    backgroundColor: donor.title_color ? `${donor.title_color}20` : 'hsl(var(--primary) / 0.1)',
-                    color: donor.title_color || 'hsl(var(--primary))'
-                  }}
-                >
-                  {donor.title}
-                </Badge>
-              )}
-            </div>
+            <h1 className="text-base font-bold">{donor.full_name}</h1>
+            {donor.title && (
+              <Badge 
+                className="text-[10px] border-0 font-medium px-2 py-0.5 mt-1"
+                style={{ 
+                  backgroundColor: donor.title_color ? `${donor.title_color}20` : 'hsl(var(--primary) / 0.1)',
+                  color: donor.title_color || 'hsl(var(--primary))'
+                }}
+              >
+                {donor.title}
+              </Badge>
+            )}
             
             <p className="text-sm text-muted-foreground flex items-center gap-1">
               <span className={`inline-block h-2 w-2 rounded-full ${getStatusDotColor()}`} />
