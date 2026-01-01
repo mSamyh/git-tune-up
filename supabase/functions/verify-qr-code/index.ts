@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { voucher_code } = await req.json();
+    const { voucher_code, merchant_id } = await req.json();
 
     if (!voucher_code) {
       return new Response(
@@ -109,12 +109,24 @@ Deno.serve(async (req) => {
 
     // Check if already verified
     if (redemption.status === 'verified') {
+      // Fetch merchant info if available
+      let merchantName = null;
+      if (redemption.verified_by_merchant_id) {
+        const { data: merchant } = await supabase
+          .from('merchant_accounts')
+          .select('name')
+          .eq('id', redemption.verified_by_merchant_id)
+          .maybeSingle();
+        merchantName = merchant?.name;
+      }
+
       return new Response(
         JSON.stringify({
           error: 'This voucher has already been used',
           redemption,
           profiles: donorProfile,
-          reward_program_active: rewardProgramActive
+          reward_program_active: rewardProgramActive,
+          verified_by_merchant: merchantName
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -148,13 +160,20 @@ Deno.serve(async (req) => {
       warningMessage = 'Note: This reward program is currently inactive, but this voucher is still valid.';
     }
 
+    // Build update object - include merchant_id if provided
+    const updateData: Record<string, any> = {
+      status: 'verified',
+      verified_at: now.toISOString()
+    };
+
+    if (merchant_id) {
+      updateData.verified_by_merchant_id = merchant_id;
+    }
+
     // Verify the QR code
     const { error: updateError } = await supabase
       .from('redemption_history')
-      .update({
-        status: 'verified',
-        verified_at: now.toISOString()
-      })
+      .update(updateData)
       .eq('id', redemption.id);
 
     if (updateError) {
@@ -165,7 +184,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('QR code verified successfully:', voucher_code);
+    // Fetch merchant name if merchant_id provided
+    let merchantName = null;
+    if (merchant_id) {
+      const { data: merchant } = await supabase
+        .from('merchant_accounts')
+        .select('name')
+        .eq('id', merchant_id)
+        .maybeSingle();
+      merchantName = merchant?.name;
+    }
+
+    console.log('QR code verified successfully:', voucher_code, 'by merchant:', merchant_id || 'unknown');
 
     return new Response(
       JSON.stringify({
@@ -177,8 +207,10 @@ Deno.serve(async (req) => {
           ...redemption,
           status: 'verified',
           verified_at: now.toISOString(),
+          verified_by_merchant_id: merchant_id || null,
         },
         profiles: donorProfile,
+        verified_by_merchant: merchantName,
         // Tier info for merchant to apply discount
         tier: {
           name: donorTier.name,

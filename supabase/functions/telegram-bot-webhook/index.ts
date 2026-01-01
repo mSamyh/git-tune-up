@@ -165,6 +165,9 @@ serve(async (req) => {
           "Available commands:\n" +
           "• /broadcast - Send SMS to donor groups\n" +
           "• /stats - View donor statistics\n" +
+          "• /donors - View top donors by donations\n" +
+          "• /requests - View active blood requests\n" +
+          "• /points - View top donors by points\n" +
           "• /help - Show this message"
         );
         return new Response(JSON.stringify({ ok: true }), {
@@ -179,6 +182,9 @@ serve(async (req) => {
           "*Commands:*\n" +
           "• /broadcast - Start SMS broadcast wizard\n" +
           "• /stats - View donor statistics\n" +
+          "• /donors - View top 10 donors by donations\n" +
+          "• /requests - View active blood requests\n" +
+          "• /points - View top 10 donors by points\n" +
           "• /help - Show this message\n\n" +
           "*Broadcast Flow:*\n" +
           "1. Use /broadcast\n" +
@@ -208,15 +214,172 @@ serve(async (req) => {
           const reserved = profiles.filter(p => p.availability_status === 'reserved').length;
           const total = profiles.length;
 
+          // Get blood request stats
+          const { data: requests } = await supabase
+            .from('blood_requests')
+            .select('status');
+
+          const activeRequests = requests?.filter(r => r.status === 'active').length || 0;
+          const fulfilledRequests = requests?.filter(r => r.status === 'fulfilled').length || 0;
+
+          // Get donation count
+          const { data: donations } = await supabase
+            .from('donation_history')
+            .select('id');
+
+          const totalDonations = donations?.length || 0;
+
           await sendTelegramMessage(botToken, chatId,
-            "📊 *Donor Statistics*\n\n" +
+            "📊 *Platform Statistics*\n\n" +
+            "*Donors:*\n" +
             `✅ Available: ${available}\n` +
             `⏳ Unavailable: ${unavailable}\n` +
             `🔒 Reserved: ${reserved}\n` +
-            `━━━━━━━━━━━━━━\n` +
-            `👥 Total: ${total}`
+            `👥 Total: ${total}\n\n` +
+            "*Blood Requests:*\n" +
+            `🔴 Active: ${activeRequests}\n` +
+            `✅ Fulfilled: ${fulfilledRequests}\n\n` +
+            "*Donations:*\n" +
+            `💉 Total: ${totalDonations}`
           );
         }
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Handle /donors command - Top donors by donation count
+      if (text === '/donors') {
+        const { data: donations, error: donationsError } = await supabase
+          .from('donation_history')
+          .select('donor_id');
+
+        if (donationsError) {
+          console.error('Donations fetch error:', donationsError);
+          await sendTelegramMessage(botToken, chatId, "❌ Error fetching donation data");
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Count donations per donor
+        const donationCounts: Record<string, number> = {};
+        donations?.forEach(d => {
+          donationCounts[d.donor_id] = (donationCounts[d.donor_id] || 0) + 1;
+        });
+
+        // Sort and get top 10
+        const topDonorIds = Object.entries(donationCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10);
+
+        if (topDonorIds.length === 0) {
+          await sendTelegramMessage(botToken, chatId, "📊 No donation history found yet.");
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Fetch donor names
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, blood_group')
+          .in('id', topDonorIds.map(d => d[0]));
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+        let message = "🏆 *Top 10 Donors by Donations*\n\n";
+        topDonorIds.forEach(([donorId, count], index) => {
+          const profile = profileMap.get(donorId);
+          const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+          message += `${medal} ${profile?.full_name || 'Unknown'} (${profile?.blood_group || '?'}) - ${count} donation${count > 1 ? 's' : ''}\n`;
+        });
+
+        await sendTelegramMessage(botToken, chatId, message);
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Handle /requests command - Active blood requests
+      if (text === '/requests') {
+        const { data: requests, error: requestsError } = await supabase
+          .from('blood_requests')
+          .select('*')
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (requestsError) {
+          console.error('Requests fetch error:', requestsError);
+          await sendTelegramMessage(botToken, chatId, "❌ Error fetching blood requests");
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        if (!requests || requests.length === 0) {
+          await sendTelegramMessage(botToken, chatId, "✅ No active blood requests at the moment.");
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        let message = "🩸 *Active Blood Requests*\n\n";
+        requests.forEach((req, index) => {
+          const urgencyIcon = req.urgency === 'critical' ? '🚨' : req.urgency === 'urgent' ? '⚠️' : '📋';
+          message += `${urgencyIcon} *${req.blood_group}* - ${req.patient_name}\n`;
+          message += `   🏥 ${req.hospital_name}\n`;
+          message += `   📱 ${req.contact_phone}\n`;
+          message += `   💉 ${req.units_needed} unit(s) needed\n\n`;
+        });
+
+        await sendTelegramMessage(botToken, chatId, message);
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Handle /points command - Top donors by points
+      if (text === '/points') {
+        const { data: pointsData, error: pointsError } = await supabase
+          .from('donor_points')
+          .select('donor_id, total_points, lifetime_points')
+          .order('total_points', { ascending: false })
+          .limit(10);
+
+        if (pointsError) {
+          console.error('Points fetch error:', pointsError);
+          await sendTelegramMessage(botToken, chatId, "❌ Error fetching points data");
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        if (!pointsData || pointsData.length === 0) {
+          await sendTelegramMessage(botToken, chatId, "📊 No points data found yet.");
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Fetch donor names
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, blood_group')
+          .in('id', pointsData.map(d => d.donor_id));
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+        let message = "🏆 *Top 10 Donors by Points*\n\n";
+        pointsData.forEach((donor, index) => {
+          const profile = profileMap.get(donor.donor_id);
+          const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+          message += `${medal} ${profile?.full_name || 'Unknown'} (${profile?.blood_group || '?'})\n`;
+          message += `   💰 ${donor.total_points} pts (Lifetime: ${donor.lifetime_points})\n\n`;
+        });
+
+        await sendTelegramMessage(botToken, chatId, message);
         return new Response(JSON.stringify({ ok: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
