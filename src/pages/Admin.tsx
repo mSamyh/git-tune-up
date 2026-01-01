@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown, Gift, Settings as SettingsIcon, Shield, Droplet, TrendingUp } from "lucide-react";
+import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown, Gift, Settings as SettingsIcon, Shield, Droplet, TrendingUp, Store, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,8 @@ import { TelegramConfigManager } from "@/components/TelegramConfigManager";
 
 import { RewardsAdminPanel } from "@/components/RewardsAdminPanel";
 import { AchievementsAdminPanel } from "@/components/AchievementsAdminPanel";
+import { MerchantAdminPanel } from "@/components/MerchantAdminPanel";
+import { RedemptionAuditPanel } from "@/components/RedemptionAuditPanel";
 import { Textarea } from "@/components/ui/textarea";
 import { AppHeader } from "@/components/AppHeader";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -785,6 +787,14 @@ const Admin = () => {
                 <SettingsIcon className="h-3.5 w-3.5" />
                 <span>Settings</span>
               </TabsTrigger>
+              <TabsTrigger value="merchants" className="min-w-[80px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
+                <Store className="h-3.5 w-3.5" />
+                <span>Merchants</span>
+              </TabsTrigger>
+              <TabsTrigger value="audit" className="min-w-[70px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
+                <FileText className="h-3.5 w-3.5" />
+                <span>Audit</span>
+              </TabsTrigger>
               <TabsTrigger value="admins" className="min-w-[70px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
                 <Shield className="h-3.5 w-3.5" />
                 <span>Admins</span>
@@ -1253,6 +1263,14 @@ const Admin = () => {
           <TabsContent value="rewards" className="space-y-4">
             <RewardsAdminPanel />
             <AchievementsAdminPanel />
+          </TabsContent>
+
+          <TabsContent value="merchants">
+            <MerchantAdminPanel />
+          </TabsContent>
+
+          <TabsContent value="audit">
+            <RedemptionAuditPanel />
           </TabsContent>
 
           <TabsContent value="admins">
