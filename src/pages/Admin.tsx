@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown, Gift, Settings as SettingsIcon, Shield, Droplet, TrendingUp, Store, FileText } from "lucide-react";
+import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown, Gift, Settings as SettingsIcon, Shield, Droplet, TrendingUp, Store, FileText, Activity, Clock, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
@@ -57,7 +57,8 @@ const Admin = () => {
   const [newAtoll, setNewAtoll] = useState("");
   const [newIsland, setNewIsland] = useState("");
   const [selectedAtollForIsland, setSelectedAtollForIsland] = useState("");
-  const [pointsPerDonation, setPointsPerDonation] = useState(100); // default value
+  const [pointsPerDonation, setPointsPerDonation] = useState(100);
+  const [activeTab, setActiveTab] = useState("donors");
   
   // Dialog states
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -156,7 +157,6 @@ const Admin = () => {
 
     if (donorsData.data) setDonors(donorsData.data);
     
-    // Fetch requests and enrich with profile data
     if (requestsData.data) {
       const requestsWithProfiles = await Promise.all(
         requestsData.data.map(async (request) => {
@@ -183,7 +183,6 @@ const Admin = () => {
   };
 
   const awardPoints = async (donorId: string, donationId: string, hospitalName: string) => {
-    // Create or update donor_points record
     const { data: existingPoints } = await supabase
       .from("donor_points")
       .select("*")
@@ -209,7 +208,6 @@ const Admin = () => {
         });
     }
 
-    // Record the transaction
     await supabase
       .from("points_transactions")
       .insert({
@@ -222,7 +220,6 @@ const Admin = () => {
   };
 
   const deductPoints = async (donorId: string, donationId: string, hospitalName: string) => {
-    // Deduct points from donor_points record
     const { data: existingPoints } = await supabase
       .from("donor_points")
       .select("*")
@@ -239,7 +236,6 @@ const Admin = () => {
         })
         .eq("donor_id", donorId);
 
-      // Record the transaction with negative points and 'adjusted' type
       await supabase
         .from("points_transactions")
         .insert({
@@ -319,12 +315,10 @@ const Admin = () => {
         description: error.message,
       });
     } else {
-      // Award points for the donation
       if (newDonation) {
         await awardPoints(selectedDonor.id, newDonation.id, historyForm.hospital_name);
       }
 
-      // Update last_donation_date in profiles
       await supabase
         .from("profiles")
         .update({ last_donation_date: format(historyForm.donation_date, "yyyy-MM-dd") })
@@ -393,7 +387,6 @@ const Admin = () => {
   const handleDeleteDonation = async (donationId: string, donorName: string) => {
     if (!confirm(`Delete this donation record for ${donorName}?`)) return;
 
-    // Get donation details before deletion
     const { data: donation } = await supabase
       .from("donation_history")
       .select("donor_id, hospital_name")
@@ -401,7 +394,6 @@ const Admin = () => {
       .single();
 
     if (donation) {
-      // Deduct points before deleting
       await deductPoints(donation.donor_id, donationId, donation.hospital_name);
     }
 
@@ -417,7 +409,6 @@ const Admin = () => {
         description: error.message,
       });
     } else {
-      // After deletion, recalculate last_donation_date for this donor
       if (donation) {
         const { data: remaining } = await supabase
           .from("donation_history")
@@ -427,7 +418,6 @@ const Admin = () => {
           .limit(1);
 
         if (!remaining || remaining.length === 0) {
-          // No more donations: clear last_donation_date and set available
           await supabase
             .from("profiles")
             .update({ 
@@ -436,7 +426,6 @@ const Admin = () => {
             })
             .eq("id", donation.donor_id);
         } else {
-          // Still has donations: set last_donation_date to most recent
           await supabase
             .from("profiles")
             .update({ last_donation_date: remaining[0].donation_date })
@@ -449,7 +438,6 @@ const Admin = () => {
     }
   };
 
-  // Group donations by donor
   const donationsByDonor = donations.reduce((acc: any, donation: any) => {
     const donorId = donation.donor_id;
     if (!acc[donorId]) {
@@ -561,7 +549,6 @@ const Admin = () => {
         description: error.message,
       });
     } else {
-      // Get current user's profile for notification
       const { data: { user } } = await supabase.auth.getUser();
       const { data: profile } = await supabase
         .from("profiles")
@@ -682,302 +669,314 @@ const Admin = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+          <p className="text-muted-foreground">Loading admin panel...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!isAdmin) {
     return null;
   }
 
+  const stats = [
+    { 
+      label: "Total Donors", 
+      value: donors.length, 
+      icon: Users, 
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      trend: `${donors.filter(d => d.availability_status === 'available').length} available`
+    },
+    { 
+      label: "Active Requests", 
+      value: requests.filter((r) => r.status === "active").length, 
+      icon: Activity, 
+      color: "text-destructive",
+      bgColor: "bg-destructive/10",
+      trend: `${requests.filter((r) => r.urgency === "critical").length} critical`
+    },
+    { 
+      label: "Total Donations", 
+      value: donations.length, 
+      icon: Droplet, 
+      color: "text-green-600",
+      bgColor: "bg-green-500/10",
+      trend: "All time"
+    },
+    { 
+      label: "Fulfilled", 
+      value: requests.filter((r) => r.status === "fulfilled").length, 
+      icon: CheckCircle2, 
+      color: "text-amber-600",
+      bgColor: "bg-amber-500/10",
+      trend: `${Math.round((requests.filter((r) => r.status === "fulfilled").length / (requests.length || 1)) * 100)}% rate`
+    },
+  ];
+
+  const navItems = [
+    { value: "donors", label: "Donors", icon: Users },
+    { value: "requests", label: "Requests", icon: Heart },
+    { value: "donations", label: "Donations", icon: Droplet },
+    { value: "rewards", label: "Rewards", icon: Gift },
+    { value: "merchants", label: "Merchants", icon: Store },
+    { value: "audit", label: "Audit", icon: FileText },
+    { value: "settings", label: "Settings", icon: SettingsIcon },
+    { value: "admins", label: "Admins", icon: Shield },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
       <AppHeader />
 
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-7xl">
-        {/* Compact Hero Header */}
-        <div className="mb-4 sm:mb-6">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shrink-0">
-              <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+      <main className="container mx-auto px-4 py-6 max-w-7xl">
+        {/* Hero Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/25">
+              <Shield className="h-7 w-7 text-primary-foreground" />
             </div>
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold truncate">Admin Dashboard</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground truncate">Manage donors, requests & settings</p>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                Admin Dashboard
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Manage your blood donation platform
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Compact Stats Cards */}
-        <div className="grid gap-2 sm:gap-3 grid-cols-4 mb-4 sm:mb-6">
-          <Card className="border-0 shadow-sm bg-gradient-to-br from-primary/10 to-primary/5">
-            <CardContent className="p-2 sm:p-4">
-              <div className="text-center sm:text-left sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-lg sm:text-2xl font-bold text-primary">{donors.length}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Donors</p>
+        {/* Stats Grid */}
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
+          {stats.map((stat, i) => (
+            <Card key={i} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden group">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stat.value}</p>
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">{stat.label}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground/70">{stat.trend}</p>
+                  </div>
+                  <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl ${stat.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
+                    <stat.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${stat.color}`} />
+                  </div>
                 </div>
-                <div className="hidden sm:flex h-10 w-10 rounded-xl bg-primary/20 items-center justify-center">
-                  <Users className="h-5 w-5 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-sm bg-gradient-to-br from-destructive/10 to-destructive/5">
-            <CardContent className="p-2 sm:p-4">
-              <div className="text-center sm:text-left sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-lg sm:text-2xl font-bold text-destructive">{requests.filter((r) => r.status === "active").length}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Active</p>
-                </div>
-                <div className="hidden sm:flex h-10 w-10 rounded-xl bg-destructive/20 items-center justify-center">
-                  <Heart className="h-5 w-5 text-destructive" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-sm bg-gradient-to-br from-green-500/10 to-green-500/5">
-            <CardContent className="p-2 sm:p-4">
-              <div className="text-center sm:text-left sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-lg sm:text-2xl font-bold text-green-600">{donations.length}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Donations</p>
-                </div>
-                <div className="hidden sm:flex h-10 w-10 rounded-xl bg-green-500/20 items-center justify-center">
-                  <Droplet className="h-5 w-5 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-sm bg-gradient-to-br from-amber-500/10 to-amber-500/5">
-            <CardContent className="p-2 sm:p-4">
-              <div className="text-center sm:text-left sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-lg sm:text-2xl font-bold text-amber-600">{requests.filter((r) => r.status === "fulfilled").length}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Fulfilled</p>
-                </div>
-                <div className="hidden sm:flex h-10 w-10 rounded-xl bg-amber-500/20 items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-amber-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
-        <Tabs defaultValue="donors" className="space-y-3 sm:space-y-4">
-          {/* Scrollable tabs on mobile */}
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <TabsList className="w-max sm:w-full bg-muted/50 p-1 rounded-xl h-auto inline-flex sm:flex">
-              <TabsTrigger value="donors" className="min-w-[70px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
-                <Users className="h-3.5 w-3.5" />
-                <span>Donors</span>
-              </TabsTrigger>
-              <TabsTrigger value="requests" className="min-w-[70px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
-                <Heart className="h-3.5 w-3.5" />
-                <span>Requests</span>
-              </TabsTrigger>
-              <TabsTrigger value="donations" className="min-w-[80px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
-                <Droplet className="h-3.5 w-3.5" />
-                <span>Donations</span>
-              </TabsTrigger>
-              <TabsTrigger value="rewards" className="min-w-[70px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
-                <Gift className="h-3.5 w-3.5" />
-                <span>Rewards</span>
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="min-w-[70px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
-                <SettingsIcon className="h-3.5 w-3.5" />
-                <span>Settings</span>
-              </TabsTrigger>
-              <TabsTrigger value="merchants" className="min-w-[80px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
-                <Store className="h-3.5 w-3.5" />
-                <span>Merchants</span>
-              </TabsTrigger>
-              <TabsTrigger value="audit" className="min-w-[70px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
-                <FileText className="h-3.5 w-3.5" />
-                <span>Audit</span>
-              </TabsTrigger>
-              <TabsTrigger value="admins" className="min-w-[70px] sm:flex-1 rounded-lg text-xs gap-1.5 py-2 px-3">
-                <Shield className="h-3.5 w-3.5" />
-                <span>Admins</span>
-              </TabsTrigger>
-            </TabsList>
+        {/* Navigation Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 -mx-4 px-4">
+            <ScrollArea className="w-full">
+              <TabsList className="w-max sm:w-full bg-muted/50 p-1.5 rounded-2xl h-auto inline-flex sm:grid sm:grid-cols-8 gap-1">
+                {navItems.map((item) => (
+                  <TabsTrigger 
+                    key={item.value}
+                    value={item.value} 
+                    className="min-w-[80px] sm:min-w-0 rounded-xl text-xs sm:text-sm gap-2 py-2.5 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span className="hidden sm:inline">{item.label}</span>
+                    <span className="sm:hidden">{item.label.slice(0, 4)}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </ScrollArea>
           </div>
 
-          <TabsContent value="donors">
+          {/* Donors Tab */}
+          <TabsContent value="donors" className="space-y-4 mt-0">
             <Card className="rounded-2xl border-0 shadow-sm">
-              <CardHeader className="pb-3 px-3 sm:px-6">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <CardTitle className="text-base sm:text-lg">Donor Management</CardTitle>
-                    <CardDescription className="text-xs hidden sm:block">Manage donors by blood group</CardDescription>
+              <CardHeader className="pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Users className="h-5 w-5 text-primary" />
+                      Donor Management
+                    </CardTitle>
+                    <CardDescription>Manage all registered blood donors</CardDescription>
                   </div>
                   <CSVImporter />
                 </div>
               </CardHeader>
-              <CardContent className="px-2 sm:px-6">
-                <ScrollArea className="h-[60vh] sm:h-[500px]">
-                {(() => {
-                  const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-                  const donorsByBloodGroup = bloodGroups.reduce((acc, group) => {
-                    acc[group] = donors.filter(d => d.blood_group === group);
-                    return acc;
-                  }, {} as Record<string, DonorProfile[]>);
-                  const groupsWithDonors = bloodGroups.filter(g => donorsByBloodGroup[g].length > 0);
+              <CardContent>
+                <ScrollArea className="h-[60vh]">
+                  {(() => {
+                    const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+                    const donorsByBloodGroup = bloodGroups.reduce((acc, group) => {
+                      acc[group] = donors.filter(d => d.blood_group === group);
+                      return acc;
+                    }, {} as Record<string, DonorProfile[]>);
+                    const groupsWithDonors = bloodGroups.filter(g => donorsByBloodGroup[g].length > 0);
 
-                  return (
-                    <Accordion type="multiple" defaultValue={['A+', 'B+', 'O+', 'AB+']} className="w-full space-y-2 pr-2 sm:pr-3">
-                      {groupsWithDonors.map(group => (
-                        <AccordionItem key={group} value={group} className="border rounded-xl bg-muted/20">
-                          <AccordionTrigger className="px-3 sm:px-4 hover:no-underline">
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <Badge className="bg-primary/10 text-primary border-0 font-bold text-xs sm:text-sm">{group}</Badge>
-                              <span className="text-xs sm:text-sm text-muted-foreground">
-                                {donorsByBloodGroup[group].length} donors
-                              </span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="px-1 sm:px-4 pb-2">
-                            {/* Mobile card view */}
-                            <div className="sm:hidden space-y-2">
-                              {donorsByBloodGroup[group].map((donor) => (
-                                <div key={donor.id} className="bg-card border rounded-lg p-3">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                      <p className="font-medium text-sm truncate">{donor.full_name}</p>
-                                      <p className="text-xs text-muted-foreground">{donor.phone}</p>
-                                      {donor.district && (
-                                        <p className="text-xs text-muted-foreground mt-0.5">{donor.district}</p>
-                                      )}
-                                    </div>
-                                    <div className="flex items-center gap-1 shrink-0">
-                                      <Badge variant="secondary" className="text-[10px] px-1.5">
-                                        {donor.user_type === 'both' ? 'Both' : donor.user_type === 'receiver' ? 'Rcvr' : 'Donor'}
-                                      </Badge>
-                                      {donor.availability_status === 'available' ? (
-                                        <span className="h-2 w-2 rounded-full bg-green-500" />
-                                      ) : donor.availability_status === 'reserved' ? (
-                                        <span className="h-2 w-2 rounded-full bg-orange-500" />
-                                      ) : (
-                                        <span className="h-2 w-2 rounded-full bg-red-500" />
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-1 mt-2 pt-2 border-t">
-                                    <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => openEditDialog(donor)}>
-                                      <Edit className="h-3 w-3 mr-1" /> Edit
-                                    </Button>
-                                    <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => openHistoryDialog(donor)}>
-                                      <Plus className="h-3 w-3 mr-1" /> History
-                                    </Button>
-                                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={() => handleDeleteDonor(donor)}>
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                            
-                            {/* Desktop table view */}
-                            <div className="hidden sm:block">
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead className="text-xs">Name</TableHead>
-                                    <TableHead className="text-xs">Phone</TableHead>
-                                    <TableHead className="text-xs hidden md:table-cell">Location</TableHead>
-                                    <TableHead className="text-xs">Type</TableHead>
-                                    <TableHead className="text-xs">Status</TableHead>
-                                    <TableHead className="text-xs">Actions</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {donorsByBloodGroup[group].map((donor) => (
-                                    <TableRow key={donor.id}>
-                                      <TableCell className="py-2">
-                                        <p className="font-medium text-sm">{donor.full_name}</p>
-                                      </TableCell>
-                                      <TableCell className="text-sm">{donor.phone}</TableCell>
-                                      <TableCell className="hidden md:table-cell text-sm">{donor.district || donor.atoll || '-'}</TableCell>
-                                      <TableCell>
-                                        <Badge variant="secondary" className="text-[10px] px-1.5">
-                                          {donor.user_type === 'both' ? 'Both' : donor.user_type === 'receiver' ? 'Rcvr' : 'Donor'}
-                                        </Badge>
-                                      </TableCell>
-                                      <TableCell>
-                                        {donor.availability_status === 'available' ? (
-                                          <Badge variant="outline" className="text-green-600 border-green-600 text-[10px] px-1.5">✓</Badge>
-                                        ) : donor.availability_status === 'available_soon' ? (
-                                          <Badge variant="outline" className="text-blue-600 border-blue-600 text-[10px] px-1.5">Soon</Badge>
-                                        ) : donor.availability_status === 'reserved' ? (
-                                          <Badge variant="outline" className="text-orange-600 border-orange-600 text-[10px] px-1.5">Rsv</Badge>
-                                        ) : (
-                                          <Badge variant="outline" className="text-red-600 border-red-600 text-[10px] px-1.5">✗</Badge>
+                    return (
+                      <Accordion type="multiple" defaultValue={['A+', 'B+', 'O+', 'AB+']} className="w-full space-y-2 pr-3">
+                        {groupsWithDonors.map(group => (
+                          <AccordionItem key={group} value={group} className="border rounded-xl bg-muted/30 overflow-hidden">
+                            <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <Badge className="bg-primary text-primary-foreground font-bold px-3 py-1">{group}</Badge>
+                                <span className="text-sm text-muted-foreground">
+                                  {donorsByBloodGroup[group].length} donors
+                                </span>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="px-2 pb-2">
+                              {/* Mobile card view */}
+                              <div className="sm:hidden space-y-2">
+                                {donorsByBloodGroup[group].map((donor) => (
+                                  <div key={donor.id} className="bg-card border rounded-xl p-4 space-y-3">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="min-w-0 flex-1">
+                                        <p className="font-semibold truncate">{donor.full_name}</p>
+                                        <p className="text-sm text-muted-foreground">{donor.phone}</p>
+                                        {donor.district && (
+                                          <p className="text-xs text-muted-foreground mt-0.5">{donor.district}</p>
                                         )}
-                                      </TableCell>
-                                      <TableCell>
-                                        <div className="flex gap-1">
-                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditDialog(donor)}>
-                                            <Edit className="h-3.5 w-3.5" />
-                                          </Button>
-                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openHistoryDialog(donor)}>
-                                            <Plus className="h-3.5 w-3.5" />
-                                          </Button>
-                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDeleteDonor(donor)}>
-                                            <Trash2 className="h-3.5 w-3.5" />
-                                          </Button>
-                                        </div>
-                                      </TableCell>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="secondary" className="text-xs">
+                                          {donor.user_type === 'both' ? 'Both' : donor.user_type === 'receiver' ? 'Receiver' : 'Donor'}
+                                        </Badge>
+                                        <div className={`h-3 w-3 rounded-full ${
+                                          donor.availability_status === 'available' ? 'bg-green-500' :
+                                          donor.availability_status === 'reserved' ? 'bg-orange-500' : 'bg-red-500'
+                                        } ring-2 ring-offset-2 ring-offset-card ${
+                                          donor.availability_status === 'available' ? 'ring-green-500/30' :
+                                          donor.availability_status === 'reserved' ? 'ring-orange-500/30' : 'ring-red-500/30'
+                                        }`} />
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2 pt-2 border-t">
+                                      <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => openEditDialog(donor)}>
+                                        <Edit className="h-4 w-4 mr-1.5" /> Edit
+                                      </Button>
+                                      <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => openHistoryDialog(donor)}>
+                                        <Plus className="h-4 w-4 mr-1.5" /> Donation
+                                      </Button>
+                                      <Button size="sm" variant="ghost" className="h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteDonor(donor)}>
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              
+                              {/* Desktop table view */}
+                              <div className="hidden sm:block">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow className="hover:bg-transparent">
+                                      <TableHead className="font-semibold">Name</TableHead>
+                                      <TableHead className="font-semibold">Phone</TableHead>
+                                      <TableHead className="font-semibold hidden md:table-cell">Location</TableHead>
+                                      <TableHead className="font-semibold">Type</TableHead>
+                                      <TableHead className="font-semibold">Status</TableHead>
+                                      <TableHead className="font-semibold text-right">Actions</TableHead>
                                     </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  );
-                })()}
+                                  </TableHeader>
+                                  <TableBody>
+                                    {donorsByBloodGroup[group].map((donor) => (
+                                      <TableRow key={donor.id} className="group">
+                                        <TableCell className="py-3 font-medium">{donor.full_name}</TableCell>
+                                        <TableCell>{donor.phone}</TableCell>
+                                        <TableCell className="hidden md:table-cell text-muted-foreground">{donor.district || donor.atoll || '-'}</TableCell>
+                                        <TableCell>
+                                          <Badge variant="secondary" className="font-normal">
+                                            {donor.user_type === 'both' ? 'Both' : donor.user_type === 'receiver' ? 'Receiver' : 'Donor'}
+                                          </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex items-center gap-2">
+                                            <div className={`h-2.5 w-2.5 rounded-full ${
+                                              donor.availability_status === 'available' ? 'bg-green-500' :
+                                              donor.availability_status === 'reserved' ? 'bg-orange-500' : 'bg-red-500'
+                                            }`} />
+                                            <span className="text-sm capitalize">{donor.availability_status}</span>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex justify-end gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEditDialog(donor)}>
+                                              <Edit className="h-4 w-4" />
+                                            </Button>
+                                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openHistoryDialog(donor)}>
+                                              <Plus className="h-4 w-4" />
+                                            </Button>
+                                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteDonor(donor)}>
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    );
+                  })()}
                 </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="requests">
+          {/* Requests Tab */}
+          <TabsContent value="requests" className="space-y-4 mt-0">
             <Card className="rounded-2xl border-0 shadow-sm">
-              <CardHeader className="pb-3 px-3 sm:px-6">
-                <CardTitle className="text-base sm:text-lg">Blood Requests</CardTitle>
-                <CardDescription className="text-xs">Manage all blood donation requests</CardDescription>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-destructive" />
+                  Blood Requests
+                </CardTitle>
+                <CardDescription>Manage blood donation requests</CardDescription>
               </CardHeader>
-              <CardContent className="px-2 sm:px-6">
-                <ScrollArea className="h-[60vh] sm:h-[500px]">
+              <CardContent>
+                <ScrollArea className="h-[60vh]">
                   {/* Mobile card view */}
-                  <div className="sm:hidden space-y-2 pr-2">
+                  <div className="sm:hidden space-y-3">
                     {requests.map((request) => (
-                      <div key={request.id} className="bg-card border rounded-lg p-3">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium text-sm">{request.patient_name}</p>
-                            <p className="text-xs text-muted-foreground">{request.hospital_name}</p>
+                      <div key={request.id} className="bg-muted/30 border rounded-xl p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-semibold">{request.patient_name}</p>
+                            <p className="text-sm text-muted-foreground">{request.hospital_name}</p>
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <Badge className="bg-primary/10 text-primary border-0 text-xs">{request.blood_group}</Badge>
-                            <Badge className={
-                              request.status === "active" ? "bg-green-500/10 text-green-600 border-0 text-xs" :
-                              request.status === "fulfilled" ? "bg-blue-500/10 text-blue-600 border-0 text-xs" :
-                              "bg-red-500/10 text-red-600 border-0 text-xs"
-                            }>{request.status}</Badge>
-                          </div>
+                          <Badge className="bg-primary text-primary-foreground font-bold">{request.blood_group}</Badge>
                         </div>
-                        <div className="text-xs text-muted-foreground mb-2">
-                          <p>Contact: {request.contact_phone}</p>
-                          <p>By: {request.requester_name || 'Unknown'}</p>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Badge variant={
+                            request.status === "active" ? "default" :
+                            request.status === "fulfilled" ? "secondary" : "outline"
+                          } className={
+                            request.status === "active" ? "bg-green-500 text-white" :
+                            request.status === "fulfilled" ? "bg-blue-500 text-white" : ""
+                          }>
+                            {request.status}
+                          </Badge>
+                          <Badge variant="outline" className={
+                            request.urgency === "critical" ? "border-red-500 text-red-500" :
+                            request.urgency === "urgent" ? "border-orange-500 text-orange-500" : ""
+                          }>
+                            {request.urgency}
+                          </Badge>
                         </div>
-                        <div className="flex gap-1 pt-2 border-t">
-                          <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => openEditRequestDialog(request)}>
-                            <Edit className="h-3 w-3 mr-1" /> Edit
+                        <div className="flex gap-2 pt-2 border-t">
+                          <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => openEditRequestDialog(request)}>
+                            <Edit className="h-4 w-4 mr-1.5" /> Edit
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={() => handleDeleteRequest(request)}>
-                            <Trash2 className="h-3.5 w-3.5" />
+                          <Button size="sm" variant="ghost" className="h-9 w-9 p-0 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteRequest(request)}>
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
@@ -985,43 +984,43 @@ const Admin = () => {
                   </div>
                   
                   {/* Desktop table view */}
-                  <div className="hidden sm:block pr-3">
+                  <div className="hidden sm:block">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-xs">Patient</TableHead>
-                          <TableHead className="text-xs">Blood</TableHead>
-                          <TableHead className="text-xs hidden md:table-cell">Hospital</TableHead>
-                          <TableHead className="text-xs hidden lg:table-cell">Contact</TableHead>
-                          <TableHead className="text-xs hidden lg:table-cell">By</TableHead>
-                          <TableHead className="text-xs">Status</TableHead>
-                          <TableHead className="text-xs">Actions</TableHead>
+                        <TableRow className="hover:bg-transparent">
+                          <TableHead className="font-semibold">Patient</TableHead>
+                          <TableHead className="font-semibold">Blood</TableHead>
+                          <TableHead className="font-semibold hidden md:table-cell">Hospital</TableHead>
+                          <TableHead className="font-semibold hidden lg:table-cell">Contact</TableHead>
+                          <TableHead className="font-semibold hidden lg:table-cell">Requester</TableHead>
+                          <TableHead className="font-semibold">Status</TableHead>
+                          <TableHead className="font-semibold text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {requests.map((request) => (
-                          <TableRow key={request.id}>
-                            <TableCell className="font-medium text-sm py-2">{request.patient_name}</TableCell>
+                          <TableRow key={request.id} className="group">
+                            <TableCell className="font-medium py-3">{request.patient_name}</TableCell>
                             <TableCell>
-                              <Badge className="bg-primary/10 text-primary border-0 text-xs">{request.blood_group}</Badge>
+                              <Badge className="bg-primary/10 text-primary border-0 font-bold">{request.blood_group}</Badge>
                             </TableCell>
-                            <TableCell className="hidden md:table-cell text-sm">{request.hospital_name}</TableCell>
-                            <TableCell className="hidden lg:table-cell text-sm">{request.contact_phone}</TableCell>
-                            <TableCell className="hidden lg:table-cell text-sm">{request.requester_name || 'Unknown'}</TableCell>
+                            <TableCell className="hidden md:table-cell text-muted-foreground">{request.hospital_name}</TableCell>
+                            <TableCell className="hidden lg:table-cell text-muted-foreground">{request.contact_phone}</TableCell>
+                            <TableCell className="hidden lg:table-cell text-muted-foreground">{request.requester_name}</TableCell>
                             <TableCell>
                               <Badge className={
-                                request.status === "active" ? "bg-green-500/10 text-green-600 border-0 text-[10px]" :
-                                request.status === "fulfilled" ? "bg-blue-500/10 text-blue-600 border-0 text-[10px]" :
-                                "bg-red-500/10 text-red-600 border-0 text-[10px]"
+                                request.status === "active" ? "bg-green-500/10 text-green-600 border-0" :
+                                request.status === "fulfilled" ? "bg-blue-500/10 text-blue-600 border-0" :
+                                "bg-red-500/10 text-red-600 border-0"
                               }>{request.status}</Badge>
                             </TableCell>
                             <TableCell>
-                              <div className="flex gap-1">
-                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditRequestDialog(request)}>
-                                  <Edit className="h-3.5 w-3.5" />
+                              <div className="flex justify-end gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEditRequestDialog(request)}>
+                                  <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteRequest(request)}>
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteRequest(request)}>
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </TableCell>
@@ -1035,245 +1034,255 @@ const Admin = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="donations">
+          {/* Donations Tab */}
+          <TabsContent value="donations" className="space-y-4 mt-0">
             <Card className="rounded-2xl border-0 shadow-sm">
-              <CardHeader className="pb-3 px-3 sm:px-6">
-                <CardTitle className="text-base sm:text-lg">Donation History</CardTitle>
-                <CardDescription className="text-xs">View all completed donations grouped by donor</CardDescription>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Droplet className="h-5 w-5 text-green-600" />
+                  Donation History
+                </CardTitle>
+                <CardDescription>View all completed donations grouped by donor</CardDescription>
               </CardHeader>
-              <CardContent className="px-2 sm:px-6">
-                <ScrollArea className="h-[60vh] sm:h-[500px]">
-                {Object.keys(donationsByDonor).length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No donation records found</p>
-                ) : (
-                  <Accordion type="single" collapsible className="w-full space-y-2 pr-2 sm:pr-3">
-                    {Object.entries(donationsByDonor).map(([donorId, data]: [string, any]) => (
-                      <AccordionItem key={donorId} value={donorId} className="border rounded-xl bg-muted/20">
-                        <AccordionTrigger className="px-3 sm:px-4 hover:no-underline">
-                          <div className="flex items-center gap-2 sm:gap-4 text-left">
-                            <div className="font-medium text-sm sm:text-base truncate">{data.donor?.full_name || 'Unknown Donor'}</div>
-                            <Badge className="bg-green-500/10 text-green-600 border-0 text-xs shrink-0">
-                              {data.donations.length} donations
-                            </Badge>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-1 sm:px-4 pb-2">
-                          {/* Mobile card view */}
-                          <div className="sm:hidden space-y-2">
-                            {data.donations.map((donation: any) => (
-                              <div key={donation.id} className="bg-card border rounded-lg p-3">
-                                <div className="flex items-start justify-between gap-2 mb-2">
-                                  <div>
-                                    <p className="font-medium text-sm">
-                                      {new Date(donation.donation_date).toLocaleDateString('en-US', {
-                                        year: 'numeric', month: 'short', day: 'numeric',
-                                      })}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">{donation.hospital_name}</p>
+              <CardContent>
+                <ScrollArea className="h-[60vh]">
+                  {Object.keys(donationsByDonor).length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <Droplet className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                      <p className="text-muted-foreground">No donation records found</p>
+                    </div>
+                  ) : (
+                    <Accordion type="single" collapsible className="w-full space-y-2 pr-3">
+                      {Object.entries(donationsByDonor).map(([donorId, data]: [string, any]) => (
+                        <AccordionItem key={donorId} value={donorId} className="border rounded-xl bg-muted/30 overflow-hidden">
+                          <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <span className="font-medium">{data.donor?.full_name || 'Unknown Donor'}</span>
+                              <Badge className="bg-green-500/10 text-green-600 border-0">
+                                {data.donations.length} donations
+                              </Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-2 pb-2">
+                            {/* Mobile card view */}
+                            <div className="sm:hidden space-y-2">
+                              {data.donations.map((donation: any) => (
+                                <div key={donation.id} className="bg-card border rounded-xl p-4 space-y-2">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                      <p className="font-medium">
+                                        {new Date(donation.donation_date).toLocaleDateString('en-US', {
+                                          year: 'numeric', month: 'short', day: 'numeric',
+                                        })}
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">{donation.hospital_name}</p>
+                                    </div>
+                                    <Badge variant="secondary">{donation.units_donated || 1} unit</Badge>
                                   </div>
-                                  <Badge variant="secondary" className="text-xs">{donation.units_donated || 1} unit</Badge>
+                                  {donation.notes && (
+                                    <p className="text-xs text-muted-foreground line-clamp-2">{donation.notes}</p>
+                                  )}
+                                  <div className="flex gap-2 pt-2 border-t">
+                                    <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => openEditDonationDialog(donation)}>
+                                      <Edit className="h-4 w-4 mr-1.5" /> Edit
+                                    </Button>
+                                    <Button size="sm" variant="ghost" className="h-9 w-9 p-0 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteDonation(donation.id, data.donor?.full_name || 'Unknown')}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 </div>
-                                {donation.notes && (
-                                  <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{donation.notes}</p>
-                                )}
-                                <div className="flex gap-1 pt-2 border-t">
-                                  <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => openEditDonationDialog(donation)}>
-                                    <Edit className="h-3 w-3 mr-1" /> Edit
-                                  </Button>
-                                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={() => handleDeleteDonation(donation.id, data.donor?.full_name || 'Unknown')}>
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                          
-                          {/* Desktop table view */}
-                          <div className="hidden sm:block">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="text-xs">Date</TableHead>
-                                  <TableHead className="text-xs">Hospital</TableHead>
-                                  <TableHead className="text-xs">Units</TableHead>
-                                  <TableHead className="text-xs hidden md:table-cell">Notes</TableHead>
-                                  <TableHead className="text-xs">Actions</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {data.donations.map((donation: any) => (
-                                  <TableRow key={donation.id}>
-                                    <TableCell className="text-sm py-2">
-                                      {new Date(donation.donation_date).toLocaleDateString('en-US', {
-                                        year: 'numeric', month: 'short', day: 'numeric',
-                                      })}
-                                    </TableCell>
-                                    <TableCell className="text-sm">{donation.hospital_name}</TableCell>
-                                    <TableCell className="text-sm">{donation.units_donated || 1}</TableCell>
-                                    <TableCell className="hidden md:table-cell text-sm max-w-xs truncate">{donation.notes || '-'}</TableCell>
-                                    <TableCell>
-                                      <div className="flex gap-1">
-                                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditDonationDialog(donation)}>
-                                          <Edit className="h-3.5 w-3.5" />
-                                        </Button>
-                                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDeleteDonation(donation.id, data.donor?.full_name || 'Unknown')}>
-                                          <Trash2 className="h-3.5 w-3.5" />
-                                        </Button>
-                                      </div>
-                                    </TableCell>
+                              ))}
+                            </div>
+                            
+                            {/* Desktop table view */}
+                            <div className="hidden sm:block">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow className="hover:bg-transparent">
+                                    <TableHead className="font-semibold">Date</TableHead>
+                                    <TableHead className="font-semibold">Hospital</TableHead>
+                                    <TableHead className="font-semibold">Units</TableHead>
+                                    <TableHead className="font-semibold hidden md:table-cell">Notes</TableHead>
+                                    <TableHead className="font-semibold text-right">Actions</TableHead>
                                   </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                )}
+                                </TableHeader>
+                                <TableBody>
+                                  {data.donations.map((donation: any) => (
+                                    <TableRow key={donation.id} className="group">
+                                      <TableCell className="py-3">
+                                        {new Date(donation.donation_date).toLocaleDateString('en-US', {
+                                          year: 'numeric', month: 'short', day: 'numeric',
+                                        })}
+                                      </TableCell>
+                                      <TableCell>{donation.hospital_name}</TableCell>
+                                      <TableCell>{donation.units_donated || 1}</TableCell>
+                                      <TableCell className="hidden md:table-cell text-muted-foreground max-w-xs truncate">{donation.notes || '-'}</TableCell>
+                                      <TableCell>
+                                        <div className="flex justify-end gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEditDonationDialog(donation)}>
+                                            <Edit className="h-4 w-4" />
+                                          </Button>
+                                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteDonation(donation.id, data.donor?.full_name || 'Unknown')}>
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  )}
                 </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Locations</CardTitle>
-                <CardDescription>Manage atolls and islands</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <Label>Add New Atoll</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Atoll name"
-                      value={newAtoll}
-                      onChange={(e) => setNewAtoll(e.target.value)}
-                    />
-                    <Button onClick={addAtoll}>Add</Button>
-                  </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Atoll Name</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {atolls.map((atoll) => (
-                        <TableRow key={atoll.id}>
-                          <TableCell>{atoll.name}</TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => deleteAtoll(atoll.id)}
-                            >
-                              Delete
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                <div className="space-y-4">
-                  <Label>Add New Island</Label>
-                  <div className="flex gap-2">
-                    <Select value={selectedAtollForIsland} onValueChange={setSelectedAtollForIsland}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select atoll" />
-                      </SelectTrigger>
-                      <SelectContent>
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-4 mt-0">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card className="rounded-2xl border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <SettingsIcon className="h-5 w-5 text-muted-foreground" />
+                    Locations
+                  </CardTitle>
+                  <CardDescription>Manage atolls and islands</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className="font-medium">Add New Atoll</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Atoll name"
+                        value={newAtoll}
+                        onChange={(e) => setNewAtoll(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button onClick={addAtoll} className="shrink-0">
+                        <Plus className="h-4 w-4 mr-1.5" /> Add
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-32 border rounded-xl p-2">
+                      <div className="space-y-1">
                         {atolls.map((atoll) => (
-                          <SelectItem key={atoll.id} value={atoll.id}>
-                            {atoll.name}
-                          </SelectItem>
+                          <div key={atoll.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-lg transition-colors">
+                            <span className="text-sm">{atoll.name}</span>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => deleteAtoll(atoll.id)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      placeholder="Island name"
-                      value={newIsland}
-                      onChange={(e) => setNewIsland(e.target.value)}
-                    />
-                    <Button onClick={addIsland}>Add</Button>
+                      </div>
+                    </ScrollArea>
                   </div>
-                  
-                  {/* Islands grouped by atoll - collapsible */}
-                  <Accordion type="multiple" className="w-full">
-                    {atolls.map((atoll) => {
-                      const atollIslands = islands.filter((i: any) => i.atolls?.name === atoll.name);
-                      return (
-                        <AccordionItem key={atoll.id} value={atoll.id}>
-                          <AccordionTrigger className="text-sm">
-                            {atoll.name} ({atollIslands.length} islands)
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            {atollIslands.length === 0 ? (
-                              <p className="text-sm text-muted-foreground py-2">No islands added</p>
-                            ) : (
-                              <div className="space-y-1">
-                                {atollIslands.map((island: any) => (
-                                  <div key={island.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                                    <span className="text-sm">{island.name}</span>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-7 text-destructive hover:text-destructive"
-                                      onClick={() => deleteIsland(island.id)}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </AccordionContent>
-                        </AccordionItem>
-                      );
-                    })}
-                  </Accordion>
-                </div>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>SMS Template</CardTitle>
-                <CardDescription>Customize blood request SMS notification</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Textarea
-                  value={smsTemplate}
-                  onChange={(e) => setSmsTemplate(e.target.value)}
-                  rows={6}
-                />
-                <Button onClick={updateSmsTemplate}>Update Template</Button>
-              </CardContent>
-            </Card>
+                  <div className="space-y-3">
+                    <Label className="font-medium">Add New Island</Label>
+                    <div className="flex gap-2">
+                      <Select value={selectedAtollForIsland} onValueChange={setSelectedAtollForIsland}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue placeholder="Atoll" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {atolls.map((atoll) => (
+                            <SelectItem key={atoll.id} value={atoll.id}>
+                              {atoll.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        placeholder="Island name"
+                        value={newIsland}
+                        onChange={(e) => setNewIsland(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button onClick={addIsland} className="shrink-0">
+                        <Plus className="h-4 w-4 mr-1.5" /> Add
+                      </Button>
+                    </div>
+                    <Accordion type="multiple" className="w-full">
+                      {atolls.map((atoll) => {
+                        const atollIslands = islands.filter((i: any) => i.atolls?.name === atoll.name);
+                        return (
+                          <AccordionItem key={atoll.id} value={atoll.id} className="border-b-0">
+                            <AccordionTrigger className="text-sm py-2 hover:no-underline">
+                              <span className="flex items-center gap-2">
+                                {atoll.name}
+                                <Badge variant="secondary" className="text-xs">{atollIslands.length}</Badge>
+                              </span>
+                            </AccordionTrigger>
+                            <AccordionContent className="pt-0 pb-2">
+                              {atollIslands.length === 0 ? (
+                                <p className="text-sm text-muted-foreground pl-2">No islands</p>
+                              ) : (
+                                <div className="space-y-1 pl-2">
+                                  {atollIslands.map((island: any) => (
+                                    <div key={island.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                                      <span className="text-sm">{island.name}</span>
+                                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive" onClick={() => deleteIsland(island.id)}>
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </AccordionContent>
+                          </AccordionItem>
+                        );
+                      })}
+                    </Accordion>
+                  </div>
+                </CardContent>
+              </Card>
 
-            <TelegramConfigManager />
+              <div className="space-y-4">
+                <Card className="rounded-2xl border-0 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg">SMS Template</CardTitle>
+                    <CardDescription>Customize blood request SMS notification</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Textarea
+                      value={smsTemplate}
+                      onChange={(e) => setSmsTemplate(e.target.value)}
+                      rows={6}
+                      className="font-mono text-sm"
+                    />
+                    <Button onClick={updateSmsTemplate} className="w-full sm:w-auto">
+                      Update Template
+                    </Button>
+                  </CardContent>
+                </Card>
 
-            
+                <TelegramConfigManager />
+              </div>
+            </div>
           </TabsContent>
 
-          <TabsContent value="rewards" className="space-y-4">
+          {/* Rewards Tab */}
+          <TabsContent value="rewards" className="space-y-4 mt-0">
             <RewardsAdminPanel />
             <AchievementsAdminPanel />
           </TabsContent>
 
-          <TabsContent value="merchants">
+          {/* Merchants Tab */}
+          <TabsContent value="merchants" className="mt-0">
             <MerchantAdminPanel />
           </TabsContent>
 
-          <TabsContent value="audit">
+          {/* Audit Tab */}
+          <TabsContent value="audit" className="mt-0">
             <RedemptionAuditPanel />
           </TabsContent>
 
-          <TabsContent value="admins">
+          {/* Admins Tab */}
+          <TabsContent value="admins" className="mt-0">
             <UserRoleManager />
           </TabsContent>
         </Tabs>
@@ -1281,73 +1290,73 @@ const Admin = () => {
 
       {/* Edit Donor Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Donor</DialogTitle>
             <DialogDescription>Update donor information</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Full Name</Label>
-              <Input
-                value={editForm.full_name}
-                onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-              />
+          <div className="space-y-4 py-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Full Name</Label>
+                <Input
+                  value={editForm.full_name}
+                  onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Blood Group</Label>
+                <Select
+                  value={editForm.blood_group}
+                  onValueChange={(value) => setEditForm({ ...editForm, blood_group: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
+                      <SelectItem key={bg} value={bg}>{bg}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <Label>Blood Group</Label>
-              <Select
-                value={editForm.blood_group}
-                onValueChange={(value) => setEditForm({ ...editForm, blood_group: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="A+">A+</SelectItem>
-                  <SelectItem value="A-">A-</SelectItem>
-                  <SelectItem value="B+">B+</SelectItem>
-                  <SelectItem value="B-">B-</SelectItem>
-                  <SelectItem value="AB+">AB+</SelectItem>
-                  <SelectItem value="AB-">AB-</SelectItem>
-                  <SelectItem value="O+">O+</SelectItem>
-                  <SelectItem value="O-">O-</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>District</Label>
+                <Input
+                  value={editForm.district}
+                  onChange={(e) => setEditForm({ ...editForm, district: e.target.value })}
+                />
+              </div>
             </div>
-            <div>
-              <Label>Phone</Label>
-              <Input
-                value={editForm.phone}
-                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>District</Label>
-              <Input
-                value={editForm.district}
-                onChange={(e) => setEditForm({ ...editForm, district: e.target.value })}
-              />
-            </div>
-            <div>
+            <div className="space-y-2">
               <Label>Address</Label>
               <Textarea
                 value={editForm.address}
                 onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                rows={2}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>Title (optional)</Label>
               <Input
                 value={editForm.title}
                 onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                placeholder="e.g., Founder, Volunteer, etc."
+                placeholder="e.g., Founder, Volunteer"
               />
             </div>
             {editForm.title && (
-              <div>
+              <div className="space-y-2">
                 <Label>Title Badge Color</Label>
-                <div className="grid grid-cols-6 gap-2 mt-2">
+                <div className="grid grid-cols-6 gap-2">
                   {[
                     { name: "Default", value: "", hex: "#6b7280" },
                     { name: "Red", value: "#ef4444", hex: "#ef4444" },
@@ -1366,17 +1375,17 @@ const Admin = () => {
                       key={color.name}
                       type="button"
                       onClick={() => setEditForm({ ...editForm, title_color: color.value })}
-                      className={`w-8 h-8 rounded-full border-2 ${
+                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
                         editForm.title_color === color.value ? "border-foreground ring-2 ring-offset-2 ring-primary" : "border-transparent"
-                      } transition-all`}
+                      }`}
                       style={{ backgroundColor: color.hex }}
                       title={color.name}
                     />
                   ))}
                 </div>
                 {editForm.title && (
-                  <div className="mt-3">
-                    <span className="text-sm text-muted-foreground mr-2">Preview:</span>
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Preview:</span>
                     <Badge 
                       className="border-0"
                       style={{ 
@@ -1391,10 +1400,8 @@ const Admin = () => {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-              Cancel
-            </Button>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleEditSave}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
@@ -1402,30 +1409,28 @@ const Admin = () => {
 
       {/* Add Donation History Dialog */}
       <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Add Donation History</DialogTitle>
             <DialogDescription>
               Record a new donation for {selectedDonor?.full_name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
               <Label>Donation Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left">
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {format(historyForm.donation_date, "PPP")}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={historyForm.donation_date}
-                    onSelect={(date) =>
-                      date && setHistoryForm({ ...historyForm, donation_date: date })
-                    }
+                    onSelect={(date) => date && setHistoryForm({ ...historyForm, donation_date: date })}
                     disabled={(date) => date > new Date()}
                     initialFocus
                     className="pointer-events-auto"
@@ -1433,38 +1438,33 @@ const Admin = () => {
                 </PopoverContent>
               </Popover>
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>Hospital Name</Label>
               <Input
                 value={historyForm.hospital_name}
-                onChange={(e) =>
-                  setHistoryForm({ ...historyForm, hospital_name: e.target.value })
-                }
+                onChange={(e) => setHistoryForm({ ...historyForm, hospital_name: e.target.value })}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>Units Donated</Label>
               <Input
                 type="number"
                 min="1"
                 value={historyForm.units_donated}
-                onChange={(e) =>
-                  setHistoryForm({ ...historyForm, units_donated: parseInt(e.target.value) })
-                }
+                onChange={(e) => setHistoryForm({ ...historyForm, units_donated: parseInt(e.target.value) })}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>Notes</Label>
               <Textarea
                 value={historyForm.notes}
                 onChange={(e) => setHistoryForm({ ...historyForm, notes: e.target.value })}
+                rows={2}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setHistoryDialogOpen(false)}>
-              Cancel
-            </Button>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setHistoryDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleHistoryAdd}>Add Donation</Button>
           </DialogFooter>
         </DialogContent>
@@ -1472,30 +1472,26 @@ const Admin = () => {
 
       {/* Edit Donation Dialog */}
       <Dialog open={editDonationDialogOpen} onOpenChange={setEditDonationDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Donation Record</DialogTitle>
-            <DialogDescription>
-              Update donation details
-            </DialogDescription>
+            <DialogDescription>Update donation details</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
               <Label>Donation Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left">
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {format(editDonationForm.donation_date, "PPP")}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={editDonationForm.donation_date}
-                    onSelect={(date) =>
-                      date && setEditDonationForm({ ...editDonationForm, donation_date: date })
-                    }
+                    onSelect={(date) => date && setEditDonationForm({ ...editDonationForm, donation_date: date })}
                     disabled={(date) => date > new Date()}
                     initialFocus
                     className="pointer-events-auto"
@@ -1503,43 +1499,33 @@ const Admin = () => {
                 </PopoverContent>
               </Popover>
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>Hospital Name</Label>
               <Input
                 value={editDonationForm.hospital_name}
-                onChange={(e) =>
-                  setEditDonationForm({ ...editDonationForm, hospital_name: e.target.value })
-                }
+                onChange={(e) => setEditDonationForm({ ...editDonationForm, hospital_name: e.target.value })}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>Units Donated</Label>
               <Input
                 type="number"
                 min="1"
                 value={editDonationForm.units_donated}
-                onChange={(e) =>
-                  setEditDonationForm({
-                    ...editDonationForm,
-                    units_donated: parseInt(e.target.value),
-                  })
-                }
+                onChange={(e) => setEditDonationForm({ ...editDonationForm, units_donated: parseInt(e.target.value) })}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>Notes</Label>
               <Textarea
                 value={editDonationForm.notes}
-                onChange={(e) =>
-                  setEditDonationForm({ ...editDonationForm, notes: e.target.value })
-                }
+                onChange={(e) => setEditDonationForm({ ...editDonationForm, notes: e.target.value })}
+                rows={2}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDonationDialogOpen(false)}>
-              Cancel
-            </Button>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setEditDonationDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleEditDonationSave}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
@@ -1547,119 +1533,98 @@ const Admin = () => {
 
       {/* Edit Blood Request Dialog */}
       <Dialog open={editRequestDialogOpen} onOpenChange={setEditRequestDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Blood Request</DialogTitle>
-            <DialogDescription>
-              Update blood request details
-            </DialogDescription>
+            <DialogDescription>Update blood request details</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Patient Name</Label>
-              <Input
-                value={editRequestForm.patient_name}
-                onChange={(e) =>
-                  setEditRequestForm({ ...editRequestForm, patient_name: e.target.value })
-                }
-              />
+          <div className="space-y-4 py-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Patient Name</Label>
+                <Input
+                  value={editRequestForm.patient_name}
+                  onChange={(e) => setEditRequestForm({ ...editRequestForm, patient_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Blood Group</Label>
+                <Select
+                  value={editRequestForm.blood_group}
+                  onValueChange={(value) => setEditRequestForm({ ...editRequestForm, blood_group: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
+                      <SelectItem key={bg} value={bg}>{bg}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <Label>Blood Group</Label>
-              <Select
-                value={editRequestForm.blood_group}
-                onValueChange={(value) =>
-                  setEditRequestForm({ ...editRequestForm, blood_group: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="A+">A+</SelectItem>
-                  <SelectItem value="A-">A-</SelectItem>
-                  <SelectItem value="B+">B+</SelectItem>
-                  <SelectItem value="B-">B-</SelectItem>
-                  <SelectItem value="AB+">AB+</SelectItem>
-                  <SelectItem value="AB-">AB-</SelectItem>
-                  <SelectItem value="O+">O+</SelectItem>
-                  <SelectItem value="O-">O-</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
+            <div className="space-y-2">
               <Label>Hospital Name</Label>
               <Input
                 value={editRequestForm.hospital_name}
-                onChange={(e) =>
-                  setEditRequestForm({ ...editRequestForm, hospital_name: e.target.value })
-                }
+                onChange={(e) => setEditRequestForm({ ...editRequestForm, hospital_name: e.target.value })}
               />
             </div>
-            <div>
-              <Label>Contact Name</Label>
-              <Input
-                value={editRequestForm.contact_name}
-                onChange={(e) =>
-                  setEditRequestForm({ ...editRequestForm, contact_name: e.target.value })
-                }
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Contact Name</Label>
+                <Input
+                  value={editRequestForm.contact_name}
+                  onChange={(e) => setEditRequestForm({ ...editRequestForm, contact_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Contact Phone</Label>
+                <Input
+                  value={editRequestForm.contact_phone}
+                  onChange={(e) => setEditRequestForm({ ...editRequestForm, contact_phone: e.target.value })}
+                />
+              </div>
             </div>
-            <div>
-              <Label>Contact Phone</Label>
-              <Input
-                value={editRequestForm.contact_phone}
-                onChange={(e) =>
-                  setEditRequestForm({ ...editRequestForm, contact_phone: e.target.value })
-                }
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Units Needed</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={editRequestForm.units_needed}
+                  onChange={(e) => setEditRequestForm({ ...editRequestForm, units_needed: parseInt(e.target.value) })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Urgency</Label>
+                <Select
+                  value={editRequestForm.urgency}
+                  onValueChange={(value) => setEditRequestForm({ ...editRequestForm, urgency: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="critical">Critical</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                    <SelectItem value="routine">Routine</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <Label>Units Needed</Label>
-              <Input
-                type="number"
-                min="1"
-                value={editRequestForm.units_needed}
-                onChange={(e) =>
-                  setEditRequestForm({
-                    ...editRequestForm,
-                    units_needed: parseInt(e.target.value),
-                  })
-                }
-              />
-            </div>
-            <div>
-              <Label>Urgency</Label>
-              <Select
-                value={editRequestForm.urgency}
-                onValueChange={(value) =>
-                  setEditRequestForm({ ...editRequestForm, urgency: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="critical">Critical</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                  <SelectItem value="routine">Routine</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
+            <div className="space-y-2">
               <Label>Notes</Label>
               <Textarea
                 value={editRequestForm.notes}
-                onChange={(e) =>
-                  setEditRequestForm({ ...editRequestForm, notes: e.target.value })
-                }
+                onChange={(e) => setEditRequestForm({ ...editRequestForm, notes: e.target.value })}
+                rows={2}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditRequestDialogOpen(false)}>
-              Cancel
-            </Button>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setEditRequestDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleEditRequestSave}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
