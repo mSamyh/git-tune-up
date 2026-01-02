@@ -1004,14 +1004,14 @@ export function RewardsAdminPanel() {
             <div className="grid gap-2">
               <Label htmlFor="merchant">Merchant PIN (for verification)</Label>
               <Select
-                value={formData.merchant_id}
-                onValueChange={(value) => setFormData({ ...formData, merchant_id: value })}
+                value={formData.merchant_id || "none"}
+                onValueChange={(value) => setFormData({ ...formData, merchant_id: value === "none" ? "" : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select merchant to link" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No merchant</SelectItem>
+                  <SelectItem value="none">No merchant</SelectItem>
                   {merchants.filter(m => m.is_active).map((merchant) => (
                     <SelectItem key={merchant.id} value={merchant.id}>
                       {merchant.name} (PIN: {merchant.pin})
