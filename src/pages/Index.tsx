@@ -4,14 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Droplet, Search, Heart, UserCheck, X, Users, BarChart3 } from "lucide-react";
+import { Droplet, Search, Heart, UserCheck, X, Users, BarChart3, GitCompare } from "lucide-react";
 import { DonorTable } from "@/components/DonorTable";
 import { DonorStatsDashboard } from "@/components/DonorStatsDashboard";
+import { BloodCompatibilityChecker } from "@/components/BloodCompatibilityChecker";
 import { BottomNav } from "@/components/BottomNav";
 import { BloodGroupFilter } from "@/components/BloodGroupFilter";
 import { AppHeader } from "@/components/AppHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -117,16 +117,23 @@ const Index = () => {
       <AppHeader />
 
       <main className="container mx-auto px-4 py-6">
-        {/* Tabs for Directory and Stats */}
+        {/* Tabs for Directory, Stats, and Compatibility */}
         <Tabs defaultValue="directory" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4 rounded-xl h-11">
-            <TabsTrigger value="directory" className="rounded-lg flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-3 mb-4 rounded-xl h-11">
+            <TabsTrigger value="directory" className="rounded-lg flex items-center gap-1.5 text-xs sm:text-sm">
               <Users className="h-4 w-4" />
-              Directory
+              <span className="hidden sm:inline">Directory</span>
+              <span className="sm:hidden">Donors</span>
             </TabsTrigger>
-            <TabsTrigger value="stats" className="rounded-lg flex items-center gap-2">
+            <TabsTrigger value="stats" className="rounded-lg flex items-center gap-1.5 text-xs sm:text-sm">
               <BarChart3 className="h-4 w-4" />
-              Statistics
+              <span className="hidden sm:inline">Statistics</span>
+              <span className="sm:hidden">Stats</span>
+            </TabsTrigger>
+            <TabsTrigger value="compatibility" className="rounded-lg flex items-center gap-1.5 text-xs sm:text-sm">
+              <GitCompare className="h-4 w-4" />
+              <span className="hidden sm:inline">Compatibility</span>
+              <span className="sm:hidden">Match</span>
             </TabsTrigger>
           </TabsList>
 
@@ -190,6 +197,10 @@ const Index = () => {
 
           <TabsContent value="stats" className="mt-0">
             <DonorStatsDashboard />
+          </TabsContent>
+
+          <TabsContent value="compatibility" className="mt-0">
+            <BloodCompatibilityChecker />
           </TabsContent>
         </Tabs>
 
