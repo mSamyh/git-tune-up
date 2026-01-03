@@ -884,167 +884,179 @@ export function RewardsAdminPanel() {
         </TabsContent>
       </Tabs>
 
-      {/* Reward Dialog */}
+      {/* Reward Dialog - Mobile optimized with scroll */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2 flex-shrink-0">
             <DialogTitle>{editingReward ? "Edit Reward" : "Add New Reward"}</DialogTitle>
             <DialogDescription>
               Configure reward details and partner information
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+          
+          {/* Scrollable form area */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-2">
+            <div className="grid gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="partner">Partner Name *</Label>
+                <Label htmlFor="title">Title *</Label>
                 <Input
-                  id="partner"
-                  value={formData.partner_name}
-                  onChange={(e) => setFormData({ ...formData, partner_name: e.target.value })}
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="points">Points Required *</Label>
-                <Input
-                  id="points"
-                  type="number"
-                  value={formData.points_required}
-                  onChange={(e) => setFormData({ ...formData, points_required: parseInt(e.target.value) })}
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="min-h-[80px]"
                 />
               </div>
-            </div>
-            {/* Partner Logo Upload */}
-            <div className="grid gap-2">
-              <Label>Partner Logo</Label>
-              <div className="flex items-center gap-3">
-                {logoPreview ? (
-                  <div className="relative">
-                    <img 
-                      src={logoPreview} 
-                      alt="Partner logo" 
-                      className="w-16 h-16 rounded-lg object-cover border"
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="partner">Partner Name *</Label>
+                  <Input
+                    id="partner"
+                    value={formData.partner_name}
+                    onChange={(e) => setFormData({ ...formData, partner_name: e.target.value })}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="points">Points Required *</Label>
+                  <Input
+                    id="points"
+                    type="number"
+                    value={formData.points_required}
+                    onChange={(e) => setFormData({ ...formData, points_required: parseInt(e.target.value) })}
+                  />
+                </div>
+              </div>
+              {/* Partner Logo Upload */}
+              <div className="grid gap-2">
+                <Label>Partner Logo</Label>
+                <div className="flex items-center gap-3">
+                  {logoPreview ? (
+                    <div className="relative flex-shrink-0">
+                      <img 
+                        src={logoPreview} 
+                        alt="Partner logo" 
+                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover border"
+                      />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="destructive"
+                        className="absolute -top-2 -right-2 h-5 w-5 rounded-full"
+                        onClick={removeLogo}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex items-center justify-center bg-muted/30 flex-shrink-0">
+                      <ImageIcon className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoSelect}
+                      className="hidden"
+                      id="logo-upload"
                     />
                     <Button
                       type="button"
-                      size="icon"
-                      variant="destructive"
-                      className="absolute -top-2 -right-2 h-5 w-5 rounded-full"
-                      onClick={removeLogo}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={uploadingLogo}
                     >
-                      <X className="h-3 w-3" />
+                      <Upload className="h-4 w-4 mr-2" />
+                      {logoPreview ? "Change" : "Upload"}
                     </Button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Max 2MB. JPG, PNG.
+                    </p>
                   </div>
-                ) : (
-                  <div className="w-16 h-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex items-center justify-center bg-muted/30">
-                    <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
-                  </div>
-                )}
-                <div className="flex-1">
-                  <input
-                    ref={logoInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoSelect}
-                    className="hidden"
-                    id="logo-upload"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => logoInputRef.current?.click()}
-                    disabled={uploadingLogo}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    {logoPreview ? "Change" : "Upload"}
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Max 2MB. JPG, PNG recommended.
-                  </p>
                 </div>
               </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Healthcare">Healthcare</SelectItem>
-                  <SelectItem value="Fitness">Fitness</SelectItem>
-                  <SelectItem value="Restaurant">Restaurant</SelectItem>
-                  <SelectItem value="Retail">Retail</SelectItem>
-                  <SelectItem value="Entertainment">Entertainment</SelectItem>
-                  <SelectItem value="Transportation">Transportation</SelectItem>
-                  <SelectItem value="Education">Education</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {/* Merchant PIN Selector */}
-            <div className="grid gap-2">
-              <Label htmlFor="merchant">Merchant PIN (for verification)</Label>
-              <Select
-                value={formData.merchant_id || "none"}
-                onValueChange={(value) => setFormData({ ...formData, merchant_id: value === "none" ? "" : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select merchant to link" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No merchant</SelectItem>
-                  {merchants.filter(m => m.is_active).map((merchant) => (
-                    <SelectItem key={merchant.id} value={merchant.id}>
-                      {merchant.name} (PIN: {merchant.pin})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Link a merchant PIN that can verify QR codes for this reward
-              </p>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="terms">Terms & Conditions</Label>
-              <Textarea
-                id="terms"
-                value={formData.terms_conditions}
-                onChange={(e) => setFormData({ ...formData, terms_conditions: e.target.value })}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-              />
-              <Label>Active</Label>
+              <div className="grid gap-2">
+                <Label htmlFor="category">Category *</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) => setFormData({ ...formData, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Healthcare">Healthcare</SelectItem>
+                    <SelectItem value="Fitness">Fitness</SelectItem>
+                    <SelectItem value="Restaurant">Restaurant</SelectItem>
+                    <SelectItem value="Retail">Retail</SelectItem>
+                    <SelectItem value="Entertainment">Entertainment</SelectItem>
+                    <SelectItem value="Transportation">Transportation</SelectItem>
+                    <SelectItem value="Education">Education</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Merchant PIN Selector */}
+              <div className="grid gap-2">
+                <Label htmlFor="merchant">Merchant PIN (for verification)</Label>
+                <Select
+                  value={formData.merchant_id || "none"}
+                  onValueChange={(value) => setFormData({ ...formData, merchant_id: value === "none" ? "" : value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select merchant to link" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No merchant</SelectItem>
+                    {merchants.filter(m => m.is_active).map((merchant) => (
+                      <SelectItem key={merchant.id} value={merchant.id}>
+                        {merchant.name} (PIN: {merchant.pin})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Link a merchant PIN that can verify QR codes for this reward
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="terms">Terms & Conditions</Label>
+                <Textarea
+                  id="terms"
+                  value={formData.terms_conditions}
+                  onChange={(e) => setFormData({ ...formData, terms_conditions: e.target.value })}
+                  className="min-h-[80px]"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                />
+                <Label>Active</Label>
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={uploadingLogo}>
-              {uploadingLogo ? "Uploading..." : "Save"}
-            </Button>
-          </DialogFooter>
+          
+          {/* Sticky footer with buttons */}
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t bg-background">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto">
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={uploadingLogo} className="w-full sm:w-auto">
+                {uploadingLogo ? "Uploading..." : "Save Reward"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

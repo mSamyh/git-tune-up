@@ -13,7 +13,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CSVImporter } from "@/components/CSVImporter";
+
 import { UserRoleManager } from "@/components/UserRoleManager";
 import { TelegramConfigManager } from "@/components/TelegramConfigManager";
 
@@ -803,7 +803,6 @@ const Admin = () => {
                     </CardTitle>
                     <CardDescription>Manage all registered blood donors</CardDescription>
                   </div>
-                  <CSVImporter />
                 </div>
               </CardHeader>
               <CardContent>
