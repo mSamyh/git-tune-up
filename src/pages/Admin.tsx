@@ -805,8 +805,8 @@ const Admin = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[60vh]">
+              <CardContent className="px-3 sm:px-6">
+                <div className="space-y-2">
                   {(() => {
                     const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
                     const donorsByBloodGroup = bloodGroups.reduce((acc, group) => {
@@ -816,7 +816,7 @@ const Admin = () => {
                     const groupsWithDonors = bloodGroups.filter(g => donorsByBloodGroup[g].length > 0);
 
                     return (
-                      <Accordion type="multiple" defaultValue={['A+', 'B+', 'O+', 'AB+']} className="w-full space-y-2 pr-3">
+                      <Accordion type="multiple" defaultValue={['A+', 'B+', 'O+', 'AB+']} className="w-full space-y-2">
                         {groupsWithDonors.map(group => (
                           <AccordionItem key={group} value={group} className="border rounded-xl bg-muted/30 overflow-hidden">
                             <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 transition-colors">
@@ -925,7 +925,7 @@ const Admin = () => {
                       </Accordion>
                     );
                   })()}
-                </ScrollArea>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -940,8 +940,8 @@ const Admin = () => {
                 </CardTitle>
                 <CardDescription>Manage blood donation requests</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[60vh]">
+              <CardContent className="px-3 sm:px-6">
+                <div className="space-y-3">
                   {/* Mobile card view */}
                   <div className="sm:hidden space-y-3">
                     {requests.map((request) => (
@@ -1028,7 +1028,7 @@ const Admin = () => {
                       </TableBody>
                     </Table>
                   </div>
-                </ScrollArea>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -1043,15 +1043,15 @@ const Admin = () => {
                 </CardTitle>
                 <CardDescription>View all completed donations grouped by donor</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[60vh]">
+              <CardContent className="px-3 sm:px-6">
+                <div className="space-y-2">
                   {Object.keys(donationsByDonor).length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
                       <Droplet className="h-12 w-12 text-muted-foreground/30 mb-4" />
                       <p className="text-muted-foreground">No donation records found</p>
                     </div>
                   ) : (
-                    <Accordion type="single" collapsible className="w-full space-y-2 pr-3">
+                    <Accordion type="single" collapsible className="w-full space-y-2">
                       {Object.entries(donationsByDonor).map(([donorId, data]: [string, any]) => (
                         <AccordionItem key={donorId} value={donorId} className="border rounded-xl bg-muted/30 overflow-hidden">
                           <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 transition-colors">
@@ -1136,7 +1136,7 @@ const Admin = () => {
                       ))}
                     </Accordion>
                   )}
-                </ScrollArea>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
