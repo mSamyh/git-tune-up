@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown, Gift, Settings as SettingsIcon, Shield, Droplet, TrendingUp, Store, FileText, Activity, Clock, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSwipe } from "@/hooks/use-swipe";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -729,6 +730,27 @@ const Admin = () => {
     { value: "admins", label: "Admins", icon: Shield },
   ];
 
+  // Swipe navigation for mobile
+  const handleSwipeLeft = useCallback(() => {
+    const currentIndex = navItems.findIndex(item => item.value === activeTab);
+    if (currentIndex < navItems.length - 1) {
+      setActiveTab(navItems[currentIndex + 1].value);
+    }
+  }, [activeTab, navItems]);
+
+  const handleSwipeRight = useCallback(() => {
+    const currentIndex = navItems.findIndex(item => item.value === activeTab);
+    if (currentIndex > 0) {
+      setActiveTab(navItems[currentIndex - 1].value);
+    }
+  }, [activeTab, navItems]);
+
+  const swipeHandlers = useSwipe({
+    onSwipeLeft: handleSwipeLeft,
+    onSwipeRight: handleSwipeRight,
+    threshold: 50,
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
       <AppHeader />
@@ -791,7 +813,8 @@ const Admin = () => {
             </ScrollArea>
           </div>
 
-          {/* Donors Tab */}
+          {/* Swipeable Tab Content Container */}
+          <div {...swipeHandlers} className="touch-pan-y">
           <TabsContent value="donors" className="space-y-4 mt-0">
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardHeader className="pb-4">
@@ -1284,6 +1307,7 @@ const Admin = () => {
           <TabsContent value="admins" className="mt-0">
             <UserRoleManager />
           </TabsContent>
+          </div>{/* End of swipeable container */}
         </Tabs>
       </main>
 
