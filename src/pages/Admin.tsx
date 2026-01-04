@@ -730,20 +730,22 @@ const Admin = () => {
     { value: "admins", label: "Admins", icon: Shield },
   ];
 
+  const tabOrder = ["donors", "requests", "donations", "rewards", "merchants", "audit", "settings", "admins"];
+
   // Swipe navigation for mobile
   const handleSwipeLeft = useCallback(() => {
-    const currentIndex = navItems.findIndex(item => item.value === activeTab);
-    if (currentIndex < navItems.length - 1) {
-      setActiveTab(navItems[currentIndex + 1].value);
+    const currentIndex = tabOrder.indexOf(activeTab);
+    if (currentIndex < tabOrder.length - 1) {
+      setActiveTab(tabOrder[currentIndex + 1]);
     }
-  }, [activeTab, navItems]);
+  }, [activeTab]);
 
   const handleSwipeRight = useCallback(() => {
-    const currentIndex = navItems.findIndex(item => item.value === activeTab);
+    const currentIndex = tabOrder.indexOf(activeTab);
     if (currentIndex > 0) {
-      setActiveTab(navItems[currentIndex - 1].value);
+      setActiveTab(tabOrder[currentIndex - 1]);
     }
-  }, [activeTab, navItems]);
+  }, [activeTab]);
 
   const swipeHandlers = useSwipe({
     onSwipeLeft: handleSwipeLeft,
