@@ -112,6 +112,30 @@ const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Tab order for swipe navigation - must be before any early returns
+  const tabOrder = ["donors", "requests", "donations", "rewards", "merchants", "audit", "settings", "admins"];
+
+  // Swipe navigation for mobile - hooks must be called unconditionally
+  const handleSwipeLeft = useCallback(() => {
+    const currentIndex = tabOrder.indexOf(activeTab);
+    if (currentIndex < tabOrder.length - 1) {
+      setActiveTab(tabOrder[currentIndex + 1]);
+    }
+  }, [activeTab]);
+
+  const handleSwipeRight = useCallback(() => {
+    const currentIndex = tabOrder.indexOf(activeTab);
+    if (currentIndex > 0) {
+      setActiveTab(tabOrder[currentIndex - 1]);
+    }
+  }, [activeTab]);
+
+  const swipeHandlers = useSwipe({
+    onSwipeLeft: handleSwipeLeft,
+    onSwipeRight: handleSwipeRight,
+    threshold: 50,
+  });
+
   useEffect(() => {
     checkAdminAccess();
   }, []);
@@ -729,29 +753,6 @@ const Admin = () => {
     { value: "settings", label: "Settings", icon: SettingsIcon },
     { value: "admins", label: "Admins", icon: Shield },
   ];
-
-  const tabOrder = ["donors", "requests", "donations", "rewards", "merchants", "audit", "settings", "admins"];
-
-  // Swipe navigation for mobile
-  const handleSwipeLeft = useCallback(() => {
-    const currentIndex = tabOrder.indexOf(activeTab);
-    if (currentIndex < tabOrder.length - 1) {
-      setActiveTab(tabOrder[currentIndex + 1]);
-    }
-  }, [activeTab]);
-
-  const handleSwipeRight = useCallback(() => {
-    const currentIndex = tabOrder.indexOf(activeTab);
-    if (currentIndex > 0) {
-      setActiveTab(tabOrder[currentIndex - 1]);
-    }
-  }, [activeTab]);
-
-  const swipeHandlers = useSwipe({
-    onSwipeLeft: handleSwipeLeft,
-    onSwipeRight: handleSwipeRight,
-    threshold: 50,
-  });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">

@@ -1,4 +1,5 @@
-import { useRef, TouchEvent } from 'react';
+import { useRef } from 'react';
+import type { TouchEvent as ReactTouchEvent } from 'react';
 
 interface SwipeOptions {
   onSwipeLeft?: () => void;
@@ -10,12 +11,12 @@ export function useSwipe({ onSwipeLeft, onSwipeRight, threshold = 50 }: SwipeOpt
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
-  const handleTouchStart = (e: TouchEvent) => {
+  const handleTouchStart = (e: ReactTouchEvent<HTMLDivElement>) => {
     touchStartX.current = e.targetTouches[0].clientX;
     touchEndX.current = null;
   };
 
-  const handleTouchMove = (e: TouchEvent) => {
+  const handleTouchMove = (e: ReactTouchEvent<HTMLDivElement>) => {
     touchEndX.current = e.targetTouches[0].clientX;
   };
 
