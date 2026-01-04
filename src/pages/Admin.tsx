@@ -817,7 +817,7 @@ const Admin = () => {
           </div>
 
           {/* Swipeable Tab Content Container */}
-          <div {...swipeHandlers} className="touch-pan-y">
+          <div {...swipeHandlers} className="min-h-[300px]">
           <TabsContent value="donors" className="space-y-4 mt-0">
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardHeader className="pb-4">
