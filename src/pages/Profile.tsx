@@ -282,14 +282,14 @@ const Profile = () => {
     <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
-      <main className="container mx-auto max-w-lg px-4">
-        {/* Instagram-style Profile Header */}
-        <div className="py-4">
+      <main className="container mx-auto max-w-2xl px-4">
+        {/* Profile Header */}
+        <div className="py-5 animate-fade-in">
           {/* Top row: Avatar and Stats */}
-          <div className="flex items-center gap-6 mb-4">
-            {/* Avatar with gradient ring */}
+          <div className="flex items-center gap-5 mb-5">
+            {/* Avatar with status ring */}
             <div className="relative flex-shrink-0">
-              <div className={`p-[3px] rounded-full bg-gradient-to-tr ${getStatusColor()}`}>
+              <div className={`p-[2px] rounded-full bg-gradient-to-tr ${getStatusColor()}`}>
                 <div className="p-[2px] rounded-full bg-background">
                   <AvatarUpload
                     currentAvatarUrl={profile.avatar_url}
@@ -366,111 +366,111 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Action Buttons - Instagram style */}
-          <div className="flex gap-2 mb-4">
+          {/* Action Buttons */}
+          <div className="flex gap-2 mb-5">
             <Button 
               variant="secondary" 
-              className="flex-1 rounded-lg h-9 text-sm font-semibold"
+              className="flex-1 rounded-xl h-10 text-sm font-medium"
               onClick={() => setShowEditDialog(true)}
             >
               Edit profile
             </Button>
             <Button 
               variant="secondary" 
-              className="flex-1 rounded-lg h-9 text-sm font-semibold"
+              className="flex-1 rounded-xl h-10 text-sm font-medium"
               onClick={() => setShowRewardsDialog(true)}
             >
-              <Gift className="h-4 w-4 mr-1" />
+              <Gift className="h-4 w-4 mr-1.5" />
               Rewards
             </Button>
             <Button 
               variant="secondary" 
               size="icon"
-              className="rounded-lg h-9 w-9"
+              className="rounded-xl h-10 w-10"
               onClick={() => setShowQRCard(true)}
             >
               <QrCode className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* Highlights / Quick Stats */}
+          {/* Quick Stats Highlights */}
           {isDonor && (
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               <div className="flex flex-col items-center flex-shrink-0">
-                <div className="h-16 w-16 rounded-full border-2 border-muted flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 mb-1">
-                  <Heart className="h-7 w-7 text-primary" />
+                <div className="h-14 w-14 rounded-2xl border border-border/50 flex items-center justify-center bg-primary/5 mb-1.5">
+                  <Heart className="h-6 w-6 text-primary" />
                 </div>
-                <span className="text-xs text-center">{donationCount} Saved</span>
+                <span className="text-[10px] text-muted-foreground">{donationCount} Lives</span>
               </div>
               <div className="flex flex-col items-center flex-shrink-0">
-                <div className="h-16 w-16 rounded-full border-2 border-muted flex items-center justify-center bg-gradient-to-br from-amber-500/20 to-amber-500/5 mb-1">
-                  <Award className="h-7 w-7 text-amber-500" />
+                <div className="h-14 w-14 rounded-2xl border border-border/50 flex items-center justify-center bg-amber-500/5 mb-1.5">
+                  <Award className="h-6 w-6 text-amber-500" />
                 </div>
-                <span className="text-xs text-center">{totalPoints} Pts</span>
+                <span className="text-[10px] text-muted-foreground">{totalPoints} Pts</span>
               </div>
               <button 
                 onClick={() => navigate('/history')}
-                className="flex flex-col items-center flex-shrink-0"
+                className="flex flex-col items-center flex-shrink-0 group"
               >
-                <div className="h-16 w-16 rounded-full border-2 border-muted flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-blue-500/5 mb-1">
-                  <Calendar className="h-7 w-7 text-blue-500" />
+                <div className="h-14 w-14 rounded-2xl border border-border/50 flex items-center justify-center bg-blue-500/5 mb-1.5 group-hover:border-blue-500/30 transition-colors">
+                  <Calendar className="h-6 w-6 text-blue-500" />
                 </div>
-                <span className="text-xs text-center">History</span>
+                <span className="text-[10px] text-muted-foreground">History</span>
               </button>
               <button 
                 onClick={() => setShowQRCard(true)}
-                className="flex flex-col items-center flex-shrink-0"
+                className="flex flex-col items-center flex-shrink-0 group"
               >
-                <div className="h-16 w-16 rounded-full border-2 border-muted flex items-center justify-center bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 mb-1">
-                  <QrCode className="h-7 w-7 text-emerald-500" />
+                <div className="h-14 w-14 rounded-2xl border border-border/50 flex items-center justify-center bg-emerald-500/5 mb-1.5 group-hover:border-emerald-500/30 transition-colors">
+                  <QrCode className="h-6 w-6 text-emerald-500" />
                 </div>
-                <span className="text-xs text-center">ID Card</span>
+                <span className="text-[10px] text-muted-foreground">ID Card</span>
               </button>
             </div>
           )}
         </div>
 
-        {/* Instagram-style Tabs */}
+        {/* Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full bg-transparent border-t border-b border-border rounded-none h-12 p-0">
+          <TabsList className="w-full bg-transparent border-y border-border/50 rounded-none h-12 p-0">
             <TabsTrigger 
               value="posts" 
-              className="flex-1 rounded-none h-full data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="flex-1 rounded-none h-full text-muted-foreground data-[state=active]:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
             >
               <Grid3X3 className="h-5 w-5" />
             </TabsTrigger>
             <TabsTrigger 
               value="saved" 
-              className="flex-1 rounded-none h-full data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="flex-1 rounded-none h-full text-muted-foreground data-[state=active]:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
             >
               <Bookmark className="h-5 w-5" />
             </TabsTrigger>
             <TabsTrigger 
               value="settings" 
-              className="flex-1 rounded-none h-full data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="flex-1 rounded-none h-full text-muted-foreground data-[state=active]:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
             >
               <Settings className="h-5 w-5" />
             </TabsTrigger>
           </TabsList>
 
-          {/* Posts/Overview Tab */}
-          <TabsContent value="posts" className="mt-4 space-y-3">
-            {/* Achievement Cards Grid - Instagram style */}
+          {/* Overview Tab */}
+          <TabsContent value="posts" className="mt-5 space-y-4">
+            {/* Quick Stats Grid */}
             {isDonor && (
-              <div className="grid grid-cols-3 gap-1">
-                <div className="aspect-square bg-gradient-to-br from-primary/20 to-primary/5 rounded-sm flex flex-col items-center justify-center p-2">
-                  <Heart className="h-8 w-8 text-primary mb-1" />
-                  <p className="text-xs font-semibold text-center">{donationCount}</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="aspect-square bg-primary/5 rounded-2xl flex flex-col items-center justify-center p-3 border border-border/50">
+                  <Heart className="h-7 w-7 text-primary mb-1.5" />
+                  <p className="text-base font-semibold">{donationCount}</p>
                   <p className="text-[10px] text-muted-foreground">Donations</p>
                 </div>
-                <div className="aspect-square bg-gradient-to-br from-amber-500/20 to-amber-500/5 rounded-sm flex flex-col items-center justify-center p-2">
-                  <Award className="h-8 w-8 text-amber-500 mb-1" />
-                  <p className="text-xs font-semibold text-center">{totalPoints}</p>
+                <div className="aspect-square bg-amber-500/5 rounded-2xl flex flex-col items-center justify-center p-3 border border-border/50">
+                  <Award className="h-7 w-7 text-amber-500 mb-1.5" />
+                  <p className="text-base font-semibold">{totalPoints}</p>
                   <p className="text-[10px] text-muted-foreground">Points</p>
                 </div>
-                <div className="aspect-square bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 rounded-sm flex flex-col items-center justify-center p-2">
-                  <Sparkles className="h-8 w-8 text-emerald-500 mb-1" />
-                  <p className="text-xs font-semibold text-center">{donationCount}</p>
+                <div className="aspect-square bg-emerald-500/5 rounded-2xl flex flex-col items-center justify-center p-3 border border-border/50">
+                  <Sparkles className="h-7 w-7 text-emerald-500 mb-1.5" />
+                  <p className="text-base font-semibold">{donationCount}</p>
                   <p className="text-[10px] text-muted-foreground">Lives</p>
                 </div>
               </div>
