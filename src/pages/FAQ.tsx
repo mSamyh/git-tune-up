@@ -266,25 +266,27 @@ const FAQ = () => {
     <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-            <Heart className="h-8 w-8 text-primary" />
+      <main className="container mx-auto px-4 py-6 max-w-2xl animate-fade-in">
+        {/* Header */}
+        <section className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-3xl bg-primary/10 mb-4">
+            <Heart className="h-7 w-7 text-primary" />
           </div>
-          <h1 className="text-4xl font-bold mb-3">Frequently Asked Questions</h1>
-          <p className="text-muted-foreground text-lg">
+          <h1 className="font-display text-2xl font-bold mb-2">Frequently Asked Questions</h1>
+          <p className="text-sm text-muted-foreground">
             Everything you need to know about LeyHadhiya
           </p>
-        </div>
+        </section>
 
-        <Card className="mb-8">
-          <CardContent className="pt-6">
+        {/* Search */}
+        <Card className="mb-6 rounded-2xl border-border/50 shadow-soft">
+          <CardContent className="pt-5 pb-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search for answers..."
-                className="pl-10"
+                className="pl-10 rounded-xl h-10 bg-secondary/50 border-0"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -293,26 +295,26 @@ const FAQ = () => {
         </Card>
 
         {filteredCategories.map((category, idx) => (
-          <Card key={idx} className="mb-6">
-            <CardHeader>
+          <Card key={idx} className="mb-4 rounded-2xl border-border/50 shadow-soft">
+            <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-                  <category.icon className="h-5 w-5 text-primary" />
+                <div className="flex items-center justify-center w-9 h-9 rounded-2xl bg-primary/10">
+                  <category.icon className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <CardTitle>{category.category}</CardTitle>
-                  <CardDescription>{category.questions.length} questions</CardDescription>
+                  <CardTitle className="font-display text-base">{category.category}</CardTitle>
+                  <CardDescription className="text-xs">{category.questions.length} questions</CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               <Accordion type="single" collapsible className="w-full">
                 {category.questions.map((item, qIdx) => (
-                  <AccordionItem key={qIdx} value={`item-${idx}-${qIdx}`}>
-                    <AccordionTrigger className="text-left">
+                  <AccordionItem key={qIdx} value={`item-${idx}-${qIdx}`} className="border-border/50">
+                    <AccordionTrigger className="text-left text-sm py-3 hover:no-underline">
                       {item.q}
                     </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">
+                    <AccordionContent className="text-sm text-muted-foreground pb-4">
                       {item.a}
                     </AccordionContent>
                   </AccordionItem>
@@ -323,23 +325,23 @@ const FAQ = () => {
         ))}
 
         {searchQuery && filteredCategories[0].questions.length === 0 && (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">No results found for "{searchQuery}"</p>
-              <Button variant="outline" onClick={() => setSearchQuery("")}>
+          <Card className="rounded-2xl border-border/50">
+            <CardContent className="py-10 text-center">
+              <p className="text-sm text-muted-foreground mb-3">No results found for "{searchQuery}"</p>
+              <Button variant="secondary" size="sm" onClick={() => setSearchQuery("")} className="rounded-xl">
                 Clear Search
               </Button>
             </CardContent>
           </Card>
         )}
 
-        <Card className="mt-8 bg-primary/5 border-primary/20">
-          <CardContent className="py-8 text-center">
-            <h3 className="text-xl font-semibold mb-2">Still have questions?</h3>
-            <p className="text-muted-foreground mb-4">
-              Can't find the answer you're looking for? Contact our support team.
+        <Card className="mt-6 rounded-2xl bg-primary/5 border-primary/10">
+          <CardContent className="py-6 text-center">
+            <h3 className="font-display font-semibold mb-1">Still have questions?</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Can't find the answer you're looking for?
             </p>
-            <Button onClick={() => navigate("/")}>
+            <Button onClick={() => navigate("/")} className="rounded-xl">
               Back to Home
             </Button>
           </CardContent>

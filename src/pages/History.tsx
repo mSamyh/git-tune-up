@@ -319,36 +319,36 @@ const History = () => {
     <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-4 max-w-lg">
-        <Card className="rounded-2xl border-0 shadow-md overflow-hidden">
+      <main className="container mx-auto px-4 py-4 max-w-2xl animate-fade-in">
+        <Card className="rounded-2xl border-border/50 shadow-soft overflow-hidden">
           <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-                <HistoryIcon className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <HistoryIcon className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-base">Donation History</CardTitle>
+                <CardTitle className="text-lg font-display">Donation History</CardTitle>
                 <CardDescription className="text-xs">Your blood donation records</CardDescription>
               </div>
             </div>
           </CardHeader>
 
           {/* Quick Stats */}
-          <div className="px-4 pb-3">
-            <div className="grid grid-cols-3 gap-2">
-              <div className="p-2.5 rounded-xl bg-green-500/10 text-center">
-                <Droplets className="h-4 w-4 text-green-600 mx-auto mb-1" />
-                <p className="text-sm font-bold text-green-600">{donationCount}</p>
+          <div className="px-6 pb-4">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 rounded-2xl bg-green-500/5 border border-green-500/10 text-center">
+                <Droplets className="h-5 w-5 text-green-600 mx-auto mb-1.5" />
+                <p className="text-base font-semibold text-green-600">{donationCount}</p>
                 <p className="text-[10px] text-muted-foreground">Donations</p>
               </div>
-              <div className="p-2.5 rounded-xl bg-orange-500/10 text-center">
-                <Award className="h-4 w-4 text-orange-600 mx-auto mb-1" />
-                <p className="text-sm font-bold text-orange-600">{totalPoints}</p>
+              <div className="p-3 rounded-2xl bg-amber-500/5 border border-amber-500/10 text-center">
+                <Award className="h-5 w-5 text-amber-600 mx-auto mb-1.5" />
+                <p className="text-base font-semibold text-amber-600">{totalPoints}</p>
                 <p className="text-[10px] text-muted-foreground">Points</p>
               </div>
-              <div className="p-2.5 rounded-xl bg-blue-500/10 text-center">
-                <TrendingUp className="h-4 w-4 text-blue-600 mx-auto mb-1" />
-                <p className="text-sm font-bold text-blue-600">{totalUnits}</p>
+              <div className="p-3 rounded-2xl bg-blue-500/5 border border-blue-500/10 text-center">
+                <TrendingUp className="h-5 w-5 text-blue-600 mx-auto mb-1.5" />
+                <p className="text-base font-semibold text-blue-600">{totalUnits}</p>
                 <p className="text-[10px] text-muted-foreground">Units</p>
               </div>
             </div>
@@ -433,7 +433,7 @@ const History = () => {
       {isDonorType && (
         <Button
           size="lg"
-          className="fixed bottom-24 right-4 h-14 w-14 rounded-full shadow-xl z-50 bg-primary hover:bg-primary/90 transition-transform hover:scale-105 active:scale-95"
+          className="fixed bottom-24 right-4 h-14 w-14 rounded-2xl shadow-primary-glow z-50 btn-press"
           onClick={() => setShowAddDialog(true)}
         >
           <Plus className="h-6 w-6" />
