@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown, Gift, Settings as SettingsIcon, Shield, Droplet, TrendingUp, Store, FileText, Activity, Clock, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown, Gift, Settings as SettingsIcon, Shield, Droplet, TrendingUp, Store, FileText, Activity, Clock, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useSwipe } from "@/hooks/use-swipe";
+import { SwipeableTabsContainer } from "@/components/admin/SwipeableTabsContainer";
+import { AdminTabIndicator } from "@/components/admin/AdminTabIndicator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,6 +47,10 @@ interface DonorProfile {
   user_type?: string;
 }
 
+// Tab order for navigation
+const TAB_ORDER = ["donors", "requests", "donations", "rewards", "merchants", "audit", "settings", "admins"] as const;
+type TabValue = typeof TAB_ORDER[number];
+
 const Admin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -59,7 +64,7 @@ const Admin = () => {
   const [newIsland, setNewIsland] = useState("");
   const [selectedAtollForIsland, setSelectedAtollForIsland] = useState("");
   const [pointsPerDonation, setPointsPerDonation] = useState(100);
-  const [activeTab, setActiveTab] = useState("donors");
+  const [activeTab, setActiveTab] = useState<TabValue>("donors");
   
   // Dialog states
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -112,29 +117,14 @@ const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Tab order for swipe navigation - must be before any early returns
-  const tabOrder = ["donors", "requests", "donations", "rewards", "merchants", "audit", "settings", "admins"];
+  // Calculate active tab index for swipe
+  const activeTabIndex = useMemo(() => TAB_ORDER.indexOf(activeTab), [activeTab]);
 
-  // Swipe navigation for mobile - hooks must be called unconditionally
-  const handleSwipeLeft = useCallback(() => {
-    const currentIndex = tabOrder.indexOf(activeTab);
-    if (currentIndex < tabOrder.length - 1) {
-      setActiveTab(tabOrder[currentIndex + 1]);
+  const handleTabIndexChange = (newIndex: number) => {
+    if (newIndex >= 0 && newIndex < TAB_ORDER.length) {
+      setActiveTab(TAB_ORDER[newIndex]);
     }
-  }, [activeTab]);
-
-  const handleSwipeRight = useCallback(() => {
-    const currentIndex = tabOrder.indexOf(activeTab);
-    if (currentIndex > 0) {
-      setActiveTab(tabOrder[currentIndex - 1]);
-    }
-  }, [activeTab]);
-
-  const swipeHandlers = useSwipe({
-    onSwipeLeft: handleSwipeLeft,
-    onSwipeRight: handleSwipeRight,
-    threshold: 50,
-  });
+  };
 
   useEffect(() => {
     checkAdminAccess();
@@ -754,41 +744,44 @@ const Admin = () => {
     { value: "admins", label: "Admins", icon: Shield },
   ];
 
+  const currentNavItem = navItems[activeTabIndex];
+  const prevNavItem = navItems[activeTabIndex - 1];
+  const nextNavItem = navItems[activeTabIndex + 1];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-6 max-w-7xl">
-        {/* Hero Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/25">
-              <Shield className="h-7 w-7 text-primary-foreground" />
+      <main className="container mx-auto px-4 py-6 max-w-7xl pb-24">
+        {/* Compact Hero Header */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/25">
+              <Shield className="h-6 w-6 text-primary-foreground" />
             </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold truncate">
                 Admin Dashboard
               </h1>
-              <p className="text-sm text-muted-foreground">
-                Manage your blood donation platform
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                Manage blood donation platform
               </p>
             </div>
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
+        {/* Stats Grid - Compact on mobile */}
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-6">
           {stats.map((stat, i) => (
-            <Card key={i} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden group">
-              <CardContent className="p-4 sm:p-5">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stat.value}</p>
-                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">{stat.label}</p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground/70">{stat.trend}</p>
+            <Card key={i} className="border-0 shadow-sm hover-lift overflow-hidden">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xl sm:text-2xl font-bold tracking-tight">{stat.value}</p>
+                    <p className="text-[10px] sm:text-xs font-medium text-muted-foreground truncate">{stat.label}</p>
                   </div>
-                  <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl ${stat.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
-                    <stat.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${stat.color}`} />
+                  <div className={`h-8 w-8 sm:h-10 sm:w-10 rounded-xl ${stat.bgColor} flex items-center justify-center shrink-0`}>
+                    <stat.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${stat.color}`} />
                   </div>
                 </div>
               </CardContent>
@@ -797,27 +790,82 @@ const Admin = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 -mx-4 px-4">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabValue)} className="space-y-4">
+          {/* Desktop Tab List */}
+          <div className="hidden sm:block sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 -mx-4 px-4">
             <ScrollArea className="w-full">
-              <TabsList className="w-max sm:w-full bg-muted/50 p-1.5 rounded-2xl h-auto inline-flex sm:grid sm:grid-cols-8 gap-1">
+              <TabsList className="w-full bg-muted/50 p-1.5 rounded-2xl h-auto grid grid-cols-8 gap-1">
                 {navItems.map((item) => (
                   <TabsTrigger 
                     key={item.value}
                     value={item.value} 
-                    className="min-w-[80px] sm:min-w-0 rounded-xl text-xs sm:text-sm gap-2 py-2.5 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+                    className="rounded-xl text-xs sm:text-sm gap-2 py-2.5 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
                   >
                     <item.icon className="h-4 w-4" />
-                    <span className="hidden sm:inline">{item.label}</span>
-                    <span className="sm:hidden">{item.label.slice(0, 4)}</span>
+                    <span>{item.label}</span>
                   </TabsTrigger>
                 ))}
               </TabsList>
             </ScrollArea>
           </div>
 
+          {/* Mobile Tab Navigation - Compact with arrows */}
+          <div className="sm:hidden sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-2 -mx-4 px-4">
+            <div className="flex items-center gap-2 py-2">
+              {/* Previous tab button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-xl shrink-0 disabled:opacity-30"
+                disabled={activeTabIndex === 0}
+                onClick={() => handleTabIndexChange(activeTabIndex - 1)}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+
+              {/* Current tab indicator */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-center gap-3 bg-muted/50 rounded-2xl p-3">
+                  {currentNavItem && (
+                    <>
+                      <currentNavItem.icon className="h-5 w-5 text-primary shrink-0" />
+                      <span className="font-semibold truncate">{currentNavItem.label}</span>
+                    </>
+                  )}
+                </div>
+                {/* Dots indicator */}
+                <AdminTabIndicator 
+                  totalTabs={TAB_ORDER.length} 
+                  activeIndex={activeTabIndex} 
+                  className="pt-2"
+                />
+              </div>
+
+              {/* Next tab button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-xl shrink-0 disabled:opacity-30"
+                disabled={activeTabIndex === TAB_ORDER.length - 1}
+                onClick={() => handleTabIndexChange(activeTabIndex + 1)}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            {/* Swipe hint text */}
+            <p className="text-[10px] text-center text-muted-foreground/60">
+              Swipe left/right or tap arrows to navigate
+            </p>
+          </div>
+
           {/* Swipeable Tab Content Container */}
-          <div {...swipeHandlers} className="min-h-[300px]">
+          <SwipeableTabsContainer
+            activeIndex={activeTabIndex}
+            onIndexChange={handleTabIndexChange}
+            totalTabs={TAB_ORDER.length}
+            className="min-h-[300px]"
+          >
           <TabsContent value="donors" className="space-y-4 mt-0">
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardHeader className="pb-4">
@@ -1310,7 +1358,7 @@ const Admin = () => {
           <TabsContent value="admins" className="mt-0">
             <UserRoleManager />
           </TabsContent>
-          </div>{/* End of swipeable container */}
+          </SwipeableTabsContainer>{/* End of swipeable container */}
         </Tabs>
       </main>
 
