@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { 
   Trophy, Plus, Edit, Trash2, Save, X, Heart, Star, Award, Crown, Zap, 
@@ -212,9 +211,10 @@ export function AchievementsAdminPanel() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[400px]">
-          <Table>
+      <CardContent className="px-0 sm:px-6">
+        <div className="overflow-x-auto touch-pan-x max-h-[400px] overflow-y-auto" style={{ touchAction: 'pan-x pan-y' }}>
+          <div className="min-w-[420px] px-4 sm:px-0">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">Icon</TableHead>
@@ -286,7 +286,8 @@ export function AchievementsAdminPanel() {
               )}
             </TableBody>
           </Table>
-        </ScrollArea>
+          </div>
+        </div>
       </CardContent>
 
       {/* Create/Edit Dialog */}

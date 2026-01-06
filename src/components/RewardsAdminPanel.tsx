@@ -549,14 +549,17 @@ export function RewardsAdminPanel() {
       {/* Tier Management */}
       <TierManagement />
 
-      <Tabs defaultValue="settings" className="space-y-6">
-        <TabsList className="w-full h-auto flex flex-wrap gap-1 bg-muted/50 p-1 rounded-xl">
-          <TabsTrigger value="settings" className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 py-1.5">Settings</TabsTrigger>
-          <TabsTrigger value="rewards" className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 py-1.5">Rewards</TabsTrigger>
-          <TabsTrigger value="redemptions" className="flex-1 min-w-[70px] text-xs sm:text-sm px-2 py-1.5">Redemptions</TabsTrigger>
-          <TabsTrigger value="users" className="flex-1 min-w-[60px] text-xs sm:text-sm px-2 py-1.5">Users</TabsTrigger>
-          <TabsTrigger value="audit" className="flex-1 min-w-[50px] text-xs sm:text-sm px-2 py-1.5">Audit</TabsTrigger>
-        </TabsList>
+      {/* Inner tabs - touch-action prevents conflict with main admin swipe */}
+      <Tabs defaultValue="settings" className="space-y-4">
+        <div className="overflow-x-auto -mx-4 px-4 touch-pan-x" style={{ touchAction: 'pan-x' }}>
+          <TabsList className="inline-flex h-9 w-auto min-w-full sm:w-full gap-1 bg-muted/50 p-1 rounded-xl">
+            <TabsTrigger value="settings" className="flex-1 min-w-[70px] text-xs px-3 py-1.5 rounded-lg">Settings</TabsTrigger>
+            <TabsTrigger value="rewards" className="flex-1 min-w-[70px] text-xs px-3 py-1.5 rounded-lg">Rewards</TabsTrigger>
+            <TabsTrigger value="redemptions" className="flex-1 min-w-[85px] text-xs px-3 py-1.5 rounded-lg">Redemptions</TabsTrigger>
+            <TabsTrigger value="users" className="flex-1 min-w-[60px] text-xs px-3 py-1.5 rounded-lg">Users</TabsTrigger>
+            <TabsTrigger value="audit" className="flex-1 min-w-[55px] text-xs px-3 py-1.5 rounded-lg">Audit</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="settings">
           <Card>
@@ -633,9 +636,9 @@ export function RewardsAdminPanel() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto -mx-4 sm:mx-0">
-                <div className="min-w-[500px] sm:min-w-0 px-4 sm:px-0">
+            <CardContent className="px-0 sm:px-6">
+              <div className="overflow-x-auto touch-pan-x" style={{ touchAction: 'pan-x' }}>
+                <div className="min-w-[520px] px-4 sm:px-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -711,15 +714,15 @@ export function RewardsAdminPanel() {
               </CardTitle>
               <CardDescription>Complete audit trail of all reward redemptions ({redemptions.length} total)</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="mb-4 flex flex-wrap gap-2">
+            <CardContent className="px-0 sm:px-6">
+              <div className="mb-4 flex flex-wrap gap-2 px-4 sm:px-0">
                 <Badge variant="outline" className="text-xs">Pending: {redemptions.filter(r => r.status === 'pending').length}</Badge>
                 <Badge variant="outline" className="bg-green-50 text-xs">Verified: {redemptions.filter(r => r.status === 'verified').length}</Badge>
                 <Badge variant="outline" className="bg-red-50 text-xs">Expired: {redemptions.filter(r => r.status === 'expired').length}</Badge>
                 <Badge variant="outline" className="text-xs">Cancelled: {redemptions.filter(r => r.status === 'cancelled').length}</Badge>
               </div>
-              <div className="max-h-[600px] overflow-y-auto overflow-x-auto -mx-4 sm:mx-0">
-                <div className="min-w-[600px] sm:min-w-0 px-4 sm:px-0">
+              <div className="max-h-[600px] overflow-y-auto overflow-x-auto touch-pan-x" style={{ touchAction: 'pan-x pan-y' }}>
+                <div className="min-w-[580px] px-4 sm:px-0">
                   <Table>
                     <TableHeader className="sticky top-0 bg-background">
                       <TableRow>
@@ -815,8 +818,8 @@ export function RewardsAdminPanel() {
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
-                        <div className="overflow-x-auto -mx-4 sm:mx-0">
-                          <div className="min-w-[450px] sm:min-w-0 px-4 sm:px-0">
+                        <div className="overflow-x-auto touch-pan-x" style={{ touchAction: 'pan-x' }}>
+                          <div className="min-w-[420px] px-2 sm:px-0">
                             <Table>
                               <TableHeader>
                                 <TableRow>
