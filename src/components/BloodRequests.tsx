@@ -115,15 +115,21 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
     }
   };
 
-  // Auto-expire check
+  // Auto-expire check - runs and triggers refresh
   const checkAndExpireRequests = async () => {
     const now = new Date().toISOString();
-    await supabase
+    const { data, error } = await supabase
       .from("blood_requests")
       .update({ status: "expired" })
       .eq("status", "active")
       .lt("needed_before", now)
-      .not("needed_before", "is", null);
+      .not("needed_before", "is", null)
+      .select();
+
+    if (!error && data && data.length > 0) {
+      console.log(`Auto-expired ${data.length} requests`);
+      fetchRequests();
+    }
   };
 
   const fetchRequests = async () => {
@@ -423,18 +429,16 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
                   Responses
                 </Button>
               )}
-              {status === "active" && (
-                <>
-                  <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-green-600 border-green-600/30 hover:bg-green-50" onClick={() => markAsFulfilled(request.id)}>
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Fulfilled
-                  </Button>
-                  {isAdmin && (
-                    <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-orange-600 border-orange-600/30 hover:bg-orange-50" onClick={() => markAsExpired(request.id)}>
-                      <XCircle className="h-3 w-3 mr-1" />
-                      Expired
-                    </Button>
-                  )}
+                  {status === "active" && (
+                    <>
+                      <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-green-600 border-green-600/30 hover:bg-green-50" onClick={() => markAsFulfilled(request.id)}>
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Done
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-orange-600 border-orange-600/30 hover:bg-orange-50" onClick={() => markAsExpired(request.id)}>
+                        <XCircle className="h-3 w-3 mr-1" />
+                        Expire
+                      </Button>
                   <Button size="sm" variant="destructive" className="h-7 text-xs rounded-lg" onClick={() => deleteRequest(request.id)}>
                     <Trash className="h-3 w-3 mr-1" />
                     Delete
