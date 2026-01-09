@@ -304,16 +304,16 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
               </div>
 
               {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-sm truncate">{donor.full_name}</p>
+              <div className="flex-1 min-w-0 pr-2">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <p className="font-semibold text-sm leading-tight line-clamp-2">{donor.full_name}</p>
                   {donor.donation_count && donor.donation_count > 0 && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium flex-shrink-0">
                       {donor.donation_count}x
                     </span>
                   )}
                 </div>
-                <p className={`text-xs truncate ${statusConfig.textColor}`}>
+                <p className={`text-xs ${statusConfig.textColor}`}>
                   {donor.is_registered === false ? "Invite to register" : statusConfig.label}
                 </p>
               </div>
@@ -397,26 +397,35 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 p-4 border-t border-border/50 bg-muted/20">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border/50 bg-muted/20">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="h-9 rounded-xl px-4"
+            className="h-9 rounded-xl px-3 disabled:opacity-40"
           >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Prev
+            <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-1.5">
-            {[...Array(Math.min(5, totalPages))].map((_, i) => {
-              const pageNum = currentPage <= 3 
-                ? i + 1 
-                : currentPage >= totalPages - 2 
-                  ? totalPages - 4 + i 
-                  : currentPage - 2 + i;
-              if (pageNum < 1 || pageNum > totalPages) return null;
-              return (
+          
+          <div className="flex items-center gap-1">
+            {/* First page */}
+            {currentPage > 2 && (
+              <>
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  className="h-8 w-8 rounded-lg text-sm font-medium hover:bg-muted text-muted-foreground"
+                >
+                  1
+                </button>
+                {currentPage > 3 && <span className="text-muted-foreground text-xs px-1">…</span>}
+              </>
+            )}
+            
+            {/* Current page range */}
+            {[currentPage - 1, currentPage, currentPage + 1]
+              .filter(p => p >= 1 && p <= totalPages)
+              .map(pageNum => (
                 <button
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
@@ -428,18 +437,30 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
                 >
                   {pageNum}
                 </button>
-              );
-            })}
+              ))}
+            
+            {/* Last page */}
+            {currentPage < totalPages - 1 && (
+              <>
+                {currentPage < totalPages - 2 && <span className="text-muted-foreground text-xs px-1">…</span>}
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  className="h-8 w-8 rounded-lg text-sm font-medium hover:bg-muted text-muted-foreground"
+                >
+                  {totalPages}
+                </button>
+              </>
+            )}
           </div>
+          
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="h-9 rounded-xl px-4"
+            className="h-9 rounded-xl px-3 disabled:opacity-40"
           >
-            Next
-            <ChevronRight className="h-4 w-4 ml-1" />
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       )}
