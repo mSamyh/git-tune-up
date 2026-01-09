@@ -1,15 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight, Phone, MessageSquare, Clock, Ban, CalendarCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Phone, MessageSquare, Clock, Ban, CalendarCheck, Droplet, UserPlus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { DonorProfileDialog } from "./DonorProfileDialog";
 import { TopDonorBadge, getTopDonorRank } from "./TopDonorBadge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Donor {
   id: string;
@@ -34,7 +32,7 @@ interface DonorTableProps {
   searchTerm?: string;
 }
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 15;
 
 export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorTableProps) => {
   const [donors, setDonors] = useState<Donor[]>([]);
@@ -44,8 +42,6 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
   const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalDonors, setTotalDonors] = useState(0);
-
-  const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
   useEffect(() => {
     fetchDonors();
@@ -158,19 +154,26 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
 
   const totalPages = Math.ceil(totalDonors / ITEMS_PER_PAGE);
 
-  // Get status info for icon indicator
-  const getStatusInfo = (donor: Donor): { color: string; icon: React.ReactNode; label: string; daysText?: string } => {
+  const getStatusConfig = (donor: Donor) => {
     if (donor.is_registered === false) {
-      return { color: "bg-muted-foreground/40", icon: null, label: "Not registered" };
+      return { 
+        color: "bg-muted-foreground/30", 
+        textColor: "text-muted-foreground",
+        icon: <UserPlus className="h-3 w-3" />, 
+        label: "Not registered",
+        ringColor: "ring-muted-foreground/30"
+      };
     }
 
     const status = donor.availability_status || 'available';
     
     if (status === 'available') {
       return { 
-        color: "bg-green-500", 
+        color: "bg-emerald-500", 
+        textColor: "text-emerald-600 dark:text-emerald-400",
         icon: null, 
-        label: "Available" 
+        label: "Available",
+        ringColor: "ring-emerald-500/50"
       };
     } else if (status === 'unavailable') {
       if (donor.last_donation_date) {
@@ -181,16 +184,19 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
           const daysUntil = 90 - daysSinceLastDonation;
           return { 
             color: "bg-amber-500", 
+            textColor: "text-amber-600 dark:text-amber-400",
             icon: <Clock className="h-3 w-3" />, 
-            label: `Available in ${daysUntil}d`,
-            daysText: `${daysUntil}d`
+            label: `${daysUntil}d`,
+            ringColor: "ring-amber-500/50"
           };
         }
       }
       return { 
         color: "bg-red-500", 
+        textColor: "text-red-600 dark:text-red-400",
         icon: <Ban className="h-3 w-3" />, 
-        label: "Unavailable" 
+        label: "Unavailable",
+        ringColor: "ring-red-500/50"
       };
     } else if (status === 'available_soon') {
       const daysUntil = donor.available_date 
@@ -198,186 +204,255 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
         : 0;
       return { 
         color: "bg-amber-500", 
+        textColor: "text-amber-600 dark:text-amber-400",
         icon: <Clock className="h-3 w-3" />, 
-        label: `Available in ${daysUntil}d`,
-        daysText: `${daysUntil}d`
+        label: `${daysUntil}d`,
+        ringColor: "ring-amber-500/50"
       };
     } else if (status === 'reserved') {
       return { 
         color: "bg-blue-500", 
+        textColor: "text-blue-600 dark:text-blue-400",
         icon: <CalendarCheck className="h-3 w-3" />, 
-        label: "Reserved" 
+        label: "Reserved",
+        ringColor: "ring-blue-500/50"
       };
     }
     
     return { 
       color: "bg-red-500", 
+      textColor: "text-red-600 dark:text-red-400",
       icon: <Ban className="h-3 w-3" />, 
-      label: "Unavailable" 
+      label: "Unavailable",
+      ringColor: "ring-red-500/50"
     };
   };
 
-  // Sort by donation count to get top 5 donors
   const topDonors = [...donors]
     .sort((a, b) => (b.donation_count || 0) - (a.donation_count || 0))
     .slice(0, 5);
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <div className="p-4 space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+            <Skeleton className="h-8 w-16 rounded-lg" />
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
-    <TooltipProvider>
-      <div>
-        {/* Header with count */}
-        <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
-          <span className="text-sm text-muted-foreground">
-            Showing <span className="font-semibold text-foreground">{totalDonors}</span> donors
+    <div>
+      {/* Stats Header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-muted/50 to-muted/30 border-b border-border/50">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Droplet className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <span className="text-sm font-semibold text-foreground">{totalDonors}</span>
+            <span className="text-sm text-muted-foreground ml-1">donors</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            Available
+          </span>
+          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 ml-2">
+            <span className="h-2 w-2 rounded-full bg-amber-500" />
+            Soon
           </span>
         </div>
-
-        <div className="overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-full">Donor</TableHead>
-                <TableHead className="text-center whitespace-nowrap">Blood</TableHead>
-                <TableHead className="text-right whitespace-nowrap pr-4">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedDonors.map((donor, index) => {
-                const topDonorRank = getTopDonorRank(donor.id, topDonors);
-                const isEvenRow = index % 2 === 0;
-                const statusInfo = getStatusInfo(donor);
-                
-                return (
-                  <TableRow 
-                    key={donor.id} 
-                    className={`cursor-pointer transition-colors ${isEvenRow ? 'bg-primary/5 dark:bg-primary/10' : 'bg-background'} hover:bg-primary/15`}
-                  >
-                    <TableCell 
-                      className="py-2.5"
-                      onClick={() => setSelectedDonor(donor)}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        {/* Avatar with status indicator */}
-                        <div className="relative flex-shrink-0">
-                          <Avatar className={`h-10 w-10 ${donor.source === 'directory' ? "ring-2 ring-yellow-500" : ""}`}>
-                            <AvatarImage src={donor.avatar_url || undefined} />
-                            <AvatarFallback className="text-sm">{donor.full_name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          {/* Status indicator dot */}
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className={`absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full border-2 border-background ${statusInfo.color} ${statusInfo.daysText ? 'h-5 w-5' : 'h-3.5 w-3.5'}`}>
-                                {statusInfo.icon && <span className="text-white">{statusInfo.icon}</span>}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-xs">
-                              {statusInfo.label}
-                            </TooltipContent>
-                          </Tooltip>
-                          {topDonorRank > 0 && (
-                            <TopDonorBadge rank={topDonorRank} className="absolute -top-1 -left-1" />
-                          )}
-                        </div>
-                        {/* Name and subtitle */}
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-sm truncate leading-tight">{donor.full_name}</p>
-                          {donor.source === 'directory' ? (
-                            <p className="text-xs text-muted-foreground truncate">Not registered</p>
-                          ) : statusInfo.daysText ? (
-                            <p className="text-xs text-amber-600 dark:text-amber-400 truncate">{statusInfo.label}</p>
-                          ) : null}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center py-2.5" onClick={() => setSelectedDonor(donor)}>
-                      <Badge variant="outline" className="font-semibold text-xs px-2 py-0.5">
-                        {donor.blood_group}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right py-2.5 pr-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.location.href = `tel:${donor.phone}`;
-                            toast({ title: "Calling", description: `Calling ${donor.full_name}...` });
-                          }}
-                          title={`Call ${donor.phone}`}
-                        >
-                          <Phone className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.location.href = `sms:${donor.phone}`;
-                            toast({ title: "SMS", description: `Opening SMS for ${donor.full_name}...` });
-                          }}
-                          title={`SMS ${donor.phone}`}
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 p-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="rounded-xl"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Previous</span>
-            </Button>
-            <span className="text-sm text-muted-foreground px-2">
-              {currentPage} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="rounded-xl"
-            >
-              <span className="hidden sm:inline">Next</span>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-
-        {selectedDonor && (
-          <DonorProfileDialog
-            donor={selectedDonor}
-            isOpen={!!selectedDonor}
-            onClose={() => setSelectedDonor(null)}
-            topDonors={topDonors}
-            onUpdate={fetchDonors}
-          />
-        )}
       </div>
-    </TooltipProvider>
+
+      {/* Donor Cards */}
+      <div className="divide-y divide-border/40">
+        {paginatedDonors.map((donor) => {
+          const topDonorRank = getTopDonorRank(donor.id, topDonors);
+          const statusConfig = getStatusConfig(donor);
+          
+          return (
+            <div 
+              key={donor.id} 
+              className="group flex items-center gap-3 p-3 hover:bg-muted/40 active:bg-muted/60 transition-colors cursor-pointer"
+              onClick={() => setSelectedDonor(donor)}
+            >
+              {/* Avatar with Status */}
+              <div className="relative flex-shrink-0">
+                <Avatar className={`h-12 w-12 ring-2 ${statusConfig.ringColor} ring-offset-2 ring-offset-background ${donor.source === 'directory' ? "opacity-75" : ""}`}>
+                  <AvatarImage src={donor.avatar_url || undefined} />
+                  <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
+                    {donor.full_name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                {/* Status dot */}
+                <div className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full ${statusConfig.color} border-2 border-background flex items-center justify-center`}>
+                  {statusConfig.icon && <span className="text-white text-[8px]">{statusConfig.icon}</span>}
+                </div>
+                {topDonorRank > 0 && (
+                  <TopDonorBadge rank={topDonorRank} className="absolute -top-1.5 -left-1.5" />
+                )}
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-sm truncate">{donor.full_name}</p>
+                  {donor.donation_count && donor.donation_count > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                      {donor.donation_count}x
+                    </span>
+                  )}
+                </div>
+                <p className={`text-xs truncate ${statusConfig.textColor}`}>
+                  {donor.is_registered === false ? "Invite to register" : statusConfig.label}
+                </p>
+              </div>
+
+              {/* Blood Group */}
+              <Badge 
+                variant="outline" 
+                className="font-bold text-sm px-2.5 py-1 border-primary/30 text-primary bg-primary/5 flex-shrink-0"
+              >
+                {donor.blood_group}
+              </Badge>
+
+              {/* Quick Actions */}
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 hover:text-emerald-700"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.href = `tel:${donor.phone}`;
+                    toast({ title: "Calling", description: `Calling ${donor.full_name}...` });
+                  }}
+                >
+                  <Phone className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 hover:text-blue-700"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.href = `sms:${donor.phone}`;
+                    toast({ title: "SMS", description: `Opening SMS for ${donor.full_name}...` });
+                  }}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Mobile Actions (always visible) */}
+              <div className="flex items-center gap-1 sm:hidden">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full text-emerald-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.href = `tel:${donor.phone}`;
+                  }}
+                >
+                  <Phone className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full text-blue-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.href = `sms:${donor.phone}`;
+                  }}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Empty State */}
+      {paginatedDonors.length === 0 && (
+        <div className="py-12 text-center">
+          <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+            <Droplet className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <p className="text-muted-foreground font-medium">No donors found</p>
+          <p className="text-sm text-muted-foreground/70 mt-1">Try adjusting your filters</p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 p-4 border-t border-border/50 bg-muted/20">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="h-9 rounded-xl px-4"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Prev
+          </Button>
+          <div className="flex items-center gap-1.5">
+            {[...Array(Math.min(5, totalPages))].map((_, i) => {
+              const pageNum = currentPage <= 3 
+                ? i + 1 
+                : currentPage >= totalPages - 2 
+                  ? totalPages - 4 + i 
+                  : currentPage - 2 + i;
+              if (pageNum < 1 || pageNum > totalPages) return null;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`h-8 w-8 rounded-lg text-sm font-medium transition-colors ${
+                    currentPage === pageNum 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="h-9 rounded-xl px-4"
+          >
+            Next
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      )}
+
+      {selectedDonor && (
+        <DonorProfileDialog
+          donor={selectedDonor}
+          isOpen={!!selectedDonor}
+          onClose={() => setSelectedDonor(null)}
+          topDonors={topDonors}
+          onUpdate={fetchDonors}
+        />
+      )}
+    </div>
   );
 };
