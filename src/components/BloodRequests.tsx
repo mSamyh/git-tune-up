@@ -126,7 +126,9 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
       .not("needed_before", "is", null)
       .select();
 
-    if (!error && data && data.length > 0) {
+    if (error) {
+      console.error("Auto-expire check failed:", error);
+    } else if (data && data.length > 0) {
       console.log(`Auto-expired ${data.length} requests`);
       fetchRequests();
     }
@@ -298,7 +300,14 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
       .update({ status: "fulfilled" })
       .eq("id", requestId);
 
-    if (!error) {
+    if (error) {
+      console.error("Failed to mark as fulfilled:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to mark as fulfilled",
+        description: error.message,
+      });
+    } else {
       if (request) {
         const { notifyBloodRequestFulfilled } = await import("@/lib/telegramNotifications");
         await notifyBloodRequestFulfilled({
@@ -322,7 +331,14 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
       .update({ status: "expired" })
       .eq("id", requestId);
 
-    if (!error) {
+    if (error) {
+      console.error("Failed to expire request:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to expire request",
+        description: error.message,
+      });
+    } else {
       toast({
         title: "Request marked as expired",
       });
