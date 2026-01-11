@@ -59,6 +59,7 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
   const [showResponseDialog, setShowResponseDialog] = useState(false);
   const [responseMessage, setResponseMessage] = useState("");
   const [shareRequest, setShareRequest] = useState<BloodRequest | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -259,6 +260,9 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
   };
 
   const deleteRequest = async (requestId: string) => {
+    if (actionLoading) return;
+    setActionLoading(requestId);
+    
     const request = requests.find(r => r.id === requestId);
     
     const { error } = await supabase
@@ -266,7 +270,14 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
       .delete()
       .eq("id", requestId);
 
-    if (!error) {
+    if (error) {
+      console.error("Failed to delete request:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to delete request",
+        description: error.message,
+      });
+    } else {
       // Send Telegram notification for deletion
       if (request) {
         const { data: { user } } = await supabase.auth.getUser();
@@ -290,9 +301,13 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
       });
       fetchRequests();
     }
+    setActionLoading(null);
   };
 
   const markAsFulfilled = async (requestId: string) => {
+    if (actionLoading) return;
+    setActionLoading(requestId);
+    
     const request = requests.find(r => r.id === requestId);
     
     const { error } = await supabase
@@ -323,9 +338,13 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
       });
       fetchRequests();
     }
+    setActionLoading(null);
   };
 
   const markAsExpired = async (requestId: string) => {
+    if (actionLoading) return;
+    setActionLoading(requestId);
+    
     const { error } = await supabase
       .from("blood_requests")
       .update({ status: "expired" })
@@ -344,6 +363,7 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
       });
       fetchRequests();
     }
+    setActionLoading(null);
   };
 
   const isRequestor = (request: BloodRequest) => {
@@ -447,20 +467,50 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
               )}
                   {status === "active" && (
                     <>
-                      <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-green-600 border-green-600/30 hover:bg-green-50" onClick={() => markAsFulfilled(request.id)}>
-                        <CheckCircle className="h-3 w-3 mr-1" />
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-7 text-xs rounded-lg text-green-600 border-green-600/30 hover:bg-green-50" 
+                        onClick={() => markAsFulfilled(request.id)}
+                        disabled={actionLoading === request.id}
+                      >
+                        {actionLoading === request.id ? (
+                          <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                        )}
                         Done
                       </Button>
-                      <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-orange-600 border-orange-600/30 hover:bg-orange-50" onClick={() => markAsExpired(request.id)}>
-                        <XCircle className="h-3 w-3 mr-1" />
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-7 text-xs rounded-lg text-orange-600 border-orange-600/30 hover:bg-orange-50" 
+                        onClick={() => markAsExpired(request.id)}
+                        disabled={actionLoading === request.id}
+                      >
+                        {actionLoading === request.id ? (
+                          <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <XCircle className="h-3 w-3 mr-1" />
+                        )}
                         Expire
                       </Button>
-                  <Button size="sm" variant="destructive" className="h-7 text-xs rounded-lg" onClick={() => deleteRequest(request.id)}>
-                    <Trash className="h-3 w-3 mr-1" />
-                    Delete
-                  </Button>
-                </>
-              )}
+                      <Button 
+                        size="sm" 
+                        variant="destructive" 
+                        className="h-7 text-xs rounded-lg" 
+                        onClick={() => deleteRequest(request.id)}
+                        disabled={actionLoading === request.id}
+                      >
+                        {actionLoading === request.id ? (
+                          <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Trash className="h-3 w-3 mr-1" />
+                        )}
+                        Delete
+                      </Button>
+                    </>
+                  )}
             </>
           ) : status === "active" && (
             <Button size="sm" className="h-7 text-xs rounded-lg" onClick={() => handleRespond(request)}>
