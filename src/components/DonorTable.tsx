@@ -305,8 +305,8 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
 
               {/* Info */}
               <div className="flex-1 min-w-0 pr-2">
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <p className="font-semibold text-sm leading-tight line-clamp-2">{donor.full_name}</p>
+                <div className="flex flex-wrap items-baseline gap-1.5 mb-0.5">
+                  <p className="font-semibold text-sm leading-tight break-words">{donor.full_name}</p>
                   {donor.donation_count && donor.donation_count > 0 && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium flex-shrink-0">
                       {donor.donation_count}x
@@ -326,12 +326,12 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
                 {donor.blood_group}
               </Badge>
 
-              {/* Quick Actions */}
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Quick Actions - Always visible on mobile, hover-reveal on desktop */}
+              <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 hover:text-emerald-700"
+                  className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 hover:text-emerald-700"
                   onClick={(e) => {
                     e.stopPropagation();
                     window.location.href = `tel:${donor.phone}`;
@@ -343,37 +343,11 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 hover:text-blue-700"
+                  className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 hover:text-blue-700"
                   onClick={(e) => {
                     e.stopPropagation();
                     window.location.href = `sms:${donor.phone}`;
                     toast({ title: "SMS", description: `Opening SMS for ${donor.full_name}...` });
-                  }}
-                >
-                  <MessageSquare className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Mobile Actions (always visible) */}
-              <div className="flex items-center gap-1 sm:hidden">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full text-emerald-600"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.location.href = `tel:${donor.phone}`;
-                  }}
-                >
-                  <Phone className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full text-blue-600"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.location.href = `sms:${donor.phone}`;
                   }}
                 >
                   <MessageSquare className="h-4 w-4" />
