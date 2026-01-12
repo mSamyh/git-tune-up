@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Store, QrCode, CheckCircle, XCircle, Percent, User, Phone, AlertTriangle, Loader2, KeyRound } from "lucide-react";
+import { Store, QrCode, CheckCircle, XCircle, Percent, User, Phone, AlertTriangle, Loader2, KeyRound, History, TrendingUp } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { formatDistanceToNow } from "date-fns";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface VerificationResult {
   success: boolean;
@@ -24,15 +26,76 @@ interface VerificationResult {
   reward_program_active?: boolean;
 }
 
+interface RedemptionRecord {
+  id: string;
+  voucher_code: string;
+  verified_at: string;
+  points_spent: number;
+  profiles: { full_name: string };
+  reward_catalog: { title: string };
+}
+
+interface DashboardStats {
+  todayCount: number;
+  weekCount: number;
+  totalPoints: number;
+}
+
 export default function MerchantPortal() {
   const [merchantPin, setMerchantPin] = useState("");
+  const [merchantId, setMerchantId] = useState<string | null>(null);
   const [voucherCode, setVoucherCode] = useState("");
   const [isVerified, setIsVerified] = useState(false);
   const [merchantName, setMerchantName] = useState("");
   const [loading, setLoading] = useState(false);
   const [verifyingVoucher, setVerifyingVoucher] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
+  const [recentRedemptions, setRecentRedemptions] = useState<RedemptionRecord[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({ todayCount: 0, weekCount: 0, totalPoints: 0 });
   const { toast } = useToast();
+
+  // Fetch dashboard data when merchant is verified
+  useEffect(() => {
+    if (isVerified && merchantId) {
+      fetchDashboardData();
+    }
+  }, [isVerified, merchantId]);
+
+  const fetchDashboardData = async () => {
+    if (!merchantId) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    // Fetch recent redemptions
+    const { data: redemptions } = await supabase
+      .from("redemption_history")
+      .select("id, voucher_code, verified_at, points_spent, profiles(full_name), reward_catalog(title)")
+      .eq("verified_by_merchant_id", merchantId)
+      .eq("status", "verified")
+      .order("verified_at", { ascending: false })
+      .limit(10);
+
+    if (redemptions) {
+      setRecentRedemptions(redemptions as unknown as RedemptionRecord[]);
+    }
+
+    // Calculate stats
+    const { data: allRedemptions } = await supabase
+      .from("redemption_history")
+      .select("verified_at, points_spent")
+      .eq("verified_by_merchant_id", merchantId)
+      .eq("status", "verified");
+
+    if (allRedemptions) {
+      const todayCount = allRedemptions.filter(r => r.verified_at && new Date(r.verified_at) >= today).length;
+      const weekCount = allRedemptions.filter(r => r.verified_at && new Date(r.verified_at) >= weekAgo).length;
+      const totalPoints = allRedemptions.reduce((sum, r) => sum + (r.points_spent || 0), 0);
+      setDashboardStats({ todayCount, weekCount, totalPoints });
+    }
+  };
 
   const verifyMerchantPin = async () => {
     if (merchantPin.length !== 6) {
@@ -51,6 +114,7 @@ export default function MerchantPortal() {
       if (data.success) {
         setIsVerified(true);
         setMerchantName(data.merchant_name);
+        setMerchantId(data.merchant_id);
         toast({ title: "Welcome!", description: `Logged in as ${data.merchant_name}` });
       } else {
         toast({ variant: "destructive", title: "Invalid PIN", description: data.error || "PIN not recognized" });
@@ -83,6 +147,8 @@ export default function MerchantPortal() {
       if (data.success) {
         toast({ title: "Voucher Verified!", description: "Discount applied successfully" });
         setVoucherCode("");
+        // Refresh dashboard data after successful verification
+        fetchDashboardData();
       }
     } catch (err: any) {
       setResult({ success: false, error: err.message });
@@ -330,6 +396,68 @@ export default function MerchantPortal() {
           </>
         )}
 
+        {/* Dashboard Stats */}
+        {!result && (
+          <Card className="rounded-2xl shadow-lg border-0 mb-4">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Your Stats
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3 bg-primary/10 rounded-xl text-center">
+                  <p className="text-2xl font-bold text-primary">{dashboardStats.todayCount}</p>
+                  <p className="text-xs text-muted-foreground">Today</p>
+                </div>
+                <div className="p-3 bg-green-500/10 rounded-xl text-center">
+                  <p className="text-2xl font-bold text-green-600">{dashboardStats.weekCount}</p>
+                  <p className="text-xs text-muted-foreground">This Week</p>
+                </div>
+                <div className="p-3 bg-orange-500/10 rounded-xl text-center">
+                  <p className="text-2xl font-bold text-orange-600">{dashboardStats.totalPoints}</p>
+                  <p className="text-xs text-muted-foreground">Points</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Recent Redemptions */}
+        {!result && recentRedemptions.length > 0 && (
+          <Card className="rounded-2xl shadow-lg border-0 mb-4">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <History className="h-4 w-4" />
+                Recent Redemptions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-48">
+                <div className="px-4 pb-4 space-y-2">
+                  {recentRedemptions.map((redemption) => (
+                    <div key={redemption.id} className="p-3 bg-muted/50 rounded-xl">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm">{redemption.profiles?.full_name}</p>
+                          <p className="text-xs text-muted-foreground">{redemption.reward_catalog?.title}</p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="outline" className="text-xs">{redemption.points_spent} pts</Badge>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {redemption.verified_at && formatDistanceToNow(new Date(redemption.verified_at), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Logout button */}
         <Button 
           variant="outline" 
@@ -337,7 +465,10 @@ export default function MerchantPortal() {
           onClick={() => {
             setIsVerified(false);
             setMerchantPin("");
+            setMerchantId(null);
             setResult(null);
+            setRecentRedemptions([]);
+            setDashboardStats({ todayCount: 0, weekCount: 0, totalPoints: 0 });
           }}
         >
           Logout

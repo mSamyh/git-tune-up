@@ -187,13 +187,13 @@ const BloodRequestsPage = () => {
           <Card className="rounded-2xl border-border/50 shadow-soft">
             <CardContent className="p-4">
               <TabsContent value="active" className="mt-0">
-                <BloodRequests status="active" highlightId={highlightId} />
+                <BloodRequests status="active" highlightId={highlightId} onStatusChange={setFilter} />
               </TabsContent>
               <TabsContent value="fulfilled" className="mt-0">
-                <BloodRequests status="fulfilled" highlightId={highlightId} />
+                <BloodRequests status="fulfilled" highlightId={highlightId} onStatusChange={setFilter} />
               </TabsContent>
               <TabsContent value="expired" className="mt-0">
-                <BloodRequests status="expired" highlightId={highlightId} />
+                <BloodRequests status="expired" highlightId={highlightId} onStatusChange={setFilter} />
               </TabsContent>
             </CardContent>
           </Card>
