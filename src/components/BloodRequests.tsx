@@ -47,9 +47,10 @@ interface Response {
 interface BloodRequestsProps {
   status?: string;
   highlightId?: string | null;
+  onStatusChange?: (newStatus: string) => void;
 }
 
-const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) => {
+const BloodRequests = ({ status = "active", highlightId, onStatusChange }: BloodRequestsProps) => {
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
@@ -334,9 +335,11 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
       }
 
       toast({
-        title: "Request marked as fulfilled",
+        title: "Request fulfilled",
+        description: "Moved to Fulfilled tab",
       });
-      fetchRequests();
+      await fetchRequests();
+      onStatusChange?.("fulfilled");
     }
     setActionLoading(null);
   };
@@ -372,9 +375,11 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
       });
     } else {
       toast({
-        title: "Request marked as expired",
+        title: "Request expired",
+        description: "Moved to Expired tab",
       });
       await fetchRequests();
+      onStatusChange?.("expired");
     }
     setActionLoading(null);
   };
