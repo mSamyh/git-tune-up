@@ -29,6 +29,20 @@ const BloodRequestsPage = () => {
 
   useEffect(() => {
     fetchStats();
+    
+    // Subscribe to blood_requests changes to refresh stats
+    const channel = supabase
+      .channel('blood_requests_stats')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'blood_requests' },
+        () => fetchStats()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchStats = async () => {

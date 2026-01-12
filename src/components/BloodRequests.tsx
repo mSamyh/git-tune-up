@@ -345,10 +345,16 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
     if (actionLoading) return;
     setActionLoading(requestId);
     
-    const { error } = await supabase
+    console.log("markAsExpired called for request:", requestId);
+    console.log("Current user:", currentUser, "Is admin:", isAdmin);
+    
+    const { data, error } = await supabase
       .from("blood_requests")
       .update({ status: "expired" })
-      .eq("id", requestId);
+      .eq("id", requestId)
+      .select();
+
+    console.log("Expire result - data:", data, "error:", error);
 
     if (error) {
       console.error("Failed to expire request:", error);
@@ -357,11 +363,18 @@ const BloodRequests = ({ status = "active", highlightId }: BloodRequestsProps) =
         title: "Failed to expire request",
         description: error.message,
       });
+    } else if (!data || data.length === 0) {
+      console.error("No rows updated - possible RLS issue");
+      toast({
+        variant: "destructive",
+        title: "Failed to expire request",
+        description: "Unable to update request. You may not have permission.",
+      });
     } else {
       toast({
         title: "Request marked as expired",
       });
-      fetchRequests();
+      await fetchRequests();
     }
     setActionLoading(null);
   };
