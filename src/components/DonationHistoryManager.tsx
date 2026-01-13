@@ -136,6 +136,21 @@ export const DonationHistoryManager = () => {
   };
 
   const deductPoints = async (donorId: string, donationId: string, hospitalName: string) => {
+    // SAFEGUARD: Check if deduction already exists to prevent duplicates
+    const { data: existingDeduction } = await supabase
+      .from("points_transactions")
+      .select("id")
+      .eq("donor_id", donorId)
+      .eq("related_donation_id", donationId)
+      .eq("transaction_type", "adjusted")
+      .lt("points", 0)
+      .maybeSingle();
+
+    if (existingDeduction) {
+      console.log("Deduction already exists for donation:", donationId, "- skipping duplicate");
+      return;
+    }
+
     // Deduct points from donor_points record
     const { data: existingPoints } = await supabase
       .from("donor_points")
@@ -153,7 +168,7 @@ export const DonationHistoryManager = () => {
         })
         .eq("donor_id", donorId);
 
-      // Record the transaction with negative points and 'adjusted' type
+      // Record the transaction with negative points, 'adjusted' type, and link to donation
       await supabase
         .from("points_transactions")
         .insert({
@@ -161,6 +176,7 @@ export const DonationHistoryManager = () => {
           points: -pointsPerDonation,
           transaction_type: "adjusted",
           description: `Points deducted for deleted donation at ${hospitalName}`,
+          related_donation_id: donationId,
         });
     }
   };
