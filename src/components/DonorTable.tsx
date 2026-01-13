@@ -307,7 +307,7 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
               <div className="flex-1 min-w-0 pr-2">
                 <div className="flex flex-wrap items-baseline gap-1.5 mb-0.5">
                   <p className="font-semibold text-sm leading-tight break-words">{donor.full_name}</p>
-                  {donor.donation_count && donor.donation_count > 0 && (
+                  {typeof donor.donation_count === 'number' && donor.donation_count > 0 && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium flex-shrink-0">
                       {donor.donation_count}x
                     </span>

@@ -117,13 +117,13 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
     }
   };
 
-  // Auto-expire check - runs and triggers refresh
+  // Auto-expire check - runs and triggers refresh, also switches tab if viewing active
   const checkAndExpireRequests = async () => {
     const now = new Date().toISOString();
     const { data, error } = await supabase
       .from("blood_requests")
       .update({ status: "expired" })
-      .eq("status", "active")
+      .in("status", ["active", "open"])
       .lt("needed_before", now)
       .not("needed_before", "is", null)
       .select();
@@ -132,7 +132,15 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
       console.error("Auto-expire check failed:", error);
     } else if (data && data.length > 0) {
       console.log(`Auto-expired ${data.length} requests`);
-      fetchRequests();
+      toast({
+        title: `${data.length} request${data.length > 1 ? 's' : ''} expired`,
+        description: "Moved to Expired tab",
+      });
+      await fetchRequests();
+      // If we're on active tab and requests expired, notify parent
+      if (status === "active") {
+        onStatusChange?.("expired");
+      }
     }
   };
 

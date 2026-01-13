@@ -13,7 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Droplet, MapPin, Phone, Edit2, Settings, Gift, QrCode, LogOut, 
   Calendar, Award, Heart, Shield, ChevronRight, X, Check, Clock,
-  User, Grid3X3, Bookmark, MoreHorizontal, Sparkles, MessageCircle, Link2
+  User, Grid3X3, Bookmark, MoreHorizontal, Sparkles, MessageCircle, Link2,
+  Share2, ExternalLink
 } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { AvatarUpload } from "@/components/AvatarUpload";
@@ -351,18 +352,27 @@ const Profile = () => {
               <p className="text-sm mt-1">{profile.bio}</p>
             )}
             
-            {/* Location and contact */}
-            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
+            {/* Location and contact - Interactive links */}
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
               {profile.island && (
-                <span className="flex items-center gap-1">
+                <a 
+                  href={`https://maps.google.com/?q=${encodeURIComponent(profile.island + ', Maldives')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+                >
                   <MapPin className="h-3 w-3" />
                   {profile.island}
-                </span>
+                  <ExternalLink className="h-2.5 w-2.5 opacity-50" />
+                </a>
               )}
-              <span className="flex items-center gap-1">
+              <a 
+                href={`tel:${profile.phone}`}
+                className="flex items-center gap-1 text-muted-foreground hover:text-emerald-600 transition-colors"
+              >
                 <Phone className="h-3 w-3" />
                 {profile.phone}
-              </span>
+              </a>
             </div>
           </div>
 
@@ -390,6 +400,25 @@ const Profile = () => {
               onClick={() => setShowQRCard(true)}
             >
               <QrCode className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="secondary" 
+              size="icon"
+              className="rounded-xl h-10 w-10"
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: `${profile.full_name} - Blood Donor`,
+                    text: `${profile.full_name} is a ${profile.blood_group} blood donor at LeyHadhiya`,
+                    url: window.location.href,
+                  });
+                } else {
+                  navigator.clipboard.writeText(window.location.href);
+                  toast({ title: "Link copied", description: "Profile link copied to clipboard" });
+                }
+              }}
+            >
+              <Share2 className="h-4 w-4" />
             </Button>
           </div>
 
