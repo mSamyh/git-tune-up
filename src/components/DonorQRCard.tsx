@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Droplet, Download, Share2 } from "lucide-react";
+import { Droplet, Download, Share2, Shield, Sparkles } from "lucide-react";
 import QRCode from "qrcode";
 
 interface DonorQRCardProps {
@@ -36,12 +36,13 @@ export const DonorQRCard = ({ open, onOpenChange, donor }: DonorQRCardProps) => 
     
     try {
       const url = await QRCode.toDataURL(verificationUrl, {
-        width: 200,
-        margin: 2,
+        width: 180,
+        margin: 1,
         color: {
-          dark: "#dc2626",
+          dark: "#1a1a2e",
           light: "#ffffff",
         },
+        errorCorrectionLevel: 'M',
       });
       setQrCodeUrl(url);
     } catch (err) {
@@ -50,10 +51,6 @@ export const DonorQRCard = ({ open, onOpenChange, donor }: DonorQRCardProps) => 
   };
 
   const downloadCard = () => {
-    const cardElement = document.getElementById("donor-id-card");
-    if (!cardElement) return;
-
-    // Use html2canvas or similar for better results, but for now we'll share the QR
     if (qrCodeUrl) {
       const link = document.createElement("a");
       link.download = `donor-card-${donor?.full_name?.replace(/\s+/g, "-")}.png`;
@@ -88,16 +85,16 @@ export const DonorQRCard = ({ open, onOpenChange, donor }: DonorQRCardProps) => 
   };
 
   const getEligibilityStatus = () => {
-    if (!donor?.last_donation_date) return { eligible: true, text: "Eligible" };
+    if (!donor?.last_donation_date) return { eligible: true, text: "Eligible", daysLeft: 0 };
     
     const daysSince = Math.floor(
       (new Date().getTime() - new Date(donor.last_donation_date).getTime()) / (1000 * 60 * 60 * 24)
     );
     
     if (daysSince >= 90) {
-      return { eligible: true, text: "Eligible" };
+      return { eligible: true, text: "Eligible", daysLeft: 0 };
     }
-    return { eligible: false, text: `Wait ${90 - daysSince} days` };
+    return { eligible: false, text: `${90 - daysSince}d wait`, daysLeft: 90 - daysSince };
   };
 
   if (!donor) return null;
@@ -106,93 +103,129 @@ export const DonorQRCard = ({ open, onOpenChange, donor }: DonorQRCardProps) => 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-transparent border-0">
-        <div
-          id="donor-id-card"
-          className="relative bg-gradient-to-br from-red-600 via-red-700 to-red-900 rounded-2xl overflow-hidden shadow-2xl"
-        >
-          {/* Header Pattern */}
-          <div className="absolute top-0 left-0 right-0 h-32 opacity-10">
-            <div className="absolute inset-0" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }} />
-          </div>
-
-          {/* Card Content */}
-          <div className="relative p-6">
-            {/* Logo & Title */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm">
-                  <Droplet className="h-6 w-6 text-white fill-white" />
-                </div>
-                <div>
-                  <h2 className="text-white font-bold text-lg tracking-wide">LeyHadhiya</h2>
-                  <p className="text-red-200 text-xs">Blood Donor Network</p>
-                </div>
-              </div>
-              <Badge 
-                className={`${
-                  eligibility.eligible 
-                    ? "bg-green-500/90 hover:bg-green-500" 
-                    : "bg-amber-500/90 hover:bg-amber-500"
-                } text-white border-0 text-xs`}
-              >
-                {eligibility.text}
-              </Badge>
+      <DialogContent className="sm:max-w-[360px] p-0 overflow-hidden bg-transparent border-0 shadow-none">
+        {/* Modern ID Card */}
+        <div className="relative">
+          {/* Card Container with Glass Effect */}
+          <div
+            id="donor-id-card"
+            className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl overflow-hidden shadow-2xl"
+          >
+            {/* Holographic Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-purple-500/10 pointer-events-none" />
+            
+            {/* Animated Shimmer Effect */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div 
+                className="absolute inset-0 translate-x-[-100%] animate-[shimmer_3s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent"
+                style={{ 
+                  animation: 'shimmer 3s ease-in-out infinite',
+                }}
+              />
             </div>
 
-            {/* Donor Info */}
-            <div className="flex gap-4 mb-6">
-              <Avatar className="h-20 w-20 border-4 border-white/30 shadow-lg">
-                <AvatarImage src={donor.avatar_url || undefined} />
-                <AvatarFallback className="bg-white/20 text-white text-xl font-bold">
-                  {donor.full_name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <h3 className="text-white font-bold text-xl mb-1">{donor.full_name}</h3>
-                <p className="text-red-200 text-sm mb-2">Donor ID: {getDonorId()}</p>
-                <div className="flex items-center gap-2">
-                  <div className="bg-white rounded-lg px-3 py-1.5 shadow-md">
-                    <span className="text-red-600 font-black text-2xl">{donor.blood_group}</span>
+            {/* Top Pattern with Logo */}
+            <div className="relative px-5 pt-5 pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="bg-gradient-to-br from-primary to-red-700 p-2 rounded-xl shadow-lg">
+                    <Droplet className="h-5 w-5 text-white fill-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-white font-bold text-sm tracking-wide">LeyHadhiya</h2>
+                    <p className="text-slate-400 text-[10px]">Blood Donor Network</p>
+                  </div>
+                </div>
+                
+                {/* Status Badge */}
+                <Badge 
+                  className={`${
+                    eligibility.eligible 
+                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" 
+                      : "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                  } border text-[10px] px-2 py-0.5 backdrop-blur-sm ${eligibility.eligible ? 'animate-pulse' : ''}`}
+                >
+                  <Shield className="h-2.5 w-2.5 mr-1" />
+                  {eligibility.text}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Donor Info Section */}
+            <div className="relative px-5 py-4">
+              <div className="flex items-start gap-4">
+                {/* Avatar with Ring */}
+                <div className={`relative ${eligibility.eligible ? 'ring-2 ring-emerald-500/50 ring-offset-2 ring-offset-slate-900' : ''} rounded-full`}>
+                  <Avatar className="h-16 w-16 border-2 border-white/20">
+                    <AvatarImage src={donor.avatar_url || undefined} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary/30 to-primary/10 text-white text-lg font-bold">
+                      {donor.full_name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {eligibility.eligible && (
+                    <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-1">
+                      <Sparkles className="h-2.5 w-2.5 text-white" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Name and Details */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-white font-bold text-base truncate">{donor.full_name}</h3>
+                  <p className="text-slate-400 text-xs mt-0.5">ID: {getDonorId()}</p>
+                  
+                  {/* Blood Type Badge */}
+                  <div className="mt-2 inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/10">
+                    <Droplet className="h-3.5 w-3.5 text-primary fill-primary" />
+                    <span className="text-white font-black text-lg">{donor.blood_group}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* QR Code Section */}
-            <div className="bg-white rounded-xl p-4 mb-4 shadow-inner">
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0">
-                  {qrCodeUrl ? (
-                    <img src={qrCodeUrl} alt="Donor QR Code" className="w-28 h-28" />
-                  ) : (
-                    <div className="w-28 h-28 bg-gray-100 rounded animate-pulse" />
-                  )}
-                </div>
-                <div className="flex-1 text-center">
-                  <p className="text-gray-600 text-sm mb-1">Scan to verify</p>
-                  <p className="text-gray-400 text-xs">Hospital staff can scan this QR code to verify donor eligibility</p>
+            <div className="relative mx-5 mb-4">
+              <div className="bg-white rounded-2xl p-3 shadow-lg">
+                <div className="flex items-center gap-3">
+                  {/* QR Code */}
+                  <div className="flex-shrink-0 bg-white rounded-xl p-1">
+                    {qrCodeUrl ? (
+                      <img src={qrCodeUrl} alt="Donor QR Code" className="w-24 h-24" />
+                    ) : (
+                      <div className="w-24 h-24 bg-slate-100 rounded-lg animate-pulse" />
+                    )}
+                  </div>
+                  
+                  {/* Scan Instructions */}
+                  <div className="flex-1 text-center">
+                    <p className="text-slate-800 text-xs font-medium mb-1">Scan to Verify</p>
+                    <p className="text-slate-500 text-[10px] leading-relaxed">
+                      Hospital staff can scan this QR code to verify donor eligibility
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="text-center">
-              <p className="text-red-200 text-xs">Valid Blood Donor Card</p>
+            {/* Bottom Bar */}
+            <div className="relative px-5 pb-4">
+              <div className="flex items-center justify-center gap-2 text-slate-500 text-[10px]">
+                <div className="h-px flex-1 bg-slate-700" />
+                <span>Valid Blood Donor Card</span>
+                <div className="h-px flex-1 bg-slate-700" />
+              </div>
             </div>
-          </div>
 
-          {/* Bottom Gradient */}
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-red-400 via-white to-red-400" />
+            {/* Holographic Bottom Accent */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-purple-500 to-primary" />
+          </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 mt-4 px-2">
+        <div className="flex gap-2 mt-4">
           <Button
             variant="outline"
-            className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20"
+            className="flex-1 bg-slate-800/50 border-slate-700 text-white hover:bg-slate-800 hover:text-white rounded-xl"
             onClick={downloadCard}
           >
             <Download className="h-4 w-4 mr-2" />
@@ -200,7 +233,7 @@ export const DonorQRCard = ({ open, onOpenChange, donor }: DonorQRCardProps) => 
           </Button>
           <Button
             variant="outline"
-            className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20"
+            className="flex-1 bg-slate-800/50 border-slate-700 text-white hover:bg-slate-800 hover:text-white rounded-xl"
             onClick={shareCard}
           >
             <Share2 className="h-4 w-4 mr-2" />
