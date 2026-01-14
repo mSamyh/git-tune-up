@@ -216,6 +216,11 @@
   to { transform: translateY(0); }
 }
 
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 /* Safe area for mobile */
 .safe-area-pb {
   padding-bottom: env(safe-area-inset-bottom, 0);

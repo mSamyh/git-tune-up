@@ -422,35 +422,29 @@ const Profile = () => {
             </Button>
           </div>
 
-          {/* Quick Stats Highlights */}
+          {/* Quick Stats Highlights - Aligned Grid */}
           {isDonor && (
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              <div className="flex flex-col items-center flex-shrink-0">
-                <div className="h-14 w-14 rounded-2xl border border-border/50 flex items-center justify-center bg-primary/5 mb-1.5">
+            <div className="grid grid-cols-4 gap-2 w-full">
+              <button onClick={() => navigate('/history')} className="flex flex-col items-center group">
+                <div className="h-16 w-16 rounded-2xl border border-border/50 flex items-center justify-center bg-primary/5 mb-1.5 group-hover:border-primary/30 transition-colors">
                   <Heart className="h-6 w-6 text-primary" />
                 </div>
                 <span className="text-[10px] text-muted-foreground">{donationCount} Lives</span>
-              </div>
-              <div className="flex flex-col items-center flex-shrink-0">
-                <div className="h-14 w-14 rounded-2xl border border-border/50 flex items-center justify-center bg-amber-500/5 mb-1.5">
+              </button>
+              <button onClick={() => setShowRewardsDialog(true)} className="flex flex-col items-center group">
+                <div className="h-16 w-16 rounded-2xl border border-border/50 flex items-center justify-center bg-amber-500/5 mb-1.5 group-hover:border-amber-500/30 transition-colors">
                   <Award className="h-6 w-6 text-amber-500" />
                 </div>
                 <span className="text-[10px] text-muted-foreground">{totalPoints} Pts</span>
-              </div>
-              <button 
-                onClick={() => navigate('/history')}
-                className="flex flex-col items-center flex-shrink-0 group"
-              >
-                <div className="h-14 w-14 rounded-2xl border border-border/50 flex items-center justify-center bg-blue-500/5 mb-1.5 group-hover:border-blue-500/30 transition-colors">
+              </button>
+              <button onClick={() => navigate('/history')} className="flex flex-col items-center group">
+                <div className="h-16 w-16 rounded-2xl border border-border/50 flex items-center justify-center bg-blue-500/5 mb-1.5 group-hover:border-blue-500/30 transition-colors">
                   <Calendar className="h-6 w-6 text-blue-500" />
                 </div>
                 <span className="text-[10px] text-muted-foreground">History</span>
               </button>
-              <button 
-                onClick={() => setShowQRCard(true)}
-                className="flex flex-col items-center flex-shrink-0 group"
-              >
-                <div className="h-14 w-14 rounded-2xl border border-border/50 flex items-center justify-center bg-emerald-500/5 mb-1.5 group-hover:border-emerald-500/30 transition-colors">
+              <button onClick={() => setShowQRCard(true)} className="flex flex-col items-center group">
+                <div className="h-16 w-16 rounded-2xl border border-border/50 flex items-center justify-center bg-emerald-500/5 mb-1.5 group-hover:border-emerald-500/30 transition-colors">
                   <QrCode className="h-6 w-6 text-emerald-500" />
                 </div>
                 <span className="text-[10px] text-muted-foreground">ID Card</span>
