@@ -30,6 +30,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
+import { awardDonationPoints, deductDonationPoints, syncLastDonationDate } from "@/lib/donationPoints";
 
 interface DonorProfile {
   id: string;
@@ -197,69 +198,13 @@ const Admin = () => {
     setLoading(false);
   };
 
+  // Use shared utility functions for points management
   const awardPoints = async (donorId: string, donationId: string, hospitalName: string) => {
-    const { data: existingPoints } = await supabase
-      .from("donor_points")
-      .select("*")
-      .eq("donor_id", donorId)
-      .single();
-
-    if (existingPoints) {
-      await supabase
-        .from("donor_points")
-        .update({
-          total_points: existingPoints.total_points + pointsPerDonation,
-          lifetime_points: existingPoints.lifetime_points + pointsPerDonation,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("donor_id", donorId);
-    } else {
-      await supabase
-        .from("donor_points")
-        .insert({
-          donor_id: donorId,
-          total_points: pointsPerDonation,
-          lifetime_points: pointsPerDonation,
-        });
-    }
-
-    await supabase
-      .from("points_transactions")
-      .insert({
-        donor_id: donorId,
-        points: pointsPerDonation,
-        transaction_type: "earned",
-        description: `Points earned from blood donation at ${hospitalName}`,
-        related_donation_id: donationId,
-      });
+    await awardDonationPoints(donorId, donationId, hospitalName, pointsPerDonation);
   };
 
   const deductPoints = async (donorId: string, donationId: string, hospitalName: string) => {
-    const { data: existingPoints } = await supabase
-      .from("donor_points")
-      .select("*")
-      .eq("donor_id", donorId)
-      .single();
-
-    if (existingPoints) {
-      await supabase
-        .from("donor_points")
-        .update({
-          total_points: Math.max(0, existingPoints.total_points - pointsPerDonation),
-          lifetime_points: Math.max(0, existingPoints.lifetime_points - pointsPerDonation),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("donor_id", donorId);
-
-      await supabase
-        .from("points_transactions")
-        .insert({
-          donor_id: donorId,
-          points: -pointsPerDonation,
-          transaction_type: "adjusted",
-          description: `Points deducted for deleted donation at ${hospitalName}`,
-        });
-    }
+    await deductDonationPoints(donorId, donationId, hospitalName, pointsPerDonation);
   };
 
   const openEditDialog = (donor: DonorProfile) => {

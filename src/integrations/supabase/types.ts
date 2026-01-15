@@ -953,6 +953,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_bulk_directory_donation_counts: {
+        Args: { donor_ids: string[] }
+        Returns: {
+          donation_count: number
+          donor_id: string
+        }[]
+      }
+      get_bulk_donation_counts: {
+        Args: { donor_ids: string[] }
+        Returns: {
+          donation_count: number
+          donor_id: string
+        }[]
+      }
       get_directory_donation_count: {
         Args: { donor_uuid: string }
         Returns: number

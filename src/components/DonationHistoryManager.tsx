@@ -17,6 +17,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar as CalendarIcon, Plus, Trash, User, Pencil, Users, ListPlus, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { 
+  awardDonationPoints, 
+  deductDonationPoints, 
+  syncLastDonationDate as syncDonorLastDate,
+  getPointsPerDonation 
+} from "@/lib/donationPoints";
 
 interface DonationEntry {
   id: string;
@@ -66,13 +72,8 @@ export const DonationHistoryManager = () => {
   }, []);
 
   const fetchPointsSettings = async () => {
-    const { data } = await supabase
-      .from("reward_settings")
-      .select("setting_value")
-      .eq("setting_key", "points_per_donation")
-      .single();
-
-    if (data) setPointsPerDonation(parseInt(data.setting_value));
+    const points = await getPointsPerDonation();
+    setPointsPerDonation(points);
   };
 
   const fetchDonors = async () => {
@@ -93,117 +94,17 @@ export const DonationHistoryManager = () => {
     if (data) setDonations(data);
   };
 
+  // Use shared utility functions
   const awardPoints = async (donorId: string, donationId: string, hospitalName: string) => {
-    const { data: existingTransaction } = await supabase
-      .from("points_transactions")
-      .select("id")
-      .eq("related_donation_id", donationId)
-      .maybeSingle();
-
-    if (existingTransaction) {
-      console.log(`Points already awarded for donation ${donationId}, skipping`);
-      return;
-    }
-
-    const { error: txError } = await supabase
-      .from("points_transactions")
-      .insert({
-        donor_id: donorId,
-        points: pointsPerDonation,
-        transaction_type: "earned",
-        description: `Points earned from blood donation at ${hospitalName}`,
-        related_donation_id: donationId,
-      });
-
-    if (txError) {
-      console.error("Failed to create points transaction:", txError);
-      return;
-    }
-
-    const { data: existingPoints } = await supabase
-      .from("donor_points")
-      .select("*")
-      .eq("donor_id", donorId)
-      .single();
-
-    if (existingPoints) {
-      await supabase
-        .from("donor_points")
-        .update({
-          total_points: existingPoints.total_points + pointsPerDonation,
-          lifetime_points: existingPoints.lifetime_points + pointsPerDonation,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("donor_id", donorId);
-    } else {
-      await supabase
-        .from("donor_points")
-        .insert({
-          donor_id: donorId,
-          total_points: pointsPerDonation,
-          lifetime_points: pointsPerDonation,
-        });
-    }
+    await awardDonationPoints(donorId, donationId, hospitalName, pointsPerDonation);
   };
 
   const deductPoints = async (donorId: string, donationId: string, hospitalName: string) => {
-    const { data: existingDeduction } = await supabase
-      .from("points_transactions")
-      .select("id")
-      .eq("donor_id", donorId)
-      .eq("related_donation_id", donationId)
-      .eq("transaction_type", "adjusted")
-      .lt("points", 0)
-      .maybeSingle();
-
-    if (existingDeduction) {
-      console.log("Deduction already exists for donation:", donationId, "- skipping duplicate");
-      return;
-    }
-
-    const { data: existingPoints } = await supabase
-      .from("donor_points")
-      .select("*")
-      .eq("donor_id", donorId)
-      .single();
-
-    if (existingPoints) {
-      await supabase
-        .from("donor_points")
-        .update({
-          total_points: Math.max(0, existingPoints.total_points - pointsPerDonation),
-          lifetime_points: Math.max(0, existingPoints.lifetime_points - pointsPerDonation),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("donor_id", donorId);
-
-      await supabase
-        .from("points_transactions")
-        .insert({
-          donor_id: donorId,
-          points: -pointsPerDonation,
-          transaction_type: "adjusted",
-          description: `Points deducted for deleted donation at ${hospitalName}`,
-          related_donation_id: donationId,
-        });
-    }
+    await deductDonationPoints(donorId, donationId, hospitalName, pointsPerDonation);
   };
 
   const syncLastDonationDate = async (donorId: string) => {
-    const { data: mostRecentDonation } = await supabase
-      .from("donation_history")
-      .select("donation_date")
-      .eq("donor_id", donorId)
-      .order("donation_date", { ascending: false })
-      .limit(1)
-      .single();
-    
-    if (mostRecentDonation) {
-      await supabase
-        .from("profiles")
-        .update({ last_donation_date: mostRecentDonation.donation_date })
-        .eq("id", donorId);
-    }
+    await syncDonorLastDate(donorId);
   };
 
   // Single donation entry

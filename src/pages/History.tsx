@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Calendar as CalendarIcon, Droplets, Award, TrendingUp, Building2, ChevronDown, History as HistoryIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { awardDonationPoints, getPointsPerDonation, syncLastDonationDate } from "@/lib/donationPoints";
 
 interface Profile {
   id: string;
@@ -109,73 +110,15 @@ const History = () => {
   };
 
   const fetchPointsSettings = async () => {
-    const { data } = await supabase
-      .from("reward_settings")
-      .select("setting_value")
-      .eq("setting_key", "points_per_donation")
-      .maybeSingle();
-
-    if (data) setPointsPerDonation(parseInt(data.setting_value));
+    const points = await getPointsPerDonation();
+    setPointsPerDonation(points);
   };
 
   const awardPoints = async (donorId: string, donationId: string, hospitalName: string) => {
-    const { data: existingTransaction } = await supabase
-      .from("points_transactions")
-      .select("id")
-      .eq("related_donation_id", donationId)
-      .maybeSingle();
-
-    if (existingTransaction) {
-      console.log(`Points already awarded for donation ${donationId}, skipping`);
-      return;
+    const awarded = await awardDonationPoints(donorId, donationId, hospitalName, pointsPerDonation);
+    if (awarded) {
+      setTotalPoints(prev => prev + pointsPerDonation);
     }
-
-    const { error: txError } = await supabase
-      .from("points_transactions")
-      .insert({
-        donor_id: donorId,
-        points: pointsPerDonation,
-        transaction_type: "earned",
-        description: `Points earned from blood donation at ${hospitalName}`,
-        related_donation_id: donationId,
-      });
-
-    if (txError) {
-      console.error("Failed to create points transaction:", txError);
-      toast({
-        variant: "destructive",
-        title: "Points Error",
-        description: "Failed to award points for this donation.",
-      });
-      return;
-    }
-
-    const { data: existingPoints } = await supabase
-      .from("donor_points")
-      .select("*")
-      .eq("donor_id", donorId)
-      .maybeSingle();
-
-    if (existingPoints) {
-      await supabase
-        .from("donor_points")
-        .update({
-          total_points: existingPoints.total_points + pointsPerDonation,
-          lifetime_points: existingPoints.lifetime_points + pointsPerDonation,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("donor_id", donorId);
-    } else {
-      await supabase
-        .from("donor_points")
-        .insert({
-          donor_id: donorId,
-          total_points: pointsPerDonation,
-          lifetime_points: pointsPerDonation,
-        });
-    }
-
-    setTotalPoints(prev => prev + pointsPerDonation);
   };
 
   const handleAddDonation = async () => {
@@ -224,20 +167,8 @@ const History = () => {
       await awardPoints(userId, newDonation.id, hospitalName.trim());
     }
 
-    const { data: historyData } = await supabase
-      .from("donation_history")
-      .select("donation_date")
-      .eq("donor_id", userId)
-      .order("donation_date", { ascending: false })
-      .limit(1)
-      .single();
-
-    if (historyData) {
-      await supabase
-        .from("profiles")
-        .update({ last_donation_date: historyData.donation_date })
-        .eq("id", userId);
-    }
+    // Sync last donation date using shared utility
+    await syncLastDonationDate(userId);
 
     const { notifyNewDonation } = await import("@/lib/telegramNotifications");
     await notifyNewDonation({

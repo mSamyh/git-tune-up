@@ -74,24 +74,33 @@ export const DonorProvider = ({ children }: { children: ReactNode }) => {
 
     const unlinkedDirectoryDonors = (directoryDonors || []).filter((d: any) => !d.linked_profile_id);
 
+    const profileDonorsList = (profileDonors || []).map((d: any) => ({ ...d, source: 'profile', is_registered: true }));
+    const directoryDonorsList = unlinkedDirectoryDonors.map((d: any) => ({ ...d, source: 'directory', is_registered: false }));
+
+    // Use bulk fetch for donation counts instead of N+1 individual calls
+    const profileIds = profileDonorsList.map(d => d.id);
+    const directoryIds = directoryDonorsList.map(d => d.id);
+
+    const [profileCountsResult, directoryCountsResult] = await Promise.all([
+      profileIds.length > 0 
+        ? supabase.rpc('get_bulk_donation_counts', { donor_ids: profileIds })
+        : { data: [] },
+      directoryIds.length > 0 
+        ? supabase.rpc('get_bulk_directory_donation_counts', { donor_ids: directoryIds })
+        : { data: [] }
+    ]);
+
+    // Create lookup maps for counts
+    const profileCountMap = new Map((profileCountsResult.data || []).map((r: any) => [r.donor_id, r.donation_count]));
+    const directoryCountMap = new Map((directoryCountsResult.data || []).map((r: any) => [r.donor_id, r.donation_count]));
+
+    // Merge counts with donors
     const allDonors = [
-      ...(profileDonors || []).map((d: any) => ({ ...d, source: 'profile', is_registered: true })),
-      ...unlinkedDirectoryDonors.map((d: any) => ({ ...d, source: 'directory', is_registered: false }))
+      ...profileDonorsList.map(d => ({ ...d, donation_count: profileCountMap.get(d.id) || 0 })),
+      ...directoryDonorsList.map(d => ({ ...d, donation_count: directoryCountMap.get(d.id) || 0 }))
     ];
 
-    const donorsWithCounts = await Promise.all(
-      allDonors.map(async (donor: any) => {
-        if (donor.source === 'profile') {
-          const { data: countData } = await supabase.rpc('get_donation_count', { donor_uuid: donor.id });
-          return { ...donor, donation_count: countData || 0 };
-        } else {
-          const { data: countData } = await supabase.rpc('get_directory_donation_count', { donor_uuid: donor.id });
-          return { ...donor, donation_count: countData || 0 };
-        }
-      })
-    );
-
-    const top5 = donorsWithCounts
+    const top5 = allDonors
       .sort((a: any, b: any) => (b.donation_count || 0) - (a.donation_count || 0))
       .slice(0, 5);
     
