@@ -414,18 +414,24 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
   const renderRequestCard = (request: BloodRequest) => {
     const isHighlighted = highlightId === request.id;
     const canManage = isRequestor(request) || isAdmin;
+    const isUrgent = request.urgency === 'urgent';
+    
+    // Get status border class based on urgency and status
+    const getCardStyles = () => {
+      if (isHighlighted) {
+        return 'border-primary bg-primary/10 ring-2 ring-primary/50';
+      }
+      if (isUrgent) {
+        return 'border-l-4 border-l-destructive border-destructive/30 bg-destructive/5';
+      }
+      return 'border-l-4 border-l-primary/30 border-border bg-muted/30';
+    };
     
     return (
     <div 
       key={request.id}
       ref={isHighlighted ? highlightRef : null}
-      className={`p-4 rounded-xl border transition-all hover:shadow-md ${
-        isHighlighted
-          ? 'border-primary bg-primary/10 ring-2 ring-primary/50 animate-pulse'
-          : request.urgency === 'urgent' 
-            ? 'border-destructive/50 bg-destructive/5' 
-            : 'border-border bg-muted/30'
-      }`}
+      className={`p-4 rounded-xl transition-all hover:shadow-md ${getCardStyles()} ${isUrgent && status === 'active' ? 'urgency-pulse' : ''}`}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
@@ -440,27 +446,33 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
             <Droplet className="h-3 w-3 mr-1" />
             {request.blood_group}
           </Badge>
-          {request.urgency === 'urgent' && (
-            <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">URGENT</Badge>
+          {isUrgent && (
+            <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5 animate-pulse">URGENT</Badge>
           )}
         </div>
       </div>
 
       <div className="space-y-1.5 text-xs">
-        <div className="flex items-center gap-2 text-muted-foreground">
+        <button 
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full text-left"
+          onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(request.hospital_name)}`, '_blank')}
+        >
           <MapPin className="h-3 w-3 shrink-0" />
-          <span className="truncate">{request.hospital_name}</span>
-        </div>
+          <span className="truncate hover:underline">{request.hospital_name}</span>
+        </button>
 
         <div className="flex items-center gap-2 text-muted-foreground">
           <User className="h-3 w-3 shrink-0" />
           <span>{request.contact_name}</span>
         </div>
 
-        <div className="flex items-center gap-2 text-muted-foreground">
+        <a 
+          href={`tel:${request.contact_phone}`}
+          className="flex items-center gap-2 text-primary hover:underline"
+        >
           <Phone className="h-3 w-3 shrink-0" />
-          <span>{request.contact_phone}</span>
-        </div>
+          <span className="font-medium">{request.contact_phone}</span>
+        </a>
 
         <div className="flex items-center gap-2 pt-1">
           <span className="text-muted-foreground">Units:</span>
