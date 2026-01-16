@@ -193,6 +193,58 @@
   .focus-minimal {
     @apply focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:ring-offset-1;
   }
+
+  /* Status border utilities */
+  .status-border-available {
+    @apply border-l-4 border-l-emerald-500;
+  }
+  
+  .status-border-unavailable {
+    @apply border-l-4 border-l-red-500;
+  }
+  
+  .status-border-reserved {
+    @apply border-l-4 border-l-blue-500;
+  }
+  
+  .status-border-soon {
+    @apply border-l-4 border-l-amber-500;
+  }
+
+  /* Urgency backgrounds */
+  .urgency-critical {
+    @apply bg-destructive/5 border-destructive/30;
+  }
+  
+  .urgency-normal {
+    @apply bg-muted/30 border-border;
+  }
+
+  /* Pulsing urgency indicator */
+  .urgency-pulse {
+    animation: urgency-pulse 2s ease-in-out infinite;
+  }
+
+  /* Form field consistent styling */
+  .form-input {
+    @apply h-11 rounded-xl border-input bg-background transition-all duration-200;
+    @apply focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/50;
+  }
+
+  /* Dialog section grouping */
+  .dialog-section {
+    @apply bg-muted/30 rounded-xl p-4 space-y-3;
+  }
+
+  /* Card with status indicator */
+  .card-status {
+    @apply relative overflow-hidden;
+  }
+  
+  .card-status::before {
+    content: '';
+    @apply absolute left-0 top-0 bottom-0 w-1;
+  }
 }
 
 /* Custom keyframes */
@@ -219,6 +271,11 @@
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
+}
+
+@keyframes urgency-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 /* Safe area for mobile */

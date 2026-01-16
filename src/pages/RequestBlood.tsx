@@ -164,22 +164,23 @@ const RequestBlood = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="patientName">Patient Name</Label>
+                  <Label htmlFor="patientName" className="text-sm font-medium">Patient Name</Label>
                   <Input
                     id="patientName"
                     value={formData.patientName}
                     onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
                     required
+                    className="h-11 rounded-xl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="bloodGroup">Blood Group</Label>
+                  <Label htmlFor="bloodGroup" className="text-sm font-medium">Blood Group</Label>
                   <Select
                     value={formData.bloodGroup}
                     onValueChange={(value) => setFormData({ ...formData, bloodGroup: value })}
                     required
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 rounded-xl">
                       <SelectValue placeholder="Select blood group" />
                     </SelectTrigger>
                     <SelectContent>
@@ -194,7 +195,7 @@ const RequestBlood = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="unitsNeeded">Units Needed</Label>
+                <Label htmlFor="unitsNeeded" className="text-sm font-medium">Units Needed</Label>
                 <Input
                   id="unitsNeeded"
                   type="number"
@@ -202,11 +203,12 @@ const RequestBlood = () => {
                   value={formData.unitsNeeded}
                   onChange={(e) => setFormData({ ...formData, unitsNeeded: e.target.value })}
                   required
+                  className="h-11 rounded-xl"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Location (Atoll & Island)</Label>
+                <Label className="text-sm font-medium">Location (Atoll & Island)</Label>
                 <LocationSelector
                   selectedAtoll={selectedAtoll}
                   selectedIsland={selectedIsland}
@@ -216,44 +218,47 @@ const RequestBlood = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="hospitalName">Hospital Name</Label>
+                <Label htmlFor="hospitalName" className="text-sm font-medium">Hospital Name</Label>
                 <Input
                   id="hospitalName"
                   value={formData.hospitalName}
                   onChange={(e) => setFormData({ ...formData, hospitalName: e.target.value })}
                   required
+                  className="h-11 rounded-xl"
                 />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="contactName">Contact Name</Label>
+                  <Label htmlFor="contactName" className="text-sm font-medium">Contact Name</Label>
                   <Input
                     id="contactName"
                     value={formData.contactName}
                     onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
                     required
+                    className="h-11 rounded-xl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contactPhone">Contact Phone</Label>
+                  <Label htmlFor="contactPhone" className="text-sm font-medium">Contact Phone</Label>
                   <Input
                     id="contactPhone"
                     value={formData.contactPhone}
                     onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
                     required
+                    className="h-11 rounded-xl"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Emergency Type</Label>
+                <Label className="text-sm font-medium">Emergency Type</Label>
                 <Select
                   value={formData.emergencyType}
                   onValueChange={(value) => setFormData({ ...formData, emergencyType: value })}
                   required
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-xl">
                     <SelectValue placeholder="Select emergency type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -268,13 +273,14 @@ const RequestBlood = () => {
 
               {formData.emergencyType === "custom" && (
                 <div className="space-y-2">
-                  <Label htmlFor="customEmergency">Specify Emergency Type</Label>
+                  <Label htmlFor="customEmergency" className="text-sm font-medium">Specify Emergency Type</Label>
                   <Input
                     id="customEmergency"
                     value={formData.customEmergency}
                     onChange={(e) => setFormData({ ...formData, customEmergency: e.target.value })}
                     placeholder="Enter custom emergency type"
                     required
+                    className="h-11 rounded-xl"
                   />
                 </div>
               )}
@@ -298,7 +304,7 @@ const RequestBlood = () => {
 
               {/* Needed Before - Countdown Timer */}
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   Needed Within
                 </Label>
@@ -306,7 +312,7 @@ const RequestBlood = () => {
                   value={neededBeforeOption}
                   onValueChange={setNeededBeforeOption}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-xl">
                     <SelectValue placeholder="Select timeframe (optional)" />
                   </SelectTrigger>
                   <SelectContent>
@@ -323,7 +329,7 @@ const RequestBlood = () => {
                     value={customDateTime}
                     onChange={(e) => setCustomDateTime(e.target.value)}
                     min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
-                    className="mt-2"
+                    className="mt-2 h-11 rounded-xl"
                   />
                 )}
                 <p className="text-xs text-muted-foreground">
@@ -332,16 +338,17 @@ const RequestBlood = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Additional Notes</Label>
+                <Label htmlFor="notes" className="text-sm font-medium">Additional Notes</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={3}
+                  className="rounded-xl resize-none"
                 />
               </div>
 
-              <Button type="submit" className="w-full rounded-xl" disabled={loading}>
+              <Button type="submit" className="w-full h-12 rounded-xl font-medium btn-press" disabled={loading}>
                 {loading ? "Creating request..." : "Create Request"}
               </Button>
             </form>

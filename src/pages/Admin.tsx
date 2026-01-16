@@ -849,14 +849,31 @@ const Admin = () => {
                             <AccordionContent className="px-2 pb-2">
                               {/* Mobile card view */}
                               <div className="sm:hidden space-y-2">
-                                {donorsByBloodGroup[group].map((donor) => (
-                                  <div key={donor.id} className="bg-card border rounded-xl p-4 space-y-3">
+                                {donorsByBloodGroup[group].map((donor) => {
+                                  const getStatusBorderClass = () => {
+                                    switch (donor.availability_status) {
+                                      case 'available': return 'border-l-4 border-l-emerald-500';
+                                      case 'reserved': return 'border-l-4 border-l-blue-500';
+                                      case 'available_soon': return 'border-l-4 border-l-amber-500';
+                                      default: return 'border-l-4 border-l-red-500';
+                                    }
+                                  };
+                                  
+                                  return (
+                                  <div key={donor.id} className={`bg-card border rounded-xl p-4 space-y-3 ${getStatusBorderClass()}`}>
                                     <div className="flex items-start justify-between gap-2">
                                       <div className="min-w-0 flex-1">
-                                        <p className="font-semibold truncate">{donor.full_name}</p>
-                                        <p className="text-sm text-muted-foreground">{donor.phone}</p>
+                                        <div className="flex items-center gap-2">
+                                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm flex-shrink-0">
+                                            {donor.full_name.charAt(0)}
+                                          </div>
+                                          <div className="min-w-0 flex-1">
+                                            <p className="font-semibold truncate">{donor.full_name}</p>
+                                            <p className="text-sm text-muted-foreground">{donor.phone}</p>
+                                          </div>
+                                        </div>
                                         {donor.district && (
-                                          <p className="text-xs text-muted-foreground mt-0.5">{donor.district}</p>
+                                          <p className="text-xs text-muted-foreground mt-1 pl-10">{donor.district}</p>
                                         )}
                                       </div>
                                       <div className="flex items-center gap-2">
@@ -864,27 +881,25 @@ const Admin = () => {
                                           {donor.user_type === 'both' ? 'Both' : donor.user_type === 'receiver' ? 'Receiver' : 'Donor'}
                                         </Badge>
                                         <div className={`h-3 w-3 rounded-full ${
-                                          donor.availability_status === 'available' ? 'bg-green-500' :
-                                          donor.availability_status === 'reserved' ? 'bg-orange-500' : 'bg-red-500'
-                                        } ring-2 ring-offset-2 ring-offset-card ${
-                                          donor.availability_status === 'available' ? 'ring-green-500/30' :
-                                          donor.availability_status === 'reserved' ? 'ring-orange-500/30' : 'ring-red-500/30'
+                                          donor.availability_status === 'available' ? 'bg-emerald-500' :
+                                          donor.availability_status === 'reserved' ? 'bg-blue-500' :
+                                          donor.availability_status === 'available_soon' ? 'bg-amber-500' : 'bg-red-500'
                                         }`} />
                                       </div>
                                     </div>
                                     <div className="flex gap-2 pt-2 border-t">
-                                      <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => openEditDialog(donor)}>
+                                      <Button size="sm" variant="outline" className="flex-1 h-9 rounded-xl" onClick={() => openEditDialog(donor)}>
                                         <Edit className="h-4 w-4 mr-1.5" /> Edit
                                       </Button>
-                                      <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => openHistoryDialog(donor)}>
+                                      <Button size="sm" variant="outline" className="flex-1 h-9 rounded-xl text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={() => openHistoryDialog(donor)}>
                                         <Plus className="h-4 w-4 mr-1.5" /> Donation
                                       </Button>
-                                      <Button size="sm" variant="ghost" className="h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteDonor(donor)}>
+                                      <Button size="sm" variant="ghost" className="h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl" onClick={() => handleDeleteDonor(donor)}>
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
                                     </div>
                                   </div>
-                                ))}
+                                );})}
                               </div>
                               
                               {/* Desktop table view */}
@@ -1309,100 +1324,120 @@ const Admin = () => {
 
       {/* Edit Donor Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit Donor</DialogTitle>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5 text-primary" />
+              Edit Donor
+            </DialogTitle>
             <DialogDescription>Update donor information</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Full Name</Label>
-                <Input
-                  value={editForm.full_name}
-                  onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Blood Group</Label>
-                <Select
-                  value={editForm.blood_group}
-                  onValueChange={(value) => setEditForm({ ...editForm, blood_group: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
-                      <SelectItem key={bg} value={bg}>{bg}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Phone</Label>
-                <Input
-                  value={editForm.phone}
-                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>District</Label>
-                <Input
-                  value={editForm.district}
-                  onChange={(e) => setEditForm({ ...editForm, district: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Address</Label>
-              <Textarea
-                value={editForm.address}
-                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Title (optional)</Label>
-              <Input
-                value={editForm.title}
-                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                placeholder="e.g., Founder, Volunteer"
-              />
-            </div>
-            {editForm.title && (
-              <div className="space-y-2">
-                <Label>Title Badge Color</Label>
-                <div className="grid grid-cols-6 gap-2">
-                  {[
-                    { name: "Default", value: "", hex: "#6b7280" },
-                    { name: "Red", value: "#ef4444", hex: "#ef4444" },
-                    { name: "Blue", value: "#3b82f6", hex: "#3b82f6" },
-                    { name: "Green", value: "#22c55e", hex: "#22c55e" },
-                    { name: "Yellow", value: "#eab308", hex: "#eab308" },
-                    { name: "Purple", value: "#a855f7", hex: "#a855f7" },
-                    { name: "Pink", value: "#ec4899", hex: "#ec4899" },
-                    { name: "Orange", value: "#f97316", hex: "#f97316" },
-                    { name: "Teal", value: "#14b8a6", hex: "#14b8a6" },
-                    { name: "Indigo", value: "#6366f1", hex: "#6366f1" },
-                    { name: "Rose", value: "#f43f5e", hex: "#f43f5e" },
-                    { name: "Gold", value: "#ca8a04", hex: "#ca8a04" },
-                  ].map((color) => (
-                    <button
-                      key={color.name}
-                      type="button"
-                      onClick={() => setEditForm({ ...editForm, title_color: color.value })}
-                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-                        editForm.title_color === color.value ? "border-foreground ring-2 ring-offset-2 ring-primary" : "border-transparent"
-                      }`}
-                      style={{ backgroundColor: color.hex }}
-                      title={color.name}
-                    />
-                  ))}
+          <div className="space-y-4 py-4">
+            {/* Personal Info Section */}
+            <div className="dialog-section">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Personal Information</h4>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Full Name</Label>
+                  <Input
+                    value={editForm.full_name}
+                    onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                    className="h-11 rounded-xl"
+                  />
                 </div>
-                {editForm.title && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Blood Group</Label>
+                  <Select
+                    value={editForm.blood_group}
+                    onValueChange={(value) => setEditForm({ ...editForm, blood_group: value })}
+                  >
+                    <SelectTrigger className="h-11 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
+                        <SelectItem key={bg} value={bg}>{bg}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            
+            {/* Contact Section */}
+            <div className="dialog-section">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Contact & Location</h4>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Phone</Label>
+                  <Input
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">District</Label>
+                  <Input
+                    value={editForm.district}
+                    onChange={(e) => setEditForm({ ...editForm, district: e.target.value })}
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2 mt-4">
+                <Label className="text-sm font-medium">Address</Label>
+                <Textarea
+                  value={editForm.address}
+                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                  rows={2}
+                  className="rounded-xl resize-none"
+                />
+              </div>
+            </div>
+            
+            {/* Title Section */}
+            <div className="dialog-section">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Title Badge (Optional)</h4>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Title</Label>
+                <Input
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  placeholder="e.g., Founder, Volunteer"
+                  className="h-11 rounded-xl"
+                />
+              </div>
+              {editForm.title && (
+                <div className="space-y-2 mt-3">
+                  <Label className="text-sm font-medium">Title Badge Color</Label>
+                  <div className="grid grid-cols-6 gap-2">
+                    {[
+                      { name: "Default", value: "", hex: "#6b7280" },
+                      { name: "Red", value: "#ef4444", hex: "#ef4444" },
+                      { name: "Blue", value: "#3b82f6", hex: "#3b82f6" },
+                      { name: "Green", value: "#22c55e", hex: "#22c55e" },
+                      { name: "Yellow", value: "#eab308", hex: "#eab308" },
+                      { name: "Purple", value: "#a855f7", hex: "#a855f7" },
+                      { name: "Pink", value: "#ec4899", hex: "#ec4899" },
+                      { name: "Orange", value: "#f97316", hex: "#f97316" },
+                      { name: "Teal", value: "#14b8a6", hex: "#14b8a6" },
+                      { name: "Indigo", value: "#6366f1", hex: "#6366f1" },
+                      { name: "Rose", value: "#f43f5e", hex: "#f43f5e" },
+                      { name: "Gold", value: "#ca8a04", hex: "#ca8a04" },
+                    ].map((color) => (
+                      <button
+                        key={color.name}
+                        type="button"
+                        onClick={() => setEditForm({ ...editForm, title_color: color.value })}
+                        className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
+                          editForm.title_color === color.value ? "border-foreground ring-2 ring-offset-2 ring-primary" : "border-transparent"
+                        }`}
+                        style={{ backgroundColor: color.hex }}
+                        title={color.name}
+                      />
+                    ))}
+                  </div>
                   <div className="mt-3 flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Preview:</span>
                     <Badge 
@@ -1415,236 +1450,276 @@ const Admin = () => {
                       {editForm.title}
                     </Badge>
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleEditSave}>Save Changes</Button>
+          <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="rounded-xl">Cancel</Button>
+            <Button onClick={handleEditSave} className="rounded-xl">Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Add Donation History Dialog */}
       <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add Donation History</DialogTitle>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-emerald-500" />
+              Add Donation History
+            </DialogTitle>
             <DialogDescription>
               Record a new donation for {selectedDonor?.full_name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>Donation Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left font-normal">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(historyForm.donation_date, "PPP")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={historyForm.donation_date}
-                    onSelect={(date) => date && setHistoryForm({ ...historyForm, donation_date: date })}
-                    disabled={(date) => date > new Date()}
-                    initialFocus
-                    className="pointer-events-auto"
+          <div className="space-y-4 py-4">
+            <div className="dialog-section">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Donation Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal h-11 rounded-xl">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {format(historyForm.donation_date, "PPP")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={historyForm.donation_date}
+                      onSelect={(date) => date && setHistoryForm({ ...historyForm, donation_date: date })}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2 mt-4">
+                <Label className="text-sm font-medium">Hospital Name</Label>
+                <Input
+                  value={historyForm.hospital_name}
+                  onChange={(e) => setHistoryForm({ ...historyForm, hospital_name: e.target.value })}
+                  className="h-11 rounded-xl"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Units Donated</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={historyForm.units_donated}
+                    onChange={(e) => setHistoryForm({ ...historyForm, units_donated: parseInt(e.target.value) })}
+                    className="h-11 rounded-xl"
                   />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-2">
-              <Label>Hospital Name</Label>
-              <Input
-                value={historyForm.hospital_name}
-                onChange={(e) => setHistoryForm({ ...historyForm, hospital_name: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Units Donated</Label>
-              <Input
-                type="number"
-                min="1"
-                value={historyForm.units_donated}
-                onChange={(e) => setHistoryForm({ ...historyForm, units_donated: parseInt(e.target.value) })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea
-                value={historyForm.notes}
-                onChange={(e) => setHistoryForm({ ...historyForm, notes: e.target.value })}
-                rows={2}
-              />
+                </div>
+              </div>
+              <div className="space-y-2 mt-4">
+                <Label className="text-sm font-medium">Notes (Optional)</Label>
+                <Textarea
+                  value={historyForm.notes}
+                  onChange={(e) => setHistoryForm({ ...historyForm, notes: e.target.value })}
+                  rows={2}
+                  className="rounded-xl resize-none"
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setHistoryDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleHistoryAdd}>Add Donation</Button>
+          <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t">
+            <Button variant="outline" onClick={() => setHistoryDialogOpen(false)} className="rounded-xl">Cancel</Button>
+            <Button onClick={handleHistoryAdd} className="rounded-xl bg-emerald-600 hover:bg-emerald-700">Add Donation</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Edit Donation Dialog */}
       <Dialog open={editDonationDialogOpen} onOpenChange={setEditDonationDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit Donation Record</DialogTitle>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5 text-primary" />
+              Edit Donation Record
+            </DialogTitle>
             <DialogDescription>Update donation details</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>Donation Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left font-normal">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(editDonationForm.donation_date, "PPP")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={editDonationForm.donation_date}
-                    onSelect={(date) => date && setEditDonationForm({ ...editDonationForm, donation_date: date })}
-                    disabled={(date) => date > new Date()}
-                    initialFocus
-                    className="pointer-events-auto"
+          <div className="space-y-4 py-4">
+            <div className="dialog-section">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Donation Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal h-11 rounded-xl">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {format(editDonationForm.donation_date, "PPP")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={editDonationForm.donation_date}
+                      onSelect={(date) => date && setEditDonationForm({ ...editDonationForm, donation_date: date })}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2 mt-4">
+                <Label className="text-sm font-medium">Hospital Name</Label>
+                <Input
+                  value={editDonationForm.hospital_name}
+                  onChange={(e) => setEditDonationForm({ ...editDonationForm, hospital_name: e.target.value })}
+                  className="h-11 rounded-xl"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Units Donated</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={editDonationForm.units_donated}
+                    onChange={(e) => setEditDonationForm({ ...editDonationForm, units_donated: parseInt(e.target.value) })}
+                    className="h-11 rounded-xl"
                   />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-2">
-              <Label>Hospital Name</Label>
-              <Input
-                value={editDonationForm.hospital_name}
-                onChange={(e) => setEditDonationForm({ ...editDonationForm, hospital_name: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Units Donated</Label>
-              <Input
-                type="number"
-                min="1"
-                value={editDonationForm.units_donated}
-                onChange={(e) => setEditDonationForm({ ...editDonationForm, units_donated: parseInt(e.target.value) })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea
-                value={editDonationForm.notes}
-                onChange={(e) => setEditDonationForm({ ...editDonationForm, notes: e.target.value })}
-                rows={2}
-              />
+                </div>
+              </div>
+              <div className="space-y-2 mt-4">
+                <Label className="text-sm font-medium">Notes (Optional)</Label>
+                <Textarea
+                  value={editDonationForm.notes}
+                  onChange={(e) => setEditDonationForm({ ...editDonationForm, notes: e.target.value })}
+                  rows={2}
+                  className="rounded-xl resize-none"
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setEditDonationDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleEditDonationSave}>Save Changes</Button>
+          <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t">
+            <Button variant="outline" onClick={() => setEditDonationDialogOpen(false)} className="rounded-xl">Cancel</Button>
+            <Button onClick={handleEditDonationSave} className="rounded-xl">Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Edit Blood Request Dialog */}
       <Dialog open={editRequestDialogOpen} onOpenChange={setEditRequestDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Blood Request</DialogTitle>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-primary" />
+              Edit Blood Request
+            </DialogTitle>
             <DialogDescription>Update blood request details</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Patient Name</Label>
-                <Input
-                  value={editRequestForm.patient_name}
-                  onChange={(e) => setEditRequestForm({ ...editRequestForm, patient_name: e.target.value })}
-                />
+          <div className="space-y-4 py-4">
+            <div className="dialog-section">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Patient Details</h4>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Patient Name</Label>
+                  <Input
+                    value={editRequestForm.patient_name}
+                    onChange={(e) => setEditRequestForm({ ...editRequestForm, patient_name: e.target.value })}
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Blood Group</Label>
+                  <Select
+                    value={editRequestForm.blood_group}
+                    onValueChange={(value) => setEditRequestForm({ ...editRequestForm, blood_group: value })}
+                  >
+                    <SelectTrigger className="h-11 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
+                        <SelectItem key={bg} value={bg}>{bg}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Blood Group</Label>
-                <Select
-                  value={editRequestForm.blood_group}
-                  onValueChange={(value) => setEditRequestForm({ ...editRequestForm, blood_group: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
-                      <SelectItem key={bg} value={bg}>{bg}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Hospital Name</Label>
-              <Input
-                value={editRequestForm.hospital_name}
-                onChange={(e) => setEditRequestForm({ ...editRequestForm, hospital_name: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Contact Name</Label>
+              <div className="space-y-2 mt-4">
+                <Label className="text-sm font-medium">Hospital Name</Label>
                 <Input
-                  value={editRequestForm.contact_name}
-                  onChange={(e) => setEditRequestForm({ ...editRequestForm, contact_name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Contact Phone</Label>
-                <Input
-                  value={editRequestForm.contact_phone}
-                  onChange={(e) => setEditRequestForm({ ...editRequestForm, contact_phone: e.target.value })}
+                  value={editRequestForm.hospital_name}
+                  onChange={(e) => setEditRequestForm({ ...editRequestForm, hospital_name: e.target.value })}
+                  className="h-11 rounded-xl"
                 />
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Units Needed</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={editRequestForm.units_needed}
-                  onChange={(e) => setEditRequestForm({ ...editRequestForm, units_needed: parseInt(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Urgency</Label>
-                <Select
-                  value={editRequestForm.urgency}
-                  onValueChange={(value) => setEditRequestForm({ ...editRequestForm, urgency: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="critical">Critical</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="routine">Routine</SelectItem>
-                  </SelectContent>
-                </Select>
+            
+            <div className="dialog-section">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Contact Information</h4>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Contact Name</Label>
+                  <Input
+                    value={editRequestForm.contact_name}
+                    onChange={(e) => setEditRequestForm({ ...editRequestForm, contact_name: e.target.value })}
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Contact Phone</Label>
+                  <Input
+                    value={editRequestForm.contact_phone}
+                    onChange={(e) => setEditRequestForm({ ...editRequestForm, contact_phone: e.target.value })}
+                    className="h-11 rounded-xl"
+                  />
+                </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea
-                value={editRequestForm.notes}
-                onChange={(e) => setEditRequestForm({ ...editRequestForm, notes: e.target.value })}
-                rows={2}
-              />
+            
+            <div className="dialog-section">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Request Details</h4>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Units Needed</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={editRequestForm.units_needed}
+                    onChange={(e) => setEditRequestForm({ ...editRequestForm, units_needed: parseInt(e.target.value) })}
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Urgency</Label>
+                  <Select
+                    value={editRequestForm.urgency}
+                    onValueChange={(value) => setEditRequestForm({ ...editRequestForm, urgency: value })}
+                  >
+                    <SelectTrigger className="h-11 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="critical">Critical</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                      <SelectItem value="routine">Routine</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2 mt-4">
+                <Label className="text-sm font-medium">Notes (Optional)</Label>
+                <Textarea
+                  value={editRequestForm.notes}
+                  onChange={(e) => setEditRequestForm({ ...editRequestForm, notes: e.target.value })}
+                  rows={2}
+                  className="rounded-xl resize-none"
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setEditRequestDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleEditRequestSave}>Save Changes</Button>
+          <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t">
+            <Button variant="outline" onClick={() => setEditRequestDialogOpen(false)} className="rounded-xl">Cancel</Button>
+            <Button onClick={handleEditRequestSave} className="rounded-xl">Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
