@@ -74,6 +74,96 @@ export type Database = {
         }
         Relationships: []
       }
+      availability_statuses: {
+        Row: {
+          bg_color: string
+          code: string
+          color: string
+          created_at: string | null
+          icon_name: string
+          id: string
+          is_active: boolean | null
+          label: string
+          sort_order: number | null
+        }
+        Insert: {
+          bg_color: string
+          code: string
+          color: string
+          created_at?: string | null
+          icon_name: string
+          id?: string
+          is_active?: boolean | null
+          label: string
+          sort_order?: number | null
+        }
+        Update: {
+          bg_color?: string
+          code?: string
+          color?: string
+          created_at?: string | null
+          icon_name?: string
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      blood_compatibility: {
+        Row: {
+          created_at: string | null
+          donor_blood_group: string
+          id: string
+          recipient_blood_group: string
+        }
+        Insert: {
+          created_at?: string | null
+          donor_blood_group: string
+          id?: string
+          recipient_blood_group: string
+        }
+        Update: {
+          created_at?: string | null
+          donor_blood_group?: string
+          id?: string
+          recipient_blood_group?: string
+        }
+        Relationships: []
+      }
+      blood_groups: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          label: string
+          rarity_percent: number | null
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          rarity_percent?: number | null
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          rarity_percent?: number | null
+          sort_order?: number
+        }
+        Relationships: []
+      }
       blood_requests: {
         Row: {
           blood_group: string
@@ -300,6 +390,33 @@ export type Database = {
           lifetime_points?: number
           total_points?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      emergency_types: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          label: string
+          sort_order: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          sort_order?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          sort_order?: number | null
         }
         Relationships: []
       }
@@ -927,6 +1044,36 @@ export type Database = {
         }
         Relationships: []
       }
+      urgency_options: {
+        Row: {
+          created_at: string | null
+          hours: number | null
+          id: string
+          is_active: boolean | null
+          label: string
+          sort_order: number | null
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          hours?: number | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          sort_order?: number | null
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          hours?: number | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          sort_order?: number | null
+          value?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -953,6 +1100,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_expire_blood_requests: { Args: never; Returns: number }
+      award_donation_points_secure: {
+        Args: {
+          p_donation_id: string
+          p_donor_id: string
+          p_hospital_name: string
+        }
+        Returns: Json
+      }
+      deduct_donation_points_secure: {
+        Args: {
+          p_donation_id: string
+          p_donor_id: string
+          p_hospital_name: string
+        }
+        Returns: Json
+      }
+      get_all_tiers: { Args: never; Returns: Json }
+      get_blood_compatibility: {
+        Args: { p_blood_group: string; p_mode: string }
+        Returns: string[]
+      }
       get_bulk_directory_donation_counts: {
         Args: { donor_ids: string[] }
         Returns: {
@@ -972,12 +1141,18 @@ export type Database = {
         Returns: number
       }
       get_donation_count: { Args: { donor_uuid: string }; Returns: number }
+      get_points_per_donation: { Args: never; Returns: number }
+      get_user_tier: { Args: { p_user_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      sync_donor_last_donation: {
+        Args: { p_donor_id: string }
+        Returns: undefined
       }
     }
     Enums: {

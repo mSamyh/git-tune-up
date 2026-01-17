@@ -5,145 +5,106 @@ export interface TierInfo {
   color: string;
   discount: number;
   minPoints: number;
-  maxPoints: number | null; // null means unlimited (top tier)
+  maxPoints: number | null;
   icon: string;
+  currentPoints?: number;
 }
 
-export async function getUserTier(currentPoints: number): Promise<TierInfo> {
-  // Fetch tier settings from database
-  const { data: settings } = await supabase
-    .from("reward_settings")
-    .select("*")
-    .in("setting_key", [
-      "tier_bronze_min", "tier_bronze_discount",
-      "tier_silver_min", "tier_silver_discount",
-      "tier_gold_min", "tier_gold_discount",
-      "tier_platinum_min", "tier_platinum_discount"
-    ]);
+const DEFAULT_TIERS: TierInfo[] = [
+  { name: 'Bronze', color: 'from-orange-400 to-orange-600', discount: 0, minPoints: 0, maxPoints: 99, icon: 'Award' },
+  { name: 'Silver', color: 'from-gray-300 to-gray-500', discount: 5, minPoints: 100, maxPoints: 499, icon: 'Medal' },
+  { name: 'Gold', color: 'from-yellow-400 to-yellow-600', discount: 10, minPoints: 500, maxPoints: 999, icon: 'Trophy' },
+  { name: 'Platinum', color: 'from-slate-400 to-slate-600', discount: 15, minPoints: 1000, maxPoints: null, icon: 'Crown' },
+];
 
-  if (!settings) {
-    // Default tier if settings not found
-    return {
-      name: "Bronze",
-      color: "text-orange-600",
-      discount: 5,
-      minPoints: 0,
-      maxPoints: 99,
-      icon: "award"
-    };
-  }
-
-  const settingsMap: any = {};
-  settings.forEach(setting => {
-    settingsMap[setting.setting_key] = parseInt(setting.setting_value);
-  });
-
-  // Build tiers with ranges (sorted by minPoints ascending)
-  const tierConfigs = [
-    {
-      name: "Bronze",
-      color: "text-orange-600",
-      discount: settingsMap.tier_bronze_discount || 5,
-      minPoints: settingsMap.tier_bronze_min || 0,
-      icon: "award"
-    },
-    {
-      name: "Silver",
-      color: "text-gray-400",
-      discount: settingsMap.tier_silver_discount || 10,
-      minPoints: settingsMap.tier_silver_min || 100,
-      icon: "trophy"
-    },
-    {
-      name: "Gold",
-      color: "text-yellow-500",
-      discount: settingsMap.tier_gold_discount || 15,
-      minPoints: settingsMap.tier_gold_min || 500,
-      icon: "star"
-    },
-    {
-      name: "Platinum",
-      color: "text-purple-500",
-      discount: settingsMap.tier_platinum_discount || 20,
-      minPoints: settingsMap.tier_platinum_min || 1000,
-      icon: "crown"
+/**
+ * Get the user's current tier based on their points
+ * Uses the secure database function
+ */
+export async function getUserTier(userIdOrPoints: string | number): Promise<TierInfo> {
+  try {
+    if (typeof userIdOrPoints === 'number') {
+      return getTierByPoints(userIdOrPoints);
     }
-  ].sort((a, b) => a.minPoints - b.minPoints);
 
-  // Assign maxPoints based on next tier's minPoints
-  const tiersWithRanges: TierInfo[] = tierConfigs.map((tier, index) => ({
-    ...tier,
-    maxPoints: index < tierConfigs.length - 1 
-      ? tierConfigs[index + 1].minPoints - 1 
-      : null // Top tier has no max
-  }));
-
-  // Find the highest tier the user qualifies for based on CURRENT points
-  // (Check from highest to lowest)
-  for (let i = tiersWithRanges.length - 1; i >= 0; i--) {
-    if (currentPoints >= tiersWithRanges[i].minPoints) {
-      return tiersWithRanges[i];
-    }
-  }
-
-  // Default to Bronze
-  return tiersWithRanges[0];
-}
-
-// Helper to get all tiers with their ranges (for display purposes)
-export async function getAllTiers(): Promise<TierInfo[]> {
-  const { data: settings } = await supabase
-    .from("reward_settings")
-    .select("*")
-    .in("setting_key", [
-      "tier_bronze_min", "tier_bronze_discount",
-      "tier_silver_min", "tier_silver_discount",
-      "tier_gold_min", "tier_gold_discount",
-      "tier_platinum_min", "tier_platinum_discount"
-    ]);
-
-  const settingsMap: any = {};
-  if (settings) {
-    settings.forEach(setting => {
-      settingsMap[setting.setting_key] = parseInt(setting.setting_value);
+    const { data, error } = await supabase.rpc('get_user_tier', {
+      p_user_id: userIdOrPoints
     });
-  }
 
-  const tierConfigs = [
-    {
-      name: "Bronze",
-      color: "text-orange-600",
-      discount: settingsMap.tier_bronze_discount || 5,
-      minPoints: settingsMap.tier_bronze_min || 0,
-      icon: "award"
-    },
-    {
-      name: "Silver",
-      color: "text-gray-400",
-      discount: settingsMap.tier_silver_discount || 10,
-      minPoints: settingsMap.tier_silver_min || 100,
-      icon: "trophy"
-    },
-    {
-      name: "Gold",
-      color: "text-yellow-500",
-      discount: settingsMap.tier_gold_discount || 15,
-      minPoints: settingsMap.tier_gold_min || 500,
-      icon: "star"
-    },
-    {
-      name: "Platinum",
-      color: "text-purple-500",
-      discount: settingsMap.tier_platinum_discount || 20,
-      minPoints: settingsMap.tier_platinum_min || 1000,
-      icon: "crown"
+    if (error) {
+      console.error('Error fetching user tier:', error);
+      return DEFAULT_TIERS[0];
     }
-  ].sort((a, b) => a.minPoints - b.minPoints);
 
-  return tierConfigs.map((tier, index) => ({
-    ...tier,
-    maxPoints: index < tierConfigs.length - 1 
-      ? tierConfigs[index + 1].minPoints - 1 
-      : null
-  }));
+    const tierData = data as unknown as TierInfo;
+    return {
+      name: tierData?.name || 'Bronze',
+      color: tierData?.color || DEFAULT_TIERS[0].color,
+      discount: tierData?.discount || 0,
+      minPoints: tierData?.minPoints || 0,
+      maxPoints: tierData?.maxPoints || null,
+      icon: tierData?.icon || 'Award',
+      currentPoints: tierData?.currentPoints || 0
+    };
+  } catch (error) {
+    console.error('Exception fetching user tier:', error);
+    return DEFAULT_TIERS[0];
+  }
+}
+
+/**
+ * Get tier info based on points
+ */
+export async function getTierByPoints(currentPoints: number): Promise<TierInfo> {
+  try {
+    const { data: tiers, error } = await supabase.rpc('get_all_tiers');
+    
+    if (error || !tiers || !Array.isArray(tiers)) {
+      return calculateTierLocally(currentPoints);
+    }
+
+    const tierArray = tiers as unknown as TierInfo[];
+    for (let i = tierArray.length - 1; i >= 0; i--) {
+      if (currentPoints >= tierArray[i].minPoints) {
+        return { ...tierArray[i], currentPoints };
+      }
+    }
+
+    return { ...tierArray[0], currentPoints };
+  } catch (error) {
+    console.error('Exception fetching tier by points:', error);
+    return calculateTierLocally(currentPoints);
+  }
+}
+
+/**
+ * Get all available tiers
+ */
+export async function getAllTiers(): Promise<TierInfo[]> {
+  try {
+    const { data, error } = await supabase.rpc('get_all_tiers');
+
+    if (error || !data || !Array.isArray(data) || data.length === 0) {
+      return DEFAULT_TIERS;
+    }
+
+    return (data as unknown as TierInfo[]).map((tier) => ({
+      name: tier.name,
+      color: tier.color,
+      discount: tier.discount,
+      minPoints: tier.minPoints,
+      maxPoints: tier.maxPoints,
+      icon: tier.icon
+    }));
+  } catch (error) {
+    console.error('Exception fetching all tiers:', error);
+    return DEFAULT_TIERS;
+  }
+}
+
+function calculateTierLocally(points: number): TierInfo {
+  if (points >= 1000) return { ...DEFAULT_TIERS[3], currentPoints: points };
+  if (points >= 500) return { ...DEFAULT_TIERS[2], currentPoints: points };
+  if (points >= 100) return { ...DEFAULT_TIERS[1], currentPoints: points };
+  return { ...DEFAULT_TIERS[0], currentPoints: points };
 }
