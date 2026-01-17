@@ -137,7 +137,7 @@ export default function MerchantPortal() {
 
     try {
       const { data, error } = await supabase.functions.invoke("verify-qr-code", {
-        body: { voucher_code: voucherCode.trim(), merchant_pin: merchantPin },
+        body: { voucher_code: voucherCode.trim(), merchant_id: merchantId },
       });
 
       if (error) throw error;
