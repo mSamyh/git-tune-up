@@ -57,6 +57,57 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log('Redemption found:', redemption.id, 'Status:', redemption.status, 'Reward ID:', redemption.reward_id);
+
+    // Validate merchant if provided
+    if (merchant_id) {
+      console.log('Validating merchant:', merchant_id);
+      
+      const { data: merchantAccount, error: merchantError } = await supabase
+        .from('merchant_accounts')
+        .select('id, name, partner_id, is_active')
+        .eq('id', merchant_id)
+        .maybeSingle();
+
+      if (merchantError) {
+        console.error('Error fetching merchant:', merchantError);
+        return new Response(
+          JSON.stringify({ error: 'Error validating merchant account' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!merchantAccount) {
+        console.error('Merchant not found:', merchant_id);
+        return new Response(
+          JSON.stringify({ error: 'Merchant account not found' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!merchantAccount.is_active) {
+        console.error('Merchant inactive:', merchant_id);
+        return new Response(
+          JSON.stringify({ error: 'This merchant account is inactive' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check if merchant is linked to a specific reward and if it matches
+      if (merchantAccount.partner_id && merchantAccount.partner_id !== redemption.reward_id) {
+        console.error('Merchant-reward mismatch. Merchant partner_id:', merchantAccount.partner_id, 'Reward ID:', redemption.reward_id);
+        return new Response(
+          JSON.stringify({ 
+            error: 'This merchant is not authorized to verify this reward. Please use the correct merchant PIN.',
+            merchant_name: merchantAccount.name
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Merchant validated successfully:', merchantAccount.name);
+    }
+
     // Check if reward program is still active
     const rewardProgramActive = redemption.reward_catalog?.is_active ?? false;
 
