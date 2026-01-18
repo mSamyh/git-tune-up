@@ -10,10 +10,11 @@ import { Droplet, ArrowLeft, CheckCircle2, Phone, Mail, Lock } from "lucide-reac
 import { LocationSelector } from "@/components/LocationSelector";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { OTPResendTimer } from "@/components/OTPResendTimer";
-
-const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+import { useReferenceData, FALLBACK_BLOOD_GROUPS } from "@/contexts/ReferenceDataContext";
 
 const Register = () => {
+  const { bloodGroupCodes } = useReferenceData();
+  const bloodGroups = bloodGroupCodes.length > 0 ? bloodGroupCodes : FALLBACK_BLOOD_GROUPS;
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
@@ -418,7 +419,7 @@ const Register = () => {
                     <SelectValue placeholder="Select blood group" />
                   </SelectTrigger>
                   <SelectContent>
-                    {BLOOD_GROUPS.map((group) => (
+                    {bloodGroups.map((group) => (
                       <SelectItem key={group} value={group}>
                         {group}
                       </SelectItem>

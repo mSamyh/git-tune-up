@@ -5,9 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Phone, MapPin, Droplet, Search, Users, Loader2, X } from "lucide-react";
-
-const BLOOD_GROUPS = ["All", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-const DISTRICTS = ["All", "Dhaka", "Chittagong", "Rajshahi", "Khulna", "Barisal", "Sylhet", "Rangpur", "Mymensingh"];
+import { useReferenceData, FALLBACK_BLOOD_GROUPS } from "@/contexts/ReferenceDataContext";
 
 interface Donor {
   id: string;
@@ -22,18 +20,30 @@ interface Donor {
 }
 
 const DonorDirectory = () => {
+  const { bloodGroupCodes } = useReferenceData();
+  const bloodGroups = ["All", ...(bloodGroupCodes.length > 0 ? bloodGroupCodes : FALLBACK_BLOOD_GROUPS)];
+  
   const [donors, setDonors] = useState<Donor[]>([]);
   const [filteredDonors, setFilteredDonors] = useState<Donor[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBloodGroup, setSelectedBloodGroup] = useState("All");
   const [selectedDistrict, setSelectedDistrict] = useState("All");
+  const [atolls, setAtolls] = useState<string[]>(["All"]);
   const [loading, setLoading] = useState(true);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchDonors();
+    fetchAtolls();
   }, []);
+  
+  const fetchAtolls = async () => {
+    const { data } = await supabase.from("atolls").select("name").order("name");
+    if (data) {
+      setAtolls(["All", ...data.map(a => a.name)]);
+    }
+  };
 
   useEffect(() => {
     filterDonors();
@@ -194,7 +204,7 @@ const DonorDirectory = () => {
               <SelectValue placeholder="Blood" />
             </SelectTrigger>
             <SelectContent>
-              {BLOOD_GROUPS.map((group) => (
+              {bloodGroups.map((group) => (
                 <SelectItem key={group} value={group}>
                   {group === "All" ? "All" : group}
                 </SelectItem>
@@ -208,13 +218,13 @@ const DonorDirectory = () => {
                 <MapPin className="h-3.5 w-3.5 mr-1 text-primary flex-shrink-0" />
                 <SelectValue placeholder="District" />
               </SelectTrigger>
-              <SelectContent>
-                {DISTRICTS.map((district) => (
-                  <SelectItem key={district} value={district}>
-                    {district === "All" ? "All" : district}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+            <SelectContent>
+              {atolls.map((atoll) => (
+                <SelectItem key={atoll} value={atoll}>
+                  {atoll === "All" ? "All" : atoll}
+                </SelectItem>
+              ))}
+            </SelectContent>
             </Select>
           )}
           

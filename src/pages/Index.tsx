@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Droplet, Search, Heart, UserCheck, X, Users, BarChart3, GitCompare, ArrowRight, Sparkles, Shield } from "lucide-react";
 import { DonorTable } from "@/components/DonorTable";
 import { DonorStatsDashboard } from "@/components/DonorStatsDashboard";
-import { BloodCompatibilityChecker } from "@/components/BloodCompatibilityChecker";
+import BloodCompatibilityChecker from "@/components/BloodCompatibilityChecker";
 import { BottomNav } from "@/components/BottomNav";
 import { BloodGroupFilter } from "@/components/BloodGroupFilter";
 import { AppHeader } from "@/components/AppHeader";

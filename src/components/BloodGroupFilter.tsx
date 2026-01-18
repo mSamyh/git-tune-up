@@ -1,14 +1,15 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useReferenceData, FALLBACK_BLOOD_GROUPS } from "@/contexts/ReferenceDataContext";
 
 interface BloodGroupFilterProps {
   selectedGroup: string;
   onSelectGroup: (group: string) => void;
 }
 
-const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-
 export const BloodGroupFilter = ({ selectedGroup, onSelectGroup }: BloodGroupFilterProps) => {
+  const { bloodGroupCodes, isLoading } = useReferenceData();
+  const bloodGroups = bloodGroupCodes.length > 0 ? bloodGroupCodes : FALLBACK_BLOOD_GROUPS;
   return (
     <div className="flex flex-wrap gap-2 justify-center">
       <Badge
@@ -21,7 +22,7 @@ export const BloodGroupFilter = ({ selectedGroup, onSelectGroup }: BloodGroupFil
       >
         All Groups
       </Badge>
-      {BLOOD_GROUPS.map((group) => (
+      {bloodGroups.map((group) => (
         <Badge
           key={group}
           variant={selectedGroup === group ? "default" : "outline"}

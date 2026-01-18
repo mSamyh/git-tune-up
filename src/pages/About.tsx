@@ -1,7 +1,7 @@
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { ContactAdminForm } from "@/components/ContactAdminForm";
-import { BloodCompatibilityChecker } from "@/components/BloodCompatibilityChecker";
+import BloodCompatibilityChecker from "@/components/BloodCompatibilityChecker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Droplet, Users } from "lucide-react";
 

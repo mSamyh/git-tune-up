@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, Clock, Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useReferenceData } from "@/contexts/ReferenceDataContext";
+import { LucideIcon } from "lucide-react";
 
 interface AvailabilityToggleProps {
   value: string;
@@ -10,13 +12,70 @@ interface AvailabilityToggleProps {
   daysUntilAvailable?: number;
 }
 
+// Icon mapping for dynamic icons from database
+const iconMap: Record<string, LucideIcon> = {
+  Check: Check,
+  Ban: Ban,
+  Clock: Clock,
+};
+
+// Fallback statuses if database data not available
+const FALLBACK_STATUSES = [
+  {
+    code: "available",
+    label: "Available",
+    icon_name: "Check",
+    color: "text-green-600",
+    bg_color: "bg-green-50",
+  },
+  {
+    code: "unavailable",
+    label: "Unavailable",
+    icon_name: "Ban",
+    color: "text-red-600",
+    bg_color: "bg-red-50",
+  },
+  {
+    code: "reserved",
+    label: "Reserved",
+    icon_name: "Clock",
+    color: "text-orange-600",
+    bg_color: "bg-orange-50",
+  },
+];
+
+// Color mapping for active states
+const activeClassMap: Record<string, string> = {
+  available: "bg-green-500 hover:bg-green-600 text-white border-green-500",
+  unavailable: "bg-red-500 hover:bg-red-600 text-white border-red-500",
+  reserved: "bg-orange-500 hover:bg-orange-600 text-white border-orange-500",
+};
+
+const pulseClassMap: Record<string, string> = {
+  available: "ring-4 ring-green-400/50",
+  unavailable: "ring-4 ring-red-400/50",
+  reserved: "ring-4 ring-orange-400/50",
+};
+
 export const AvailabilityToggle = ({
   value,
   onChange,
   canSetAvailable,
   daysUntilAvailable = 0,
 }: AvailabilityToggleProps) => {
+  const { availabilityStatuses } = useReferenceData();
   const [animatingStatus, setAnimatingStatus] = useState<string | null>(null);
+
+  // Use database statuses if available, otherwise fallback
+  const statuses = availabilityStatuses.length > 0 
+    ? availabilityStatuses.map(s => ({
+        code: s.code,
+        label: s.label,
+        icon_name: s.icon_name,
+        color: s.color,
+        bg_color: s.bg_color,
+      }))
+    : FALLBACK_STATUSES;
 
   const handleClick = (status: string) => {
     if (status === value) return;
@@ -31,54 +90,28 @@ export const AvailabilityToggle = ({
     }
   }, [animatingStatus]);
 
-  const statuses = [
-    {
-      value: "available",
-      label: "Available",
-      icon: Check,
-      activeClass: "bg-green-500 hover:bg-green-600 text-white border-green-500",
-      pulseClass: "ring-4 ring-green-400/50",
-      disabled: !canSetAvailable,
-    },
-    {
-      value: "unavailable",
-      label: "Unavailable",
-      icon: Ban,
-      activeClass: "bg-red-500 hover:bg-red-600 text-white border-red-500",
-      pulseClass: "ring-4 ring-red-400/50",
-      disabled: false,
-    },
-    {
-      value: "reserved",
-      label: "Reserved",
-      icon: Clock,
-      activeClass: "bg-orange-500 hover:bg-orange-600 text-white border-orange-500",
-      pulseClass: "ring-4 ring-orange-400/50",
-      disabled: false,
-    },
-  ];
-
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
         {statuses.map((status) => {
-          const Icon = status.icon;
-          const isActive = value === status.value;
-          const isAnimating = animatingStatus === status.value;
+          const Icon = iconMap[status.icon_name] || Check;
+          const isActive = value === status.code;
+          const isAnimating = animatingStatus === status.code;
+          const isDisabled = status.code === "available" && !canSetAvailable;
           
           return (
             <Button
-              key={status.value}
+              key={status.code}
               variant="outline"
               size="sm"
-              disabled={status.disabled}
-              onClick={() => handleClick(status.value)}
+              disabled={isDisabled}
+              onClick={() => handleClick(status.code)}
               className={cn(
                 "flex-1 gap-1.5 transition-all duration-200",
-                isActive && status.activeClass,
-                isAnimating && status.pulseClass,
+                isActive && activeClassMap[status.code],
+                isAnimating && pulseClassMap[status.code],
                 isAnimating && "animate-scale-in",
-                status.disabled && "opacity-50 cursor-not-allowed"
+                isDisabled && "opacity-50 cursor-not-allowed"
               )}
             >
               <Icon className={cn(
