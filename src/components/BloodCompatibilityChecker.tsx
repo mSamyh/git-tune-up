@@ -1,200 +1,157 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Droplet, ArrowRight, ArrowLeft, Heart, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Droplet, ArrowRight, ArrowLeft, Heart, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useReferenceData, FALLBACK_BLOOD_GROUPS } from "@/contexts/ReferenceDataContext";
 
-const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] as const;
-type BloodType = typeof bloodTypes[number];
-
-// Who can this blood type DONATE to
-const canDonateTo: Record<BloodType, BloodType[]> = {
-  "O-": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
-  "O+": ["A+", "B+", "AB+", "O+"],
-  "A-": ["A+", "A-", "AB+", "AB-"],
-  "A+": ["A+", "AB+"],
-  "B-": ["B+", "B-", "AB+", "AB-"],
-  "B+": ["B+", "AB+"],
-  "AB-": ["AB+", "AB-"],
-  "AB+": ["AB+"],
-};
-
-// Who can this blood type RECEIVE from
-const canReceiveFrom: Record<BloodType, BloodType[]> = {
-  "O-": ["O-"],
-  "O+": ["O-", "O+"],
-  "A-": ["O-", "A-"],
-  "A+": ["O-", "O+", "A-", "A+"],
-  "B-": ["O-", "B-"],
-  "B+": ["O-", "O+", "B-", "B+"],
-  "AB-": ["O-", "A-", "B-", "AB-"],
-  "AB+": ["O-", "O+", "A-", "A+", "B-", "B+", "AB-", "AB+"],
-};
-
-const bloodTypeInfo: Record<BloodType, { title: string; rarity: string }> = {
-  "O-": { title: "Universal Donor", rarity: "~7%" },
-  "O+": { title: "Most Common", rarity: "~37%" },
-  "A-": { title: "Rare Type", rarity: "~6%" },
-  "A+": { title: "Common Type", rarity: "~30%" },
-  "B-": { title: "Rare Type", rarity: "~2%" },
-  "B+": { title: "Fairly Common", rarity: "~8%" },
-  "AB-": { title: "Rarest Type", rarity: "~1%" },
-  "AB+": { title: "Universal Recipient", rarity: "~4%" },
-};
-
-export const BloodCompatibilityChecker = () => {
-  const [selectedType, setSelectedType] = useState<BloodType | null>(null);
+const BloodCompatibilityChecker = () => {
+  const { bloodGroupCodes, bloodCompatibility, isLoading } = useReferenceData();
+  const bloodTypes = bloodGroupCodes.length > 0 ? bloodGroupCodes : FALLBACK_BLOOD_GROUPS;
+  
+  const [selectedType, setSelectedType] = useState<string | null>(null);
   const [mode, setMode] = useState<"donate" | "receive">("donate");
+  
+  // Use compatibility data from context, with fallback
+  const canDonateTo = bloodCompatibility.canDonateTo;
+  const canReceiveFrom = bloodCompatibility.canReceiveFrom;
+  const bloodTypeInfo = bloodCompatibility.bloodTypeInfo;
 
-  const compatibleTypes = selectedType
-    ? mode === "donate"
-      ? canDonateTo[selectedType]
-      : canReceiveFrom[selectedType]
-    : [];
+  const getCompatibleTypes = () => {
+    if (!selectedType) return [];
+    if (mode === "donate") {
+      return canDonateTo[selectedType] || [];
+    }
+    return canReceiveFrom[selectedType] || [];
+  };
+
+  const compatibleTypes = getCompatibleTypes();
+  const info = selectedType ? bloodTypeInfo[selectedType] : null;
 
   return (
-    <Card className="rounded-2xl border-border/50 shadow-sm overflow-hidden">
-      <CardHeader className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent pb-3 px-3 sm:px-6">
-        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-          <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+    <Card className="bg-gradient-to-br from-card to-muted/30 border-border/50 overflow-hidden">
+      <CardHeader className="pb-3 space-y-1">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-primary/10">
+            <Heart className="h-4 w-4 text-primary" />
+          </div>
           Blood Compatibility
         </CardTitle>
-        <p className="text-xs sm:text-sm text-muted-foreground">
-          Tap a blood type to check compatibility
+        <p className="text-xs text-muted-foreground">
+          Select a blood type to see compatibility
         </p>
       </CardHeader>
-
-      <CardContent className="space-y-4 pt-3 px-3 sm:px-6 sm:space-y-6 sm:pt-4">
-        {/* Blood Type Selector - Optimized for mobile */}
-        <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+      <CardContent className="space-y-4 pb-5">
+        {/* Blood Type Selection Grid - Compact for Mobile */}
+        <div className="grid grid-cols-4 gap-1.5">
           {bloodTypes.map((type) => (
-            <button
+            <Button
               key={type}
+              variant={selectedType === type ? "default" : "outline"}
+              size="sm"
               onClick={() => setSelectedType(type)}
               className={cn(
-                "relative p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-0.5 sm:gap-1 active:scale-95",
-                selectedType === type
-                  ? "border-primary bg-primary/10 shadow-md"
-                  : "border-border hover:border-primary/50 hover:bg-muted/50"
+                "h-9 text-xs font-semibold transition-all",
+                selectedType === type && "ring-2 ring-primary/30 scale-105"
               )}
             >
-              <Droplet
-                className={cn(
-                  "h-4 w-4 sm:h-6 sm:w-6 transition-colors",
-                  selectedType === type ? "text-primary fill-primary/20" : "text-muted-foreground"
-                )}
-              />
-              <span className={cn(
-                "font-bold text-xs sm:text-sm",
-                selectedType === type ? "text-primary" : "text-foreground"
-              )}>
-                {type}
-              </span>
-            </button>
+              <Droplet className={cn(
+                "h-3 w-3 mr-1",
+                selectedType === type ? "fill-current" : ""
+              )} />
+              {type}
+            </Button>
           ))}
         </div>
 
-        {/* Mode Toggle - More compact on mobile */}
-        {selectedType && (
-          <div className="flex gap-1 p-0.5 sm:p-1 bg-muted rounded-lg sm:rounded-xl animate-fade-in">
-            <button
-              onClick={() => setMode("donate")}
-              className={cn(
-                "flex-1 py-1.5 sm:py-2 px-2 sm:px-4 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 sm:gap-2",
-                mode === "donate"
-                  ? "bg-background shadow-sm text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Can</span> Donate To
-            </button>
-            <button
-              onClick={() => setMode("receive")}
-              className={cn(
-                "flex-1 py-1.5 sm:py-2 px-2 sm:px-4 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 sm:gap-2",
-                mode === "receive"
-                  ? "bg-background shadow-sm text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Can</span> Receive
-            </button>
-          </div>
-        )}
+        {/* Mode Toggle */}
+        <div className="flex gap-2">
+          <Button
+            variant={mode === "donate" ? "default" : "outline"}
+            size="sm"
+            className="flex-1 h-9 text-xs"
+            onClick={() => setMode("donate")}
+          >
+            <ArrowRight className="h-3 w-3 mr-1" />
+            Can Donate To
+          </Button>
+          <Button
+            variant={mode === "receive" ? "default" : "outline"}
+            size="sm"
+            className="flex-1 h-9 text-xs"
+            onClick={() => setMode("receive")}
+          >
+            <ArrowLeft className="h-3 w-3 mr-1" />
+            Can Receive From
+          </Button>
+        </div>
 
-        {/* Selected Type Info - Compact on mobile */}
-        {selectedType && (
-          <div className="p-3 sm:p-4 bg-primary/5 rounded-lg sm:rounded-xl border border-primary/20 animate-scale-in">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-base sm:text-xl font-bold text-primary">{selectedType}</span>
+        {/* Results */}
+        {selectedType ? (
+          <div className="space-y-3">
+            {/* Selected Type Info */}
+            {info && (
+              <div className="p-3 rounded-xl bg-primary/5 border border-primary/10">
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge className="bg-primary text-primary-foreground text-xs px-2">
+                    <Droplet className="h-3 w-3 mr-1 fill-current" />
+                    {selectedType}
+                  </Badge>
+                  <span className="text-xs font-medium">{info.title}</span>
                 </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm sm:text-base truncate">{bloodTypeInfo[selectedType].title}</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Population: {bloodTypeInfo[selectedType].rarity}
-                  </p>
-                </div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  {info.rarity}
+                </p>
               </div>
-              <Badge variant="outline" className="text-primary border-primary text-[10px] sm:text-xs flex-shrink-0">
-                {compatibleTypes.length} match
-              </Badge>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* Compatibility Results - Optimized grid for mobile */}
-        {selectedType && (
-          <div className="space-y-2 sm:space-y-3 animate-fade-in">
-            <p className="text-xs sm:text-sm font-medium text-muted-foreground">
-              {mode === "donate" 
-                ? `${selectedType} can donate to:`
-                : `${selectedType} can receive from:`
-              }
-            </p>
-            <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
-              {bloodTypes.map((type) => {
-                const isCompatible = compatibleTypes.includes(type);
-                return (
-                  <div
-                    key={type}
-                    className={cn(
-                      "p-2 sm:p-3 rounded-lg sm:rounded-xl text-center transition-all duration-300 relative",
-                      isCompatible
-                        ? "bg-green-500/10 border-2 border-green-500/30 text-green-700 dark:text-green-400"
-                        : "bg-muted/30 border-2 border-transparent text-muted-foreground/50"
-                    )}
-                  >
-                    {isCompatible && (
-                      <div className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 bg-green-500 rounded-full flex items-center justify-center">
-                        <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
-                      </div>
-                    )}
-                    <Droplet
+            {/* Compatible Types Grid */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">
+                {mode === "donate" 
+                  ? `${selectedType} can donate to:` 
+                  : `${selectedType} can receive from:`}
+              </p>
+              <div className="grid grid-cols-4 gap-1.5">
+                {bloodTypes.map((type) => {
+                  const isCompatible = compatibleTypes.includes(type);
+                  return (
+                    <div
+                      key={type}
                       className={cn(
-                        "h-4 w-4 sm:h-5 sm:w-5 mx-auto mb-0.5 sm:mb-1",
-                        isCompatible ? "fill-green-500/20" : ""
+                        "h-9 flex items-center justify-center rounded-lg text-xs font-medium transition-all",
+                        isCompatible
+                          ? "bg-green-500/15 text-green-600 border border-green-500/30"
+                          : "bg-muted/50 text-muted-foreground/50 border border-transparent"
                       )}
-                    />
-                    <span className="text-xs sm:text-sm font-medium">{type}</span>
-                  </div>
-                );
-              })}
+                    >
+                      <Droplet className={cn(
+                        "h-3 w-3 mr-1",
+                        isCompatible && "fill-current"
+                      )} />
+                      {type}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-center text-muted-foreground mt-2">
+                {compatibleTypes.length} compatible type{compatibleTypes.length !== 1 ? 's' : ''}
+              </p>
             </div>
           </div>
-        )}
-
-        {/* Empty State - Compact */}
-        {!selectedType && (
-          <div className="text-center py-6 sm:py-8 text-muted-foreground">
-            <Droplet className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-3 opacity-30" />
-            <p className="text-xs sm:text-sm">Tap a blood type above to check compatibility</p>
+        ) : (
+          <div className="py-6 text-center">
+            <Droplet className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
+            <p className="text-xs text-muted-foreground">
+              Select a blood type above to check compatibility
+            </p>
           </div>
         )}
       </CardContent>
     </Card>
   );
 };
+
+export default BloodCompatibilityChecker;

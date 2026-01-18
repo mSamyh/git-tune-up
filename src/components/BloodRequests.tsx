@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { BloodRequestShareCard } from "@/components/BloodRequestShareCard";
+import { useReferenceData, FALLBACK_BLOOD_GROUPS } from "@/contexts/ReferenceDataContext";
 
 interface BloodRequest {
   id: string;
@@ -51,6 +52,9 @@ interface BloodRequestsProps {
 }
 
 const BloodRequests = ({ status = "active", highlightId, onStatusChange }: BloodRequestsProps) => {
+  const { bloodGroupCodes } = useReferenceData();
+  const bloodGroups = bloodGroupCodes.length > 0 ? bloodGroupCodes : FALLBACK_BLOOD_GROUPS;
+  
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
@@ -117,30 +121,31 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
     }
   };
 
-  // Auto-expire check - runs and triggers refresh, also switches tab if viewing active
+  // Auto-expire check - now uses database function for server-side expiration
   const checkAndExpireRequests = async () => {
-    const now = new Date().toISOString();
-    const { data, error } = await supabase
-      .from("blood_requests")
-      .update({ status: "expired" })
-      .in("status", ["active", "open"])
-      .lt("needed_before", now)
-      .not("needed_before", "is", null)
-      .select();
-
-    if (error) {
-      console.error("Auto-expire check failed:", error);
-    } else if (data && data.length > 0) {
-      console.log(`Auto-expired ${data.length} requests`);
-      toast({
-        title: `${data.length} request${data.length > 1 ? 's' : ''} expired`,
-        description: "Moved to Expired tab",
-      });
-      await fetchRequests();
-      // If we're on active tab and requests expired, notify parent
-      if (status === "active") {
-        onStatusChange?.("expired");
+    try {
+      const { data, error } = await supabase.rpc('auto_expire_blood_requests');
+      
+      if (error) {
+        console.error("Auto-expire check failed:", error);
+        return;
       }
+      
+      const expiredCount = data as number;
+      if (expiredCount > 0) {
+        console.log(`Auto-expired ${expiredCount} requests via RPC`);
+        toast({
+          title: `${expiredCount} request${expiredCount > 1 ? 's' : ''} expired`,
+          description: "Moved to Expired tab",
+        });
+        await fetchRequests();
+        // If we're on active tab and requests expired, notify parent
+        if (status === "active") {
+          onStatusChange?.("expired");
+        }
+      }
+    } catch (err) {
+      console.error("Auto-expire RPC error:", err);
     }
   };
 
@@ -404,8 +409,7 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
     );
   }
 
-  // Group requests by blood group
-  const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+  // Group requests by blood group (using context data)
   const requestsByBloodGroup = bloodGroups.reduce((acc, group) => {
     acc[group] = requests.filter(r => r.blood_group === group);
     return acc;

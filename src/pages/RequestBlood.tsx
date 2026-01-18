@@ -12,20 +12,17 @@ import { Heart, X, Clock } from "lucide-react";
 import { LocationSelector } from "@/components/LocationSelector";
 import { AppHeader } from "@/components/AppHeader";
 import { format, addHours } from "date-fns";
-
-const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-
-const NEEDED_BEFORE_OPTIONS = [
-  { value: "2", label: "2 hours" },
-  { value: "4", label: "4 hours" },
-  { value: "6", label: "6 hours" },
-  { value: "12", label: "12 hours" },
-  { value: "24", label: "24 hours" },
-  { value: "48", label: "48 hours" },
-  { value: "custom", label: "Custom time" },
-];
+import { useReferenceData, FALLBACK_BLOOD_GROUPS, FALLBACK_URGENCY_OPTIONS, FALLBACK_EMERGENCY_TYPES } from "@/contexts/ReferenceDataContext";
 
 const RequestBlood = () => {
+  const { bloodGroupCodes, urgencyOptions, emergencyTypes } = useReferenceData();
+  const bloodGroups = bloodGroupCodes.length > 0 ? bloodGroupCodes : FALLBACK_BLOOD_GROUPS;
+  const neededBeforeOptions = urgencyOptions.length > 0 
+    ? urgencyOptions.map(opt => ({ value: opt.value, label: opt.label }))
+    : FALLBACK_URGENCY_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }));
+  const emergencyTypesList = emergencyTypes.length > 0 
+    ? emergencyTypes 
+    : FALLBACK_EMERGENCY_TYPES;
   const [loading, setLoading] = useState(false);
   const [selectedAtoll, setSelectedAtoll] = useState("");
   const [selectedIsland, setSelectedIsland] = useState("");
@@ -184,7 +181,7 @@ const RequestBlood = () => {
                       <SelectValue placeholder="Select blood group" />
                     </SelectTrigger>
                     <SelectContent>
-                      {BLOOD_GROUPS.map((group) => (
+                      {bloodGroups.map((group) => (
                         <SelectItem key={group} value={group}>
                           {group}
                         </SelectItem>
@@ -262,11 +259,11 @@ const RequestBlood = () => {
                     <SelectValue placeholder="Select emergency type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="thalassaemia">Thalassaemia</SelectItem>
-                    <SelectItem value="pregnancy">Pregnancy</SelectItem>
-                    <SelectItem value="surgery">Surgery</SelectItem>
-                    <SelectItem value="emergency_surgery">Emergency Surgery</SelectItem>
-                    <SelectItem value="custom">Custom (Specify)</SelectItem>
+                    {emergencyTypesList.map((type) => (
+                      <SelectItem key={type.code} value={type.code}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -316,7 +313,7 @@ const RequestBlood = () => {
                     <SelectValue placeholder="Select timeframe (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {NEEDED_BEFORE_OPTIONS.map((option) => (
+                    {neededBeforeOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
