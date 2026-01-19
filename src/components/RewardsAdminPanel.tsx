@@ -120,7 +120,6 @@ export function RewardsAdminPanel() {
       console.error("Error fetching redemptions:", redemptionsError);
     }
     
-    console.log("Redemptions fetched:", redemptionsData?.length || 0, "items");
     setRedemptions(redemptionsData || []);
 
     // Fetch all donor points

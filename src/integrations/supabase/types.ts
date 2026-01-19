@@ -459,6 +459,7 @@ export type Database = {
           partner_id: string | null
           phone: string | null
           pin: string
+          pin_hash: string | null
           updated_at: string
         }
         Insert: {
@@ -470,6 +471,7 @@ export type Database = {
           partner_id?: string | null
           phone?: string | null
           pin: string
+          pin_hash?: string | null
           updated_at?: string
         }
         Update: {
@@ -481,6 +483,7 @@ export type Database = {
           partner_id?: string | null
           phone?: string | null
           pin?: string
+          pin_hash?: string | null
           updated_at?: string
         }
         Relationships: [

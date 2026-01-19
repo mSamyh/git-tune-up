@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
       .from('merchant_accounts')
       .select('id, name, is_active')
       .eq('pin', pin)
+      .eq('is_active', true)
       .maybeSingle();
 
     if (fetchError) {
@@ -41,21 +42,12 @@ Deno.serve(async (req) => {
     }
 
     if (!merchant) {
-      console.log('Invalid PIN attempted:', pin);
+      // Don't log the actual PIN for security
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid PIN' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    if (!merchant.is_active) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Merchant account is inactive' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Merchant logged in:', merchant.name);
 
     return new Response(
       JSON.stringify({
