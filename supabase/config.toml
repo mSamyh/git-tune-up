@@ -14,3 +14,12 @@ verify_jwt = false
 
 [functions.broadcast-sms]
 verify_jwt = false
+
+[functions.preview-voucher]
+verify_jwt = false
+
+[functions.verify-qr-code]
+verify_jwt = false
+
+[functions.verify-merchant-pin]
+verify_jwt = false
