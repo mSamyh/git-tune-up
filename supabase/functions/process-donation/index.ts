@@ -36,7 +36,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Processing donation:', { donor_id, donation_date, hospital_name });
+    // Processing donation for donor_id
 
     // 1. Insert donation record
     const { data: donation, error: donationError } = await supabase
@@ -57,7 +57,7 @@ serve(async (req) => {
       throw donationError;
     }
 
-    console.log('Donation inserted:', donation.id);
+    // Donation inserted successfully
 
     // 2. Award points using the secure database function
     const { data: pointsResult, error: pointsError } = await supabase
@@ -72,7 +72,7 @@ serve(async (req) => {
       // Don't throw - donation was successful, points can be fixed later
     }
 
-    console.log('Points result:', pointsResult);
+    // Points processing complete
 
     // 3. Sync last donation date
     const { error: syncError } = await supabase

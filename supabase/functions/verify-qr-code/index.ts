@@ -66,10 +66,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Redemption found:', redemption.id, 'Status:', redemption.status, 'Reward ID:', redemption.reward_id);
+    // Redemption found, proceeding with validation
 
     // Validate merchant - REQUIRED
-    console.log('Validating merchant:', merchant_id);
+    // Validating merchant authorization
     
     const { data: merchantAccount, error: merchantError } = await supabase
       .from('merchant_accounts')
@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Merchant validated successfully:', merchantAccount.name);
+    // Merchant validated successfully
 
     // Check if reward program is still active
     const rewardProgramActive = redemption.reward_catalog?.is_active ?? false;
@@ -253,7 +253,7 @@ Deno.serve(async (req) => {
       merchantName = merchant?.name;
     }
 
-    console.log('QR code verified successfully:', voucher_code, 'by merchant:', merchant_id || 'unknown');
+    // QR code verified successfully
 
     return new Response(
       JSON.stringify({

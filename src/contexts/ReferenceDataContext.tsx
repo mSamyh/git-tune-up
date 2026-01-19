@@ -139,7 +139,7 @@ export function useReferenceData() {
   return context;
 }
 
-// Fallback data for when reference data is loading or unavailable
+// Fallback data for graceful degradation when reference data is loading or unavailable
 export const FALLBACK_BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export const FALLBACK_URGENCY_OPTIONS = [
