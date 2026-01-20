@@ -453,7 +453,7 @@ const Profile = () => {
           <TabsContent value="posts" className="mt-5 space-y-4">
             {/* Achievements section - replaces redundant stats */}
             {isDonor && (
-              <AchievementsPreview donationCount={donationCount} totalPoints={totalPoints} />
+              <AchievementsPreview donationCount={donationCount} totalPoints={totalPoints} userName={profile.full_name} />
             )}
 
             {/* Quick Actions as list */}
