@@ -23,6 +23,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { RewardsSection } from "@/components/RewardsSection";
 import { AvailabilityToggle } from "@/components/AvailabilityToggle";
 import { DonorQRCard } from "@/components/DonorQRCard";
+import { AchievementsPreview } from "@/components/AchievementsPreview";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Profile {
@@ -422,35 +423,7 @@ const Profile = () => {
             </Button>
           </div>
 
-          {/* Quick Stats Highlights - Aligned Grid */}
-          {isDonor && (
-            <div className="grid grid-cols-4 gap-2 w-full">
-              <button onClick={() => navigate('/history')} className="flex flex-col items-center group">
-                <div className="h-16 w-16 rounded-2xl border border-border/50 flex items-center justify-center bg-primary/5 mb-1.5 group-hover:border-primary/30 transition-colors">
-                  <Heart className="h-6 w-6 text-primary" />
-                </div>
-                <span className="text-[10px] text-muted-foreground">{donationCount} Lives</span>
-              </button>
-              <button onClick={() => setShowRewardsDialog(true)} className="flex flex-col items-center group">
-                <div className="h-16 w-16 rounded-2xl border border-border/50 flex items-center justify-center bg-amber-500/5 mb-1.5 group-hover:border-amber-500/30 transition-colors">
-                  <Award className="h-6 w-6 text-amber-500" />
-                </div>
-                <span className="text-[10px] text-muted-foreground">{totalPoints} Pts</span>
-              </button>
-              <button onClick={() => navigate('/history')} className="flex flex-col items-center group">
-                <div className="h-16 w-16 rounded-2xl border border-border/50 flex items-center justify-center bg-blue-500/5 mb-1.5 group-hover:border-blue-500/30 transition-colors">
-                  <Calendar className="h-6 w-6 text-blue-500" />
-                </div>
-                <span className="text-[10px] text-muted-foreground">History</span>
-              </button>
-              <button onClick={() => setShowQRCard(true)} className="flex flex-col items-center group">
-                <div className="h-16 w-16 rounded-2xl border border-border/50 flex items-center justify-center bg-emerald-500/5 mb-1.5 group-hover:border-emerald-500/30 transition-colors">
-                  <QrCode className="h-6 w-6 text-emerald-500" />
-                </div>
-                <span className="text-[10px] text-muted-foreground">ID Card</span>
-              </button>
-            </div>
-          )}
+          {/* Removed redundant Quick Stats Highlights - stats shown in header row above */}
         </div>
 
         {/* Content Tabs */}
@@ -478,25 +451,9 @@ const Profile = () => {
 
           {/* Overview Tab */}
           <TabsContent value="posts" className="mt-5 space-y-4">
-            {/* Quick Stats Grid */}
+            {/* Achievements section - replaces redundant stats */}
             {isDonor && (
-              <div className="grid grid-cols-3 gap-2">
-                <div className="aspect-square bg-primary/5 rounded-2xl flex flex-col items-center justify-center p-3 border border-border/50">
-                  <Heart className="h-7 w-7 text-primary mb-1.5" />
-                  <p className="text-base font-semibold">{donationCount}</p>
-                  <p className="text-[10px] text-muted-foreground">Donations</p>
-                </div>
-                <div className="aspect-square bg-amber-500/5 rounded-2xl flex flex-col items-center justify-center p-3 border border-border/50">
-                  <Award className="h-7 w-7 text-amber-500 mb-1.5" />
-                  <p className="text-base font-semibold">{totalPoints}</p>
-                  <p className="text-[10px] text-muted-foreground">Points</p>
-                </div>
-                <div className="aspect-square bg-emerald-500/5 rounded-2xl flex flex-col items-center justify-center p-3 border border-border/50">
-                  <Sparkles className="h-7 w-7 text-emerald-500 mb-1.5" />
-                  <p className="text-base font-semibold">{donationCount}</p>
-                  <p className="text-[10px] text-muted-foreground">Lives</p>
-                </div>
-              </div>
+              <AchievementsPreview donationCount={donationCount} totalPoints={totalPoints} />
             )}
 
             {/* Quick Actions as list */}
