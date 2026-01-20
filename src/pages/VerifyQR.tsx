@@ -99,7 +99,8 @@ export default function VerifyQR() {
       }
     } catch (err: any) {
       console.error("Preview error:", err);
-      setError(err.message || "Failed to load voucher details");
+      const errorMessage = err?.context?.body?.error || err.message || "Failed to load voucher details";
+      setError(errorMessage);
       setStep('error');
     }
   };
@@ -118,7 +119,15 @@ export default function VerifyQR() {
         body: { pin: merchantPin },
       });
 
-      if (pinError) throw pinError;
+      if (pinError) {
+        console.error("PIN verification error:", pinError);
+        const errorMsg = pinError?.context?.body?.error || pinError.message || "Failed to verify PIN";
+        setError(errorMsg);
+        setStep('preview');
+        toast.error(errorMsg);
+        setMerchantPin("");
+        return;
+      }
 
       if (!pinData.success) {
         setError(pinData.error || "Invalid PIN");
@@ -139,7 +148,15 @@ export default function VerifyQR() {
         },
       });
 
-      if (verifyError) throw verifyError;
+      if (verifyError) {
+        console.error("QR verification error:", verifyError);
+        const errorMsg = verifyError?.context?.body?.error || verifyError.message || "Failed to verify voucher";
+        setError(errorMsg);
+        setStep('preview');
+        toast.error(errorMsg);
+        setMerchantPin("");
+        return;
+      }
 
       if (verifyData.error) {
         setError(verifyData.error);
