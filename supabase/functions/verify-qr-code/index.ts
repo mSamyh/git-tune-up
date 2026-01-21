@@ -5,6 +5,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Tier defaults aligned with database (Bronze: 0, Silver: 500, Gold: 1000, Platinum: 2000)
+const DEFAULT_TIERS = [
+  { name: 'Platinum', discount: 15, minPoints: 2000 },
+  { name: 'Gold', discount: 10, minPoints: 1000 },
+  { name: 'Silver', discount: 5, minPoints: 500 },
+  { name: 'Bronze', discount: 0, minPoints: 0 },
+];
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -66,11 +74,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Redemption found, proceeding with validation
-
     // Validate merchant - REQUIRED
-    // Validating merchant authorization
-    
     const { data: merchantAccount, error: merchantError } = await supabase
       .from('merchant_accounts')
       .select('id, name, partner_id, is_active')
@@ -106,14 +110,11 @@ Deno.serve(async (req) => {
       console.error('Merchant-reward mismatch. Merchant partner_id:', merchantAccount.partner_id, 'Reward ID:', redemption.reward_id);
       return new Response(
         JSON.stringify({ 
-          error: 'This merchant is not authorized to verify this reward. Please use the correct merchant PIN.',
-          merchant_name: merchantAccount.name
+          error: `This merchant (${merchantAccount.name}) is not authorized to verify this reward. Please use the correct merchant PIN.`
         }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Merchant validated successfully
 
     // Check if reward program is still active
     const rewardProgramActive = redemption.reward_catalog?.is_active ?? false;
@@ -150,11 +151,12 @@ Deno.serve(async (req) => {
       settingsMap[setting.setting_key] = parseInt(setting.setting_value);
     });
 
+    // Use database values with aligned defaults
     const tiers = [
-      { name: 'Platinum', discount: settingsMap.tier_platinum_discount || 20, minPoints: settingsMap.tier_platinum_min || 1000 },
-      { name: 'Gold', discount: settingsMap.tier_gold_discount || 15, minPoints: settingsMap.tier_gold_min || 500 },
-      { name: 'Silver', discount: settingsMap.tier_silver_discount || 10, minPoints: settingsMap.tier_silver_min || 100 },
-      { name: 'Bronze', discount: settingsMap.tier_bronze_discount || 5, minPoints: settingsMap.tier_bronze_min || 0 },
+      { name: 'Platinum', discount: settingsMap.tier_platinum_discount ?? 15, minPoints: settingsMap.tier_platinum_min ?? 2000 },
+      { name: 'Gold', discount: settingsMap.tier_gold_discount ?? 10, minPoints: settingsMap.tier_gold_min ?? 1000 },
+      { name: 'Silver', discount: settingsMap.tier_silver_discount ?? 5, minPoints: settingsMap.tier_silver_min ?? 500 },
+      { name: 'Bronze', discount: settingsMap.tier_bronze_discount ?? 0, minPoints: settingsMap.tier_bronze_min ?? 0 },
     ];
 
     let donorTier = tiers[tiers.length - 1]; // Default to Bronze
@@ -167,7 +169,6 @@ Deno.serve(async (req) => {
 
     // Check if already verified
     if (redemption.status === 'verified') {
-      // Fetch merchant info if available
       let merchantName = null;
       if (redemption.verified_by_merchant_id) {
         const { data: merchant } = await supabase
@@ -180,7 +181,7 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({
-          error: 'This voucher has already been used',
+          error: `This voucher has already been redeemed${merchantName ? ` by ${merchantName}` : ''}`,
           redemption,
           profiles: donorProfile,
           reward_program_active: rewardProgramActive,
@@ -203,7 +204,7 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({
-          error: 'This QR code has expired',
+          error: 'This voucher has expired',
           redemption,
           profiles: donorProfile,
           reward_program_active: rewardProgramActive
@@ -218,15 +219,12 @@ Deno.serve(async (req) => {
       warningMessage = 'Note: This reward program is currently inactive, but this voucher is still valid.';
     }
 
-    // Build update object - include merchant_id if provided
+    // Build update object
     const updateData: Record<string, any> = {
       status: 'verified',
-      verified_at: now.toISOString()
+      verified_at: now.toISOString(),
+      verified_by_merchant_id: merchant_id
     };
-
-    if (merchant_id) {
-      updateData.verified_by_merchant_id = merchant_id;
-    }
 
     // Verify the QR code
     const { error: updateError } = await supabase
@@ -237,39 +235,27 @@ Deno.serve(async (req) => {
     if (updateError) {
       console.error('Error updating redemption:', updateError);
       return new Response(
-        JSON.stringify({ error: 'Failed to verify QR code' }),
+        JSON.stringify({ error: 'Failed to verify voucher. Please try again.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Fetch merchant name if merchant_id provided
-    let merchantName = null;
-    if (merchant_id) {
-      const { data: merchant } = await supabase
-        .from('merchant_accounts')
-        .select('name')
-        .eq('id', merchant_id)
-        .maybeSingle();
-      merchantName = merchant?.name;
-    }
-
-    // QR code verified successfully
+    console.log(`Voucher ${voucher_code} verified by merchant ${merchantAccount.name}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'QR code verified successfully',
+        message: 'Voucher verified successfully',
         warning: warningMessage,
         reward_program_active: rewardProgramActive,
         redemption: {
           ...redemption,
           status: 'verified',
           verified_at: now.toISOString(),
-          verified_by_merchant_id: merchant_id || null,
+          verified_by_merchant_id: merchant_id,
         },
         profiles: donorProfile,
-        verified_by_merchant: merchantName,
-        // Tier info for merchant to apply discount
+        verified_by_merchant: merchantAccount.name,
         tier: {
           name: donorTier.name,
           discount: donorTier.discount,
@@ -282,7 +268,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in verify-qr-code function:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error. Please try again.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

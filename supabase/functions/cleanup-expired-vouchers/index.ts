@@ -32,20 +32,22 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${expiredVouchers?.length || 0} expired vouchers to process`);
 
+    let refundedCount = 0;
+
     // Step 2: Process each expired voucher
     if (expiredVouchers && expiredVouchers.length > 0) {
       for (const voucher of expiredVouchers) {
         console.log(`Processing expired voucher: ${voucher.voucher_code}`);
 
         // Fetch current donor points
-        const { data: donorPoints, error: fetchError } = await supabase
+        const { data: donorPoints, error: pointsFetchError } = await supabase
           .from('donor_points')
           .select('total_points')
           .eq('donor_id', voucher.donor_id)
           .single();
 
-        if (fetchError || !donorPoints) {
-          console.error(`Failed to fetch points for voucher ${voucher.voucher_code}:`, fetchError);
+        if (pointsFetchError || !donorPoints) {
+          console.error(`Failed to fetch points for voucher ${voucher.voucher_code}:`, pointsFetchError);
           continue;
         }
 
@@ -63,13 +65,13 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Log transaction with 'expired' type
+        // Log transaction with standardized 'refunded' type
         await supabase
           .from('points_transactions')
           .insert({
             donor_id: voucher.donor_id,
             points: voucher.points_spent,
-            transaction_type: 'expired',
+            transaction_type: 'refunded',
             description: `Voucher expired - points auto-refunded (${voucher.voucher_code})`,
             related_redemption_id: voucher.id,
           });
@@ -80,6 +82,7 @@ Deno.serve(async (req) => {
           .update({ status: 'expired' })
           .eq('id', voucher.id);
 
+        refundedCount++;
         console.log(`Refunded ${voucher.points_spent} points for voucher ${voucher.voucher_code}`);
       }
     }
@@ -102,7 +105,7 @@ Deno.serve(async (req) => {
     }
 
     const summary = {
-      expired_and_refunded: expiredVouchers?.length || 0,
+      expired_and_refunded: refundedCount,
       deleted_old_vouchers: oldExpiredVouchers?.length || 0,
       timestamp: new Date().toISOString(),
     };

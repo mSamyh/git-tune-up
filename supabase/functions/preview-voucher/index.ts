@@ -5,6 +5,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Tier defaults aligned with database (Bronze: 0, Silver: 500, Gold: 1000, Platinum: 2000)
+const DEFAULT_TIERS = [
+  { name: 'Platinum', discount: 15, minPoints: 2000 },
+  { name: 'Gold', discount: 10, minPoints: 1000 },
+  { name: 'Silver', discount: 5, minPoints: 500 },
+  { name: 'Bronze', discount: 0, minPoints: 0 },
+];
+
+// Mask phone number for privacy (e.g., "***4567")
+function maskPhone(phone: string | null | undefined): string {
+  if (!phone) return '***';
+  const cleaned = phone.replace(/\D/g, '');
+  if (cleaned.length <= 4) return '***' + cleaned;
+  return '***' + cleaned.slice(-4);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -25,7 +41,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch the redemption record with reward details - READ ONLY, no updates
+    // Fetch the redemption record with reward details - READ ONLY
     const { data: redemption, error: fetchError } = await supabase
       .from('redemption_history')
       .select(`
@@ -57,8 +73,6 @@ Deno.serve(async (req) => {
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log('Voucher preview requested:', redemption.id, 'Status:', redemption.status);
 
     // Check if reward program is still active
     const rewardProgramActive = redemption.reward_catalog?.is_active ?? false;
@@ -95,11 +109,12 @@ Deno.serve(async (req) => {
       settingsMap[setting.setting_key] = parseInt(setting.setting_value);
     });
 
+    // Use database values with aligned defaults
     const tiers = [
-      { name: 'Platinum', discount: settingsMap.tier_platinum_discount || 20, minPoints: settingsMap.tier_platinum_min || 1000 },
-      { name: 'Gold', discount: settingsMap.tier_gold_discount || 15, minPoints: settingsMap.tier_gold_min || 500 },
-      { name: 'Silver', discount: settingsMap.tier_silver_discount || 10, minPoints: settingsMap.tier_silver_min || 100 },
-      { name: 'Bronze', discount: settingsMap.tier_bronze_discount || 5, minPoints: settingsMap.tier_bronze_min || 0 },
+      { name: 'Platinum', discount: settingsMap.tier_platinum_discount ?? 15, minPoints: settingsMap.tier_platinum_min ?? 2000 },
+      { name: 'Gold', discount: settingsMap.tier_gold_discount ?? 10, minPoints: settingsMap.tier_gold_min ?? 1000 },
+      { name: 'Silver', discount: settingsMap.tier_silver_discount ?? 5, minPoints: settingsMap.tier_silver_min ?? 500 },
+      { name: 'Bronze', discount: settingsMap.tier_bronze_discount ?? 0, minPoints: settingsMap.tier_bronze_min ?? 0 },
     ];
 
     let donorTier = tiers[tiers.length - 1]; // Default to Bronze
@@ -138,7 +153,7 @@ Deno.serve(async (req) => {
       displayStatus = 'expired';
     }
 
-    console.log('Voucher preview complete. Status:', displayStatus, 'Valid:', isValid);
+    console.log(`Voucher preview: ${voucher_code} - Status: ${displayStatus}, Valid: ${isValid}`);
 
     return new Response(
       JSON.stringify({
@@ -158,7 +173,7 @@ Deno.serve(async (req) => {
         },
         customer: {
           full_name: donorProfile?.full_name,
-          phone: donorProfile?.phone,
+          phone: maskPhone(donorProfile?.phone), // Masked for privacy
         },
         tier: {
           name: donorTier.name,
