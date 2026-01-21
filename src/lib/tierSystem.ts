@@ -10,11 +10,12 @@ export interface TierInfo {
   currentPoints?: number;
 }
 
+// Defaults aligned with database settings (Bronze: 0, Silver: 500, Gold: 1000, Platinum: 2000)
 const DEFAULT_TIERS: TierInfo[] = [
-  { name: 'Bronze', color: 'from-orange-400 to-orange-600', discount: 0, minPoints: 0, maxPoints: 99, icon: 'Award' },
-  { name: 'Silver', color: 'from-gray-300 to-gray-500', discount: 5, minPoints: 100, maxPoints: 499, icon: 'Medal' },
-  { name: 'Gold', color: 'from-yellow-400 to-yellow-600', discount: 10, minPoints: 500, maxPoints: 999, icon: 'Trophy' },
-  { name: 'Platinum', color: 'from-slate-400 to-slate-600', discount: 15, minPoints: 1000, maxPoints: null, icon: 'Crown' },
+  { name: 'Bronze', color: 'from-orange-400 to-orange-600', discount: 0, minPoints: 0, maxPoints: 499, icon: 'Award' },
+  { name: 'Silver', color: 'from-gray-300 to-gray-500', discount: 5, minPoints: 500, maxPoints: 999, icon: 'Medal' },
+  { name: 'Gold', color: 'from-yellow-400 to-yellow-600', discount: 10, minPoints: 1000, maxPoints: 1999, icon: 'Trophy' },
+  { name: 'Platinum', color: 'from-slate-400 to-slate-600', discount: 15, minPoints: 2000, maxPoints: null, icon: 'Crown' },
 ];
 
 /**
@@ -102,9 +103,10 @@ export async function getAllTiers(): Promise<TierInfo[]> {
   }
 }
 
+// Fallback tier calculation aligned with database thresholds
 function calculateTierLocally(points: number): TierInfo {
-  if (points >= 1000) return { ...DEFAULT_TIERS[3], currentPoints: points };
-  if (points >= 500) return { ...DEFAULT_TIERS[2], currentPoints: points };
-  if (points >= 100) return { ...DEFAULT_TIERS[1], currentPoints: points };
+  if (points >= 2000) return { ...DEFAULT_TIERS[3], currentPoints: points };
+  if (points >= 1000) return { ...DEFAULT_TIERS[2], currentPoints: points };
+  if (points >= 500) return { ...DEFAULT_TIERS[1], currentPoints: points };
   return { ...DEFAULT_TIERS[0], currentPoints: points };
 }

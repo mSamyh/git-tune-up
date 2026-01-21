@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     // Verify the redemption belongs to the user and get details
     const { data: redemption, error: fetchError } = await supabaseAdmin
       .from('redemption_history')
-      .select('donor_id, points_spent, status')
+      .select('donor_id, points_spent, status, voucher_code')
       .eq('id', redemption_id)
       .single();
 
@@ -106,19 +106,19 @@ Deno.serve(async (req) => {
         })
         .eq('donor_id', user.id);
 
-      // Record refund transaction with 'adjusted' type
+      // Record refund transaction with standardized 'refunded' type
       await supabaseAdmin
         .from('points_transactions')
         .insert({
           donor_id: user.id,
           points: redemption.points_spent,
-          transaction_type: 'adjusted',
-          description: 'Voucher deleted - points refunded',
+          transaction_type: 'refunded',
+          description: `Voucher cancelled - points refunded (${redemption.voucher_code})`,
           related_redemption_id: redemption_id,
         });
     }
 
-    console.log(`Voucher deleted successfully: ${redemption_id} by user ${user.id}`);
+    console.log(`Voucher ${redemption.voucher_code} deleted by user ${user.id}, ${redemption.points_spent} points refunded`);
 
     return new Response(
       JSON.stringify({
