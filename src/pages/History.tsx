@@ -8,15 +8,16 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { BottomNav } from "@/components/BottomNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppHeader } from "@/components/AppHeader";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar as CalendarIcon, Droplets, Award, TrendingUp, Building2, ChevronDown, History as HistoryIcon } from "lucide-react";
-import { format } from "date-fns";
+import { DonationHistoryByYear } from "@/components/DonationHistoryByYear";
+import { PointsHistoryPanel } from "@/components/PointsHistoryPanel";
+import { Plus, Calendar as CalendarIcon, Droplets, Award, TrendingUp, Timer, History as HistoryIcon, Coins } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { awardDonationPoints, getPointsPerDonation, syncLastDonationDate } from "@/lib/donationPoints";
 
@@ -46,51 +47,57 @@ const History = () => {
   const [donationCount, setDonationCount] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
   const [donations, setDonations] = useState<DonationRecord[]>([]);
-  const [openYears, setOpenYears] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState("donations");
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    checkAuth();
+    let isMounted = true;
+    
+    const loadData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      if (!isMounted) return;
+      setUserId(user.id);
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id, full_name, last_donation_date, user_type")
+        .eq("id", user.id)
+        .single();
+
+      if (!isMounted) return;
+      if (profileData) {
+        setProfile(profileData);
+      }
+
+      const { data: countData } = await supabase.rpc('get_donation_count', { donor_uuid: user.id });
+      if (!isMounted) return;
+      setDonationCount(countData || 0);
+
+      const { data: pointsData } = await supabase
+        .from("donor_points")
+        .select("total_points")
+        .eq("donor_id", user.id)
+        .maybeSingle();
+      
+      if (!isMounted) return;
+      setTotalPoints(pointsData?.total_points || 0);
+
+      await fetchDonations(user.id);
+      if (isMounted) setLoading(false);
+    };
+
+    loadData();
     fetchPointsSettings();
-  }, []);
-
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
     
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-
-    setUserId(user.id);
-
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("id, full_name, last_donation_date, user_type")
-      .eq("id", user.id)
-      .single();
-
-    if (profileData) {
-      setProfile(profileData);
-    }
-
-    const { data: countData } = await supabase.rpc('get_donation_count', { donor_uuid: user.id });
-    setDonationCount(countData || 0);
-
-    const { data: pointsData } = await supabase
-      .from("donor_points")
-      .select("total_points")
-      .eq("donor_id", user.id)
-      .maybeSingle();
-    
-    setTotalPoints(pointsData?.total_points || 0);
-
-    // Fetch donation history
-    await fetchDonations(user.id);
-
-    setLoading(false);
-  };
+    return () => { isMounted = false; };
+  }, [navigate]);
 
   const fetchDonations = async (donorId: string) => {
     const { data } = await supabase
@@ -101,24 +108,12 @@ const History = () => {
 
     if (data) {
       setDonations(data);
-      // Open the most recent year by default
-      if (data.length > 0) {
-        const mostRecentYear = new Date(data[0].donation_date).getFullYear().toString();
-        setOpenYears([mostRecentYear]);
-      }
     }
   };
 
   const fetchPointsSettings = async () => {
     const points = await getPointsPerDonation();
     setPointsPerDonation(points);
-  };
-
-  const awardPoints = async (donorId: string, donationId: string, hospitalName: string) => {
-    const awarded = await awardDonationPoints(donorId, donationId, hospitalName, pointsPerDonation);
-    if (awarded) {
-      setTotalPoints(prev => prev + pointsPerDonation);
-    }
   };
 
   const handleAddDonation = async () => {
@@ -164,10 +159,12 @@ const History = () => {
     }
 
     if (newDonation) {
-      await awardPoints(userId, newDonation.id, hospitalName.trim());
+      const awarded = await awardDonationPoints(userId, newDonation.id, hospitalName.trim(), pointsPerDonation);
+      if (awarded) {
+        setTotalPoints(prev => prev + pointsPerDonation);
+      }
     }
 
-    // Sync last donation date using shared utility
     await syncLastDonationDate(userId);
 
     const { notifyNewDonation } = await import("@/lib/telegramNotifications");
@@ -184,62 +181,49 @@ const History = () => {
     setDonationCount(prev => prev + 1);
     await fetchDonations(userId);
 
+    // Refetch profile to get updated last_donation_date
+    const { data: updatedProfile } = await supabase
+      .from("profiles")
+      .select("id, full_name, last_donation_date, user_type")
+      .eq("id", userId)
+      .single();
+    if (updatedProfile) setProfile(updatedProfile);
+
     toast({
       title: "Donation recorded",
       description: `You earned ${pointsPerDonation} points!`,
     });
   };
 
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const diffMonths = Math.floor(diffDays / 30);
-    const diffYears = Math.floor(diffDays / 365);
-
-    if (diffYears > 0) return `${diffYears}y ago`;
-    if (diffMonths > 0) return `${diffMonths}mo ago`;
-    if (diffDays > 0) return `${diffDays}d ago`;
-    return 'Today';
-  };
-
-  // Group donations by year
-  const donationsByYear = donations.reduce((acc, donation) => {
-    const year = new Date(donation.donation_date).getFullYear().toString();
-    if (!acc[year]) {
-      acc[year] = [];
-    }
-    acc[year].push(donation);
-    return acc;
-  }, {} as Record<string, DonationRecord[]>);
-
-  // Sort donations within each year
-  Object.keys(donationsByYear).forEach(year => {
-    donationsByYear[year].sort((a, b) => 
-      new Date(b.donation_date).getTime() - new Date(a.donation_date).getTime()
-    );
-  });
-
-  const sortedYears = Object.keys(donationsByYear).sort((a, b) => Number(b) - Number(a));
-
-  const toggleYear = (year: string) => {
-    setOpenYears(prev => 
-      prev.includes(year) 
-        ? prev.filter(y => y !== year)
-        : [...prev, year]
-    );
-  };
-
   const totalUnits = donations.reduce((sum, d) => sum + (d.units_donated || 1), 0);
   const isDonorType = profile?.user_type === 'donor' || profile?.user_type === 'both';
+
+  // Calculate days until eligible (90-day rule)
+  const getDaysUntilEligible = () => {
+    if (!profile?.last_donation_date) return 0;
+    const lastDonation = new Date(profile.last_donation_date);
+    const eligibleDate = new Date(lastDonation);
+    eligibleDate.setDate(eligibleDate.getDate() + 90);
+    const today = new Date();
+    const daysRemaining = differenceInDays(eligibleDate, today);
+    return Math.max(0, daysRemaining);
+  };
+
+  const daysUntilEligible = getDaysUntilEligible();
+  const daysSinceLastDonation = profile?.last_donation_date 
+    ? differenceInDays(new Date(), new Date(profile.last_donation_date))
+    : 0;
+  const eligibilityProgress = profile?.last_donation_date 
+    ? Math.min(100, (daysSinceLastDonation / 90) * 100)
+    : 100;
+  const isEligible = daysUntilEligible === 0;
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background pb-20">
         <AppHeader />
         <main className="container mx-auto px-4 py-6 max-w-lg">
-          <Skeleton className="h-[450px] w-full rounded-2xl" />
+          <Skeleton className="h-[500px] w-full rounded-2xl" />
         </main>
         <BottomNav />
       </div>
@@ -251,120 +235,153 @@ const History = () => {
       <AppHeader />
 
       <main className="container mx-auto px-4 py-4 max-w-2xl animate-fade-in">
-        <Card className="rounded-2xl border-border/50 shadow-soft overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <HistoryIcon className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-display">Donation History</CardTitle>
-                <CardDescription className="text-xs">Your blood donation records</CardDescription>
-              </div>
+        {/* Header Section */}
+        <div className="mb-4">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-sm">
+              <HistoryIcon className="h-5 w-5 text-primary" />
             </div>
-          </CardHeader>
-
-          {/* Quick Stats */}
-          <div className="px-6 pb-4">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="p-3 rounded-2xl bg-green-500/5 border border-green-500/10 text-center">
-                <Droplets className="h-5 w-5 text-green-600 mx-auto mb-1.5" />
-                <p className="text-base font-semibold text-green-600">{donationCount}</p>
-                <p className="text-[10px] text-muted-foreground">Donations</p>
-              </div>
-              <div className="p-3 rounded-2xl bg-amber-500/5 border border-amber-500/10 text-center">
-                <Award className="h-5 w-5 text-amber-600 mx-auto mb-1.5" />
-                <p className="text-base font-semibold text-amber-600">{totalPoints}</p>
-                <p className="text-[10px] text-muted-foreground">Points</p>
-              </div>
-              <div className="p-3 rounded-2xl bg-blue-500/5 border border-blue-500/10 text-center">
-                <TrendingUp className="h-5 w-5 text-blue-600 mx-auto mb-1.5" />
-                <p className="text-base font-semibold text-blue-600">{totalUnits}</p>
-                <p className="text-[10px] text-muted-foreground">Units</p>
-              </div>
+            <div>
+              <h1 className="text-xl font-display font-bold">Donation History</h1>
+              <p className="text-xs text-muted-foreground">Your blood donation journey</p>
             </div>
           </div>
+        </div>
 
-          <CardContent className="pt-0">
-            {donations.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Droplets className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No donations yet</p>
-                <p className="text-xs">Tap + to record your first donation</p>
-              </div>
-            ) : (
-              <ScrollArea className="h-[320px]">
-                <div className="space-y-2 pr-3">
-                  {sortedYears.map((year) => {
-                    const yearDonations = donationsByYear[year];
-                    const yearUnits = yearDonations.reduce((sum, d) => sum + (d.units_donated || 1), 0);
-                    const isOpen = openYears.includes(year);
-
-                    return (
-                      <Collapsible key={year} open={isOpen} onOpenChange={() => toggleYear(year)}>
-                        <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/40 hover:bg-muted/60 rounded-xl transition-colors">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                              <CalendarIcon className="h-4 w-4 text-primary" />
-                            </div>
-                            <span className="font-semibold text-sm">{year}</span>
-                            <Badge variant="secondary" className="rounded-full text-[10px] px-2 h-5">
-                              {yearDonations.length} donation{yearDonations.length !== 1 ? 's' : ''}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground font-medium">{yearUnits}u</span>
-                            <ChevronDown className={cn(
-                              "h-4 w-4 text-muted-foreground transition-transform duration-200",
-                              isOpen && "rotate-180"
-                            )} />
-                          </div>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="pt-2">
-                          <div className="space-y-1.5 ml-3 pl-3 border-l-2 border-primary/20">
-                            {yearDonations.map((donation) => (
-                              <div 
-                                key={donation.id} 
-                                className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
-                              >
-                                <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center flex-shrink-0 shadow-sm">
-                                  <Droplets className="h-4 w-4 text-primary" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5 mb-0.5">
-                                    <Badge className="bg-green-500/10 text-green-600 border-0 text-xs">Donated</Badge>
-                                  </div>
-                                  <p className="text-xs text-muted-foreground line-clamp-1 flex items-center gap-1">
-                                    <Building2 className="h-3 w-3" />
-                                    {donation.hospital_name}
-                                  </p>
-                                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                                    {format(new Date(donation.donation_date), "MMM d, yyyy")} • {getTimeAgo(donation.donation_date)}
-                                  </p>
-                                </div>
-                                <div className="text-right flex-shrink-0 font-bold text-sm text-primary">
-                                  {donation.units_donated || 1}
-                                  <span className="text-[10px] font-normal text-muted-foreground block">unit{(donation.units_donated || 1) !== 1 ? 's' : ''}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
+        {/* Interactive Stats Row */}
+        <div className="grid grid-cols-3 gap-2.5 mb-4">
+          <button
+            onClick={() => setActiveTab("donations")}
+            className={cn(
+              "p-3 rounded-2xl text-center transition-all btn-press",
+              activeTab === "donations"
+                ? "bg-primary/10 ring-2 ring-primary/30"
+                : "bg-muted/50 hover:bg-muted/70"
             )}
-          </CardContent>
-        </Card>
+          >
+            <Droplets className={cn(
+              "h-5 w-5 mx-auto mb-1.5 transition-colors",
+              activeTab === "donations" ? "text-primary" : "text-muted-foreground"
+            )} />
+            <p className={cn(
+              "text-lg font-bold transition-colors",
+              activeTab === "donations" ? "text-primary" : "text-foreground"
+            )}>{donationCount}</p>
+            <p className="text-[10px] text-muted-foreground">Donations</p>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab("points")}
+            className={cn(
+              "p-3 rounded-2xl text-center transition-all btn-press",
+              activeTab === "points"
+                ? "bg-amber-500/10 ring-2 ring-amber-500/30"
+                : "bg-muted/50 hover:bg-muted/70"
+            )}
+          >
+            <Award className={cn(
+              "h-5 w-5 mx-auto mb-1.5 transition-colors",
+              activeTab === "points" ? "text-amber-600" : "text-muted-foreground"
+            )} />
+            <p className={cn(
+              "text-lg font-bold transition-colors",
+              activeTab === "points" ? "text-amber-600" : "text-foreground"
+            )}>{totalPoints}</p>
+            <p className="text-[10px] text-muted-foreground">Points</p>
+          </button>
+          
+          <div className="p-3 rounded-2xl bg-muted/50 text-center">
+            <TrendingUp className="h-5 w-5 text-muted-foreground mx-auto mb-1.5" />
+            <p className="text-lg font-bold">{totalUnits}</p>
+            <p className="text-[10px] text-muted-foreground">Units</p>
+          </div>
+        </div>
+
+        {/* Eligibility Progress Card */}
+        {profile?.last_donation_date && donationCount > 0 && (
+          <Card className="rounded-2xl border-border/50 shadow-soft mb-4 overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center",
+                  isEligible 
+                    ? "bg-green-500/10" 
+                    : "bg-amber-500/10"
+                )}>
+                  <Timer className={cn(
+                    "h-5 w-5",
+                    isEligible ? "text-green-600" : "text-amber-600"
+                  )} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    {isEligible 
+                      ? "You're eligible to donate!" 
+                      : `${daysUntilEligible} days until eligible`
+                    }
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Last donation: {format(new Date(profile.last_donation_date), "MMM d, yyyy")}
+                  </p>
+                </div>
+              </div>
+              <Progress 
+                value={eligibilityProgress} 
+                className={cn(
+                  "h-2",
+                  isEligible && "[&>div]:bg-green-500"
+                )}
+              />
+              <div className="flex justify-between mt-1.5">
+                <span className="text-[10px] text-muted-foreground">Day {Math.min(90, daysSinceLastDonation)}</span>
+                <span className="text-[10px] text-muted-foreground">90 days</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tabbed Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 h-11 rounded-xl bg-muted/50 p-1">
+            <TabsTrigger value="donations" className="rounded-lg text-sm data-[state=active]:shadow-sm">
+              <Droplets className="h-4 w-4 mr-1.5" />
+              Donations
+            </TabsTrigger>
+            <TabsTrigger value="points" className="rounded-lg text-sm data-[state=active]:shadow-sm">
+              <Coins className="h-4 w-4 mr-1.5" />
+              Points
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="donations" className="mt-4">
+            <Card className="rounded-2xl border-border/50 shadow-soft overflow-hidden">
+              <CardHeader className="pb-2 pt-4">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base">Blood Donations</CardTitle>
+                </div>
+                <CardDescription className="text-xs">
+                  Your past donations grouped by year
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pb-4">
+                {userId && (
+                  <DonationHistoryByYear donorId={userId} variant="standalone" />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="points" className="mt-4">
+            {userId && <PointsHistoryPanel userId={userId} />}
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Floating Add Button */}
       {isDonorType && (
         <Button
           size="lg"
-          className="fixed bottom-24 right-4 h-14 w-14 rounded-2xl shadow-primary-glow z-50 btn-press"
+          className="fixed bottom-24 right-4 h-14 w-14 rounded-2xl shadow-lg z-50 btn-press"
           onClick={() => setShowAddDialog(true)}
         >
           <Plus className="h-6 w-6" />
@@ -374,13 +391,13 @@ const History = () => {
       {/* Add Donation Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-sm rounded-2xl">
-          <DialogHeader>
+          <DialogHeader className="px-4 py-3 border-b border-border/50">
             <DialogTitle>Add Donation</DialogTitle>
             <DialogDescription>
               Record a new blood donation. You'll earn {pointsPerDonation} points!
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 p-4">
             <div className="space-y-2">
               <Label>Donation Date</Label>
               <Popover>
@@ -388,7 +405,7 @@ const History = () => {
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal rounded-xl",
+                      "w-full justify-start text-left font-normal h-11 rounded-xl",
                       !tempDonationDate && "text-muted-foreground"
                     )}
                   >
@@ -401,24 +418,12 @@ const History = () => {
                     mode="single"
                     selected={tempDonationDate}
                     onSelect={setTempDonationDate}
-                    disabled={(date) => {
-                      if (date > new Date()) return true;
-                      if (profile?.last_donation_date && donationCount > 0) {
-                        const existingDate = new Date(profile.last_donation_date);
-                        if (date < existingDate) return true;
-                      }
-                      return false;
-                    }}
+                    disabled={(date) => date > new Date()}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
                 </PopoverContent>
               </Popover>
-              {donationCount > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  You can only add dates newer than your last donation.
-                </p>
-              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="hospital">Hospital Name</Label>
@@ -427,11 +432,11 @@ const History = () => {
                 placeholder="Enter hospital name"
                 value={hospitalName}
                 onChange={(e) => setHospitalName(e.target.value)}
-                className="rounded-xl"
+                className="h-11 rounded-xl"
               />
             </div>
           </div>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 px-4 py-3 border-t border-border/50">
             <Button
               variant="outline"
               className="rounded-xl"
@@ -444,11 +449,11 @@ const History = () => {
               Cancel
             </Button>
             <Button 
-              onClick={handleAddDonation} 
+              className="rounded-xl btn-press"
+              onClick={handleAddDonation}
               disabled={!tempDonationDate || !hospitalName.trim()}
-              className="rounded-xl"
             >
-              Save
+              Add Donation
             </Button>
           </DialogFooter>
         </DialogContent>
