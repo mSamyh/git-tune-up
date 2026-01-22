@@ -1157,6 +1157,18 @@ export type Database = {
         Args: { p_donor_id: string }
         Returns: undefined
       }
+      validate_points_integrity: {
+        Args: never
+        Returns: {
+          calculated_lifetime: number
+          calculated_total: number
+          discrepancy: number
+          donor_id: string
+          donor_name: string
+          stored_lifetime: number
+          stored_total: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
