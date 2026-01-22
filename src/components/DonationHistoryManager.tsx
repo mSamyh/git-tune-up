@@ -61,6 +61,7 @@ export const DonationHistoryManager = () => {
   const [editUnits, setEditUnits] = useState("1");
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const [pointsPerDonation, setPointsPerDonation] = useState(100);
@@ -349,39 +350,47 @@ export const DonationHistoryManager = () => {
   };
 
   const deleteDonation = async (donation: any) => {
-    await deductPoints(donation.donor_id, donation.id, donation.hospital_name);
+    // Prevent double-click race condition
+    if (deletingId === donation.id) return;
+    setDeletingId(donation.id);
+    
+    try {
+      await deductPoints(donation.donor_id, donation.id, donation.hospital_name);
 
-    const { error } = await supabase
-      .from("donation_history")
-      .delete()
-      .eq("id", donation.id);
-
-    if (!error) {
-      const { data: remaining } = await supabase
+      const { error } = await supabase
         .from("donation_history")
-        .select("donation_date")
-        .eq("donor_id", donation.donor_id)
-        .order("donation_date", { ascending: false })
-        .limit(1);
+        .delete()
+        .eq("id", donation.id);
 
-      if (!remaining || remaining.length === 0) {
-        await supabase
-          .from("profiles")
-          .update({ 
-            last_donation_date: null,
-            availability_status: 'available'
-          })
-          .eq("id", donation.donor_id);
-      } else {
-        await supabase
-          .from("profiles")
-          .update({ last_donation_date: remaining[0].donation_date })
-          .eq("id", donation.donor_id);
+      if (!error) {
+        const { data: remaining } = await supabase
+          .from("donation_history")
+          .select("donation_date")
+          .eq("donor_id", donation.donor_id)
+          .order("donation_date", { ascending: false })
+          .limit(1);
+
+        if (!remaining || remaining.length === 0) {
+          await supabase
+            .from("profiles")
+            .update({ 
+              last_donation_date: null,
+              availability_status: 'available'
+            })
+            .eq("id", donation.donor_id);
+        } else {
+          await supabase
+            .from("profiles")
+            .update({ last_donation_date: remaining[0].donation_date })
+            .eq("id", donation.donor_id);
+        }
+
+        toast({ title: "Donation deleted" });
+        await fetchDonations();
+        await fetchDonors();
       }
-
-      toast({ title: "Donation deleted" });
-      await fetchDonations();
-      await fetchDonors();
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -787,12 +796,13 @@ export const DonationHistoryManager = () => {
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button
+                              <Button
                                   variant="destructive"
                                   size="sm"
                                   onClick={() => deleteDonation(donation)}
+                                  disabled={deletingId === donation.id}
                                 >
-                                  <Trash className="h-4 w-4" />
+                                  <Trash className={cn("h-4 w-4", deletingId === donation.id && "animate-pulse")} />
                                 </Button>
                               </div>
                             </TableCell>

@@ -102,9 +102,9 @@ export function RewardsSection({ userId }: RewardsSectionProps) {
         settings.forEach(s => settingsMap[s.setting_key] = parseInt(s.setting_value));
         
         const tiers = [
-          { name: "Silver", minPoints: settingsMap.tier_silver_min || 100 },
-          { name: "Gold", minPoints: settingsMap.tier_gold_min || 500 },
-          { name: "Platinum", minPoints: settingsMap.tier_platinum_min || 1000 },
+          { name: "Silver", minPoints: settingsMap.tier_silver_min || 500 },
+          { name: "Gold", minPoints: settingsMap.tier_gold_min || 1000 },
+          { name: "Platinum", minPoints: settingsMap.tier_platinum_min || 2000 },
         ];
         
         const next = tiers.find(t => pointsData.total_points < t.minPoints);

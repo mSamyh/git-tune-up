@@ -35,37 +35,45 @@ export function PointsHistoryPanel({ userId }: PointsHistoryPanelProps) {
   const [stats, setStats] = useState({ earned: 0, spent: 0, refunded: 0 });
 
   useEffect(() => {
+    let isMounted = true;
+    
+    const fetchTransactions = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("points_transactions")
+        .select("*")
+        .eq("donor_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (!isMounted) return;
+      
+      if (!error && data) {
+        setTransactions(data);
+        
+        // Calculate stats - include 'refunded' transaction type
+        const earned = data.filter(t => t.points > 0 && t.transaction_type === "earned")
+          .reduce((sum, t) => sum + t.points, 0);
+        const spent = Math.abs(data.filter(t => t.points < 0 && t.transaction_type === "redeemed")
+          .reduce((sum, t) => sum + t.points, 0));
+        const refunded = data.filter(t => 
+          t.points > 0 && 
+          (t.transaction_type === "adjusted" || t.transaction_type === "expired" || t.transaction_type === "refunded")
+        ).reduce((sum, t) => sum + t.points, 0);
+        
+        setStats({ earned, spent, refunded });
+      }
+      setLoading(false);
+    };
+    
     fetchTransactions();
+    return () => { isMounted = false; };
   }, [userId]);
-
-  const fetchTransactions = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("points_transactions")
-      .select("*")
-      .eq("donor_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (!error && data) {
-      setTransactions(data);
-      
-      // Calculate stats
-      const earned = data.filter(t => t.points > 0 && t.transaction_type === "earned")
-        .reduce((sum, t) => sum + t.points, 0);
-      const spent = Math.abs(data.filter(t => t.points < 0 && t.transaction_type === "redeemed")
-        .reduce((sum, t) => sum + t.points, 0));
-      const refunded = data.filter(t => t.points > 0 && (t.transaction_type === "adjusted" || t.transaction_type === "expired"))
-        .reduce((sum, t) => sum + t.points, 0);
-      
-      setStats({ earned, spent, refunded });
-    }
-    setLoading(false);
-  };
 
   const getTransactionIcon = (type: string, points: number) => {
     if (type === "earned") return <Droplets className="h-4 w-4 text-primary" />;
     if (type === "redeemed") return <Gift className="h-4 w-4 text-orange-500" />;
+    if (type === "refunded") return <RefreshCw className="h-4 w-4 text-green-500" />;
     if (type === "expired" || type === "adjusted") {
       return points > 0 
         ? <RefreshCw className="h-4 w-4 text-green-500" />
@@ -88,6 +96,9 @@ export function PointsHistoryPanel({ userId }: PointsHistoryPanelProps) {
     }
     if (type === "expired") {
       return <Badge className="bg-purple-500/10 text-purple-600 border-0 text-xs">Expired Refund</Badge>;
+    }
+    if (type === "refunded") {
+      return <Badge className="bg-green-500/10 text-green-600 border-0 text-xs">Refunded</Badge>;
     }
     return <Badge variant="outline" className="text-xs">{type}</Badge>;
   };
