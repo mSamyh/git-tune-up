@@ -24,6 +24,7 @@ const RequestBlood = () => {
     ? emergencyTypes 
     : FALLBACK_EMERGENCY_TYPES;
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedAtoll, setSelectedAtoll] = useState("");
   const [selectedIsland, setSelectedIsland] = useState("");
   const [neededBeforeOption, setNeededBeforeOption] = useState("");
@@ -45,6 +46,10 @@ const RequestBlood = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent double-submit
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     setLoading(true);
 
     try {
@@ -127,6 +132,7 @@ const RequestBlood = () => {
     }
 
     setLoading(false);
+    setIsSubmitting(false);
   };
 
   return (

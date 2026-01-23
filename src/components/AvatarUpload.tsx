@@ -81,9 +81,11 @@ export const AvatarUpload = ({ currentAvatarUrl, userName, onUploadComplete, siz
   };
 
   const uploadAvatar = async () => {
-    if (!imageSrc || !croppedAreaPixels) return;
+    if (!imageSrc || !croppedAreaPixels || uploading) return;
 
     setUploading(true);
+    let isCancelled = false;
+    
     try {
       const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
       
@@ -99,6 +101,7 @@ export const AvatarUpload = ({ currentAvatarUrl, userName, onUploadComplete, siz
           upsert: true,
         });
 
+      if (isCancelled) return;
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
@@ -110,6 +113,7 @@ export const AvatarUpload = ({ currentAvatarUrl, userName, onUploadComplete, siz
         .update({ avatar_url: publicUrl })
         .eq("id", user.id);
 
+      if (isCancelled) return;
       if (updateError) throw updateError;
 
       toast({
@@ -121,13 +125,17 @@ export const AvatarUpload = ({ currentAvatarUrl, userName, onUploadComplete, siz
       setIsOpen(false);
       setImageSrc(null);
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Upload failed",
-        description: error.message,
-      });
+      if (!isCancelled) {
+        toast({
+          variant: "destructive",
+          title: "Upload failed",
+          description: error.message,
+        });
+      }
     } finally {
-      setUploading(false);
+      if (!isCancelled) {
+        setUploading(false);
+      }
     }
   };
 
