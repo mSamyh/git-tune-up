@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
@@ -6,16 +6,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Droplet, Search, Heart } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Droplet, Search, Heart, HelpCircle, Shield, Settings, Users, Info, BookOpen, X, MessageCircle, ChevronRight, Sparkles } from "lucide-react";
 
 const FAQ = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const navigate = useNavigate();
+  const categoryRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const faqCategories = [
     {
       category: "Getting Started",
       icon: Heart,
+      color: "from-rose-500 to-pink-500",
       questions: [
         {
           q: "What is LeyHadhiya?",
@@ -38,6 +42,7 @@ const FAQ = () => {
     {
       category: "For Blood Donors",
       icon: Droplet,
+      color: "from-red-500 to-rose-500",
       questions: [
         {
           q: "What blood groups are needed?",
@@ -76,6 +81,7 @@ const FAQ = () => {
     {
       category: "Requesting Blood",
       icon: Search,
+      color: "from-blue-500 to-cyan-500",
       questions: [
         {
           q: "How do I request blood for a patient?",
@@ -109,7 +115,8 @@ const FAQ = () => {
     },
     {
       category: "Profile & Settings",
-      icon: Heart,
+      icon: Settings,
+      color: "from-violet-500 to-purple-500",
       questions: [
         {
           q: "How do I update my location?",
@@ -139,7 +146,8 @@ const FAQ = () => {
     },
     {
       category: "Safety & Privacy",
-      icon: Heart,
+      icon: Shield,
+      color: "from-emerald-500 to-green-500",
       questions: [
         {
           q: "Is my personal information secure?",
@@ -161,7 +169,8 @@ const FAQ = () => {
     },
     {
       category: "Technical & Troubleshooting",
-      icon: Search,
+      icon: HelpCircle,
+      color: "from-amber-500 to-orange-500",
       questions: [
         {
           q: "I didn't receive the OTP code. What should I do?",
@@ -191,7 +200,8 @@ const FAQ = () => {
     },
     {
       category: "For Administrators",
-      icon: Heart,
+      icon: Users,
+      color: "from-indigo-500 to-blue-500",
       questions: [
         {
           q: "How do I access the admin panel?",
@@ -217,7 +227,8 @@ const FAQ = () => {
     },
     {
       category: "Blood Donation Facts",
-      icon: Droplet,
+      icon: BookOpen,
+      color: "from-pink-500 to-rose-500",
       questions: [
         {
           q: "Who can donate blood?",
@@ -247,14 +258,26 @@ const FAQ = () => {
     }
   ];
 
+  // Most asked questions (featured)
+  const mostAskedQuestions = [
+    { q: "What is LeyHadhiya?", category: "Getting Started" },
+    { q: "How often can I donate blood?", category: "For Blood Donors" },
+    { q: "How do I request blood for a patient?", category: "Requesting Blood" },
+    { q: "Is the service free?", category: "Getting Started" },
+  ];
+
   const allQuestions = faqCategories.flatMap(cat => 
     cat.questions.map(q => ({ ...q, category: cat.category }))
   );
+
+  const totalQuestions = allQuestions.length;
+  const totalCategories = faqCategories.length;
 
   const filteredCategories = searchQuery
     ? [{
         category: "Search Results",
         icon: Search,
+        color: "from-primary to-primary/80",
         questions: allQuestions.filter(q => 
           q.q.toLowerCase().includes(searchQuery.toLowerCase()) ||
           q.a.toLowerCase().includes(searchQuery.toLowerCase())
@@ -262,23 +285,49 @@ const FAQ = () => {
       }]
     : faqCategories;
 
+  const scrollToCategory = (categoryName: string) => {
+    setActiveCategory(categoryName);
+    const ref = categoryRefs.current[categoryName];
+    if (ref) {
+      ref.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <AppHeader />
 
       <main className="container mx-auto px-4 py-6 max-w-2xl animate-fade-in">
-        {/* Header */}
-        <section className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-3xl bg-primary/10 mb-4">
-            <Heart className="h-7 w-7 text-primary" />
+        {/* Enhanced Header with Stats */}
+        <section className="relative text-center mb-6 overflow-hidden">
+          {/* Decorative background blur */}
+          <div className="absolute inset-0 -z-10">
+            <div className="absolute top-0 left-1/4 w-32 h-32 bg-primary/20 rounded-full blur-3xl" />
+            <div className="absolute top-4 right-1/4 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl" />
+          </div>
+          
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 mb-4 shadow-lg">
+            <HelpCircle className="h-8 w-8 text-primary" />
           </div>
           <h1 className="font-display text-2xl font-bold mb-2">Frequently Asked Questions</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mb-4">
             Everything you need to know about LeyHadhiya
           </p>
+          
+          {/* Quick Stats */}
+          <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full">
+              <Info className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium">{totalQuestions} Questions</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full">
+              <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium">{totalCategories} Topics</span>
+            </div>
+          </div>
         </section>
 
-        {/* Search */}
+        {/* Enhanced Search */}
         <Card className="mb-6 rounded-2xl border-border/50 shadow-soft">
           <CardContent className="pt-5 pb-4">
             <div className="relative">
@@ -286,48 +335,124 @@ const FAQ = () => {
               <Input
                 type="search"
                 placeholder="Search for answers..."
-                className="pl-10 rounded-xl h-10 bg-secondary/50 border-0"
+                className="pl-10 pr-10 rounded-xl h-11 bg-secondary/50 border-0"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded-full transition-colors"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              )}
             </div>
+            {searchQuery && (
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Found {filteredCategories[0].questions.length} result{filteredCategories[0].questions.length !== 1 ? 's' : ''}
+              </p>
+            )}
           </CardContent>
         </Card>
 
-        {filteredCategories.map((category, idx) => (
-          <Card key={idx} className="mb-4 rounded-2xl border-border/50 shadow-soft">
+        {/* Category Quick Navigation - Only show when not searching */}
+        {!searchQuery && (
+          <div className="mb-6 -mx-4 px-4 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 pb-2">
+              {faqCategories.map((cat) => (
+                <button
+                  key={cat.category}
+                  onClick={() => scrollToCategory(cat.category)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
+                    activeCategory === cat.category
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <cat.icon className="h-3.5 w-3.5" />
+                  {cat.category}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Most Asked Section - Only show when not searching */}
+        {!searchQuery && (
+          <Card className="mb-6 rounded-2xl border-border/50 shadow-soft bg-gradient-to-br from-primary/5 via-background to-rose-500/5">
             <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-9 h-9 rounded-2xl bg-primary/10">
-                  <category.icon className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="font-display text-base">{category.category}</CardTitle>
-                  <CardDescription className="text-xs">{category.questions.length} questions</CardDescription>
-                </div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <CardTitle className="font-display text-sm">Most Asked</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="pt-0">
-              <Accordion type="single" collapsible className="w-full">
-                {category.questions.map((item, qIdx) => (
-                  <AccordionItem key={qIdx} value={`item-${idx}-${qIdx}`} className="border-border/50">
-                    <AccordionTrigger className="text-left text-sm py-3 hover:no-underline">
-                      {item.q}
-                    </AccordionTrigger>
-                    <AccordionContent className="text-sm text-muted-foreground pb-4">
-                      {item.a}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+            <CardContent className="pt-0 space-y-2">
+              {mostAskedQuestions.map((item, idx) => {
+                const fullQuestion = allQuestions.find(q => q.q === item.q);
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => scrollToCategory(item.category)}
+                    className="w-full flex items-center justify-between p-3 bg-background/80 hover:bg-background rounded-xl transition-colors text-left group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.q}</p>
+                      <p className="text-xs text-muted-foreground">{item.category}</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0 ml-2" />
+                  </button>
+                );
+              })}
             </CardContent>
           </Card>
+        )}
+
+        {/* FAQ Categories */}
+        {filteredCategories.map((category, idx) => (
+          <div 
+            key={idx} 
+            ref={(el) => { categoryRefs.current[category.category] = el; }}
+            className="scroll-mt-4"
+          >
+            <Card className="mb-4 rounded-2xl border-border/50 shadow-soft hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-br ${category.color} shadow-sm`}>
+                    <category.icon className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="font-display text-base">{category.category}</CardTitle>
+                    <CardDescription className="text-xs">{category.questions.length} questions</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Accordion type="single" collapsible className="w-full">
+                  {category.questions.map((item, qIdx) => (
+                    <AccordionItem key={qIdx} value={`item-${idx}-${qIdx}`} className="border-border/50">
+                      <AccordionTrigger className="text-left text-sm py-3 hover:no-underline hover:text-primary transition-colors">
+                        {item.q}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground pb-4 animate-fade-in">
+                        {item.a}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </CardContent>
+            </Card>
+          </div>
         ))}
 
         {searchQuery && filteredCategories[0].questions.length === 0 && (
           <Card className="rounded-2xl border-border/50">
             <CardContent className="py-10 text-center">
-              <p className="text-sm text-muted-foreground mb-3">No results found for "{searchQuery}"</p>
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-3">
+                <Search className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium mb-1">No results found</p>
+              <p className="text-xs text-muted-foreground mb-3">Try different keywords or browse categories</p>
               <Button variant="secondary" size="sm" onClick={() => setSearchQuery("")} className="rounded-xl">
                 Clear Search
               </Button>
@@ -335,15 +460,29 @@ const FAQ = () => {
           </Card>
         )}
 
-        <Card className="mt-6 rounded-2xl bg-primary/5 border-primary/10">
-          <CardContent className="py-6 text-center">
-            <h3 className="font-display font-semibold mb-1">Still have questions?</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Can't find the answer you're looking for?
-            </p>
-            <Button onClick={() => navigate("/")} className="rounded-xl">
-              Back to Home
-            </Button>
+        {/* Contact Support Section */}
+        <Card className="mt-6 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/10">
+          <CardContent className="py-6">
+            <div className="text-center mb-4">
+              <h3 className="font-display font-semibold mb-1">Still have questions?</h3>
+              <p className="text-sm text-muted-foreground">
+                Can't find the answer you're looking for?
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button 
+                variant="secondary" 
+                onClick={() => navigate("/about")} 
+                className="rounded-xl"
+              >
+                <Info className="h-4 w-4 mr-2" />
+                About Us
+              </Button>
+              <Button onClick={() => navigate("/")} className="rounded-xl">
+                <Heart className="h-4 w-4 mr-2" />
+                Back to Home
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </main>

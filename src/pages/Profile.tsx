@@ -65,42 +65,48 @@ const Profile = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchProfile();
+    let isMounted = true;
+    
+    const loadData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (!isMounted) return;
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error loading profile",
+          description: error.message,
+        });
+      } else if (data) {
+        setProfile(data);
+        setAvailabilityStatus(data.availability_status || 'available');
+        setUserType(data.user_type || 'donor');
+        setSelectedAtoll(data.atoll || '');
+        setSelectedIsland(data.island || '');
+        setEditBio(data.bio || '');
+      }
+
+      setLoading(false);
+    };
+    
+    loadData();
     fetchDonationCount();
     fetchPoints();
-  }, []);
-
-  const fetchProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
     
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error loading profile",
-        description: error.message,
-      });
-    } else if (data) {
-      setProfile(data);
-      setAvailabilityStatus(data.availability_status || 'available');
-      setUserType(data.user_type || 'donor');
-      setSelectedAtoll(data.atoll || '');
-      setSelectedIsland(data.island || '');
-      setEditBio(data.bio || '');
-    }
-
-    setLoading(false);
-  };
+    return () => { isMounted = false; };
+  }, [navigate, toast]);
 
   const fetchDonationCount = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -204,7 +210,13 @@ const Profile = () => {
       toast({ variant: "destructive", title: "Update failed", description: error.message });
     } else {
       toast({ title: "Location updated" });
-      fetchProfile();
+      // Refetch profile data
+      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      if (data) {
+        setProfile(data);
+        setSelectedAtoll(data.atoll || '');
+        setSelectedIsland(data.island || '');
+      }
     }
   };
 

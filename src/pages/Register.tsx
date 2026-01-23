@@ -16,6 +16,7 @@ const Register = () => {
   const { bloodGroupCodes } = useReferenceData();
   const bloodGroups = bloodGroupCodes.length > 0 ? bloodGroupCodes : FALLBACK_BLOOD_GROUPS;
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
@@ -221,6 +222,10 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent double-submit
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     setLoading(true);
 
     try {
@@ -313,6 +318,7 @@ const Register = () => {
     }
 
     setLoading(false);
+    setIsSubmitting(false);
   };
 
   // Step indicator
