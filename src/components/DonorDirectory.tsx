@@ -134,14 +134,14 @@ const DonorDirectory = () => {
       return <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-xs">Available</Badge>;
     }
     if (status === "reserved") {
-      // Show reservation month if available
+      // Show reservation month if available - "Reserved for Feb 2026"
       if (donor.reserved_until) {
         const date = new Date(donor.reserved_until);
         const monthName = date.toLocaleDateString('en-US', { month: 'short' });
         const year = date.getFullYear();
         return (
           <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs">
-            Reserved • {monthName} {year}
+            Reserved for {monthName} {year}
           </Badge>
         );
       }
@@ -280,13 +280,19 @@ const DonorDirectory = () => {
                 {getStatusBadge(donor)}
               </div>
             </div>
-            {/* Show status note for unavailable donors */}
+            {/* Instagram Notes style speech bubble for status note */}
             {donor.availability_status === "unavailable" && donor.status_note && (
-              <p className="text-xs text-muted-foreground/80 mt-2 italic line-clamp-1">
-                "{donor.status_note}"
-              </p>
+              <div className="mt-2 relative inline-block max-w-full">
+                <div className="bg-muted/60 rounded-xl px-3 py-1.5 relative">
+                  <p className="text-xs text-muted-foreground line-clamp-1">
+                    {donor.status_note}
+                  </p>
+                  {/* Speech bubble tail */}
+                  <div className="absolute -top-1 left-3 w-2 h-2 bg-muted/60 rotate-45" />
+                </div>
+              </div>
             )}
-            {donor.address && !donor.status_note && (
+            {donor.address && !(donor.availability_status === "unavailable" && donor.status_note) && (
               <p className="text-xs text-muted-foreground mt-2 line-clamp-1">{donor.address}</p>
             )}
           </div>
