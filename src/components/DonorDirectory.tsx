@@ -17,6 +17,8 @@ interface Donor {
   is_available: boolean;
   availability_status?: string;
   available_date?: string;
+  reserved_until?: string | null;
+  status_note?: string | null;
 }
 
 const DonorDirectory = () => {
@@ -132,6 +134,17 @@ const DonorDirectory = () => {
       return <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-xs">Available</Badge>;
     }
     if (status === "reserved") {
+      // Show reservation month if available
+      if (donor.reserved_until) {
+        const date = new Date(donor.reserved_until);
+        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+        const year = date.getFullYear();
+        return (
+          <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs">
+            Reserved • {monthName} {year}
+          </Badge>
+        );
+      }
       return <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs">Reserved</Badge>;
     }
     if (status === "unavailable" && donor.available_date) {
@@ -267,7 +280,13 @@ const DonorDirectory = () => {
                 {getStatusBadge(donor)}
               </div>
             </div>
-            {donor.address && (
+            {/* Show status note for unavailable donors */}
+            {donor.availability_status === "unavailable" && donor.status_note && (
+              <p className="text-xs text-muted-foreground/80 mt-2 italic line-clamp-1">
+                "{donor.status_note}"
+              </p>
+            )}
+            {donor.address && !donor.status_note && (
               <p className="text-xs text-muted-foreground mt-2 line-clamp-1">{donor.address}</p>
             )}
           </div>

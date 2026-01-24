@@ -44,6 +44,8 @@ interface Profile {
   title: string | null;
   title_color: string | null;
   bio: string | null;
+  reserved_until: string | null;
+  status_note: string | null;
 }
 
 const Profile = () => {
@@ -145,7 +147,7 @@ const Profile = () => {
     return Math.max(0, 90 - daysSinceLastDonation);
   };
 
-  const updateAvailability = async (status: string) => {
+  const updateAvailability = async (status: string, metadata?: { reservedUntil?: string; statusNote?: string }) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -158,15 +160,32 @@ const Profile = () => {
       return;
     }
 
+    const updateData: Record<string, any> = { availability_status: status };
+    
+    // Add metadata for reserved status
+    if (status === 'reserved' && metadata?.reservedUntil) {
+      updateData.reserved_until = metadata.reservedUntil;
+    }
+    
+    // Add metadata for unavailable status
+    if (status === 'unavailable' && metadata?.statusNote !== undefined) {
+      updateData.status_note = metadata.statusNote || null;
+    }
+
     const { error } = await supabase
       .from("profiles")
-      .update({ availability_status: status })
+      .update(updateData)
       .eq("id", user.id);
 
     if (error) {
       toast({ variant: "destructive", title: "Update failed", description: error.message });
     } else {
-      setProfile((prev) => prev ? { ...prev, availability_status: status } : null);
+      setProfile((prev) => prev ? { 
+        ...prev, 
+        availability_status: status,
+        reserved_until: status === 'reserved' ? (metadata?.reservedUntil || null) : null,
+        status_note: status === 'unavailable' ? (metadata?.statusNote || null) : null,
+      } : null);
       setAvailabilityStatus(status);
       toast({ title: "Status updated" });
     }
@@ -540,6 +559,8 @@ const Profile = () => {
                     onChange={updateAvailability}
                     canSetAvailable={canSetAvailable()}
                     daysUntilAvailable={getDaysUntilAvailable()}
+                    reservedUntil={profile?.reserved_until}
+                    statusNote={profile?.status_note}
                   />
                 </CardContent>
               </Card>

@@ -31,6 +31,8 @@ interface Donor {
   title?: string | null;
   title_color?: string | null;
   bio?: string | null;
+  reserved_until?: string | null;
+  status_note?: string | null;
 }
 
 interface DonorProfileDialogProps {
@@ -152,9 +154,21 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
         : 0;
       return `Available in ${daysUntil} days`;
     } else if (status === 'reserved') {
+      if (donor.reserved_until) {
+        const date = new Date(donor.reserved_until);
+        const monthName = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        return `Reserved until ${monthName}`;
+      }
       return 'Reserved for donation';
     }
     return 'Currently unavailable';
+  };
+  
+  const getStatusNote = () => {
+    if (donor.availability_status === 'unavailable' && donor.status_note) {
+      return donor.status_note;
+    }
+    return null;
   };
 
   const isFirstTimeDonor = !donor.last_donation_date && donationHistory.length === 0;
@@ -295,6 +309,13 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
               <span className={`inline-block h-2 w-2 rounded-full ${getStatusDotColor()}`} />
               {getStatusText()}
             </p>
+            
+            {/* Status note for unavailable */}
+            {getStatusNote() && (
+              <p className="text-sm text-muted-foreground/80 italic mt-0.5">
+                "{getStatusNote()}"
+              </p>
+            )}
             
             {/* Badges */}
             <div className="flex flex-wrap gap-1 mt-2">

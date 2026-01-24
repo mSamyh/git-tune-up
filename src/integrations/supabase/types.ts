@@ -660,6 +660,8 @@ export type Database = {
           last_donation_date: string | null
           notification_preferences: Json | null
           phone: string
+          reserved_until: string | null
+          status_note: string | null
           title: string | null
           title_color: string | null
           updated_at: string | null
@@ -682,6 +684,8 @@ export type Database = {
           last_donation_date?: string | null
           notification_preferences?: Json | null
           phone: string
+          reserved_until?: string | null
+          status_note?: string | null
           title?: string | null
           title_color?: string | null
           updated_at?: string | null
@@ -704,6 +708,8 @@ export type Database = {
           last_donation_date?: string | null
           notification_preferences?: Json | null
           phone?: string
+          reserved_until?: string | null
+          status_note?: string | null
           title?: string | null
           title_color?: string | null
           updated_at?: string | null
