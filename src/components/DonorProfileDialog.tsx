@@ -157,7 +157,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
       if (donor.reserved_until) {
         const date = new Date(donor.reserved_until);
         const monthName = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-        return `Reserved until ${monthName}`;
+        return `Reserved for ${monthName}`;
       }
       return 'Reserved for donation';
     }
@@ -310,11 +310,17 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
               {getStatusText()}
             </p>
             
-            {/* Status note for unavailable */}
+            {/* Instagram Notes style speech bubble for status note */}
             {getStatusNote() && (
-              <p className="text-sm text-muted-foreground/80 italic mt-0.5">
-                "{getStatusNote()}"
-              </p>
+              <div className="relative inline-block mt-1">
+                <div className="bg-muted/60 rounded-xl px-3 py-1.5 relative">
+                  <p className="text-xs text-muted-foreground">
+                    {getStatusNote()}
+                  </p>
+                  {/* Speech bubble tail */}
+                  <div className="absolute -top-1 left-3 w-2 h-2 bg-muted/60 rotate-45" />
+                </div>
+              </div>
             )}
             
             {/* Badges */}
