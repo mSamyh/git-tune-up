@@ -310,15 +310,13 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
               {getStatusText()}
             </p>
             
-            {/* Instagram Notes style speech bubble for status note */}
+            {/* Instagram Notes style floating bubble */}
             {getStatusNote() && (
-              <div className="relative inline-block mt-1">
-                <div className="bg-muted/60 rounded-xl px-3 py-1.5 relative">
-                  <p className="text-xs text-muted-foreground">
-                    {getStatusNote()}
-                  </p>
-                  {/* Speech bubble tail */}
-                  <div className="absolute -top-1 left-3 w-2 h-2 bg-muted/60 rotate-45" />
+              <div className="flex justify-start mt-1.5">
+                <div className="relative bg-muted/80 rounded-full px-3 py-1 text-xs text-muted-foreground shadow-sm">
+                  {getStatusNote()}
+                  {/* Bubble tail pointing down */}
+                  <div className="absolute -bottom-1 left-4 w-2 h-2 bg-muted/80 rotate-45" />
                 </div>
               </div>
             )}

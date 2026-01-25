@@ -253,50 +253,67 @@ const DonorDirectory = () => {
 
       {/* Donor List */}
       <div className="space-y-3 pt-2 flex-1">
-        {filteredDonors.map((donor) => (
-          <div
-            key={donor.id}
-            className="bg-card/50 backdrop-blur-sm rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-colors"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm truncate">{donor.full_name}</h3>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
-                  <MapPin className="h-3 w-3 flex-shrink-0" />
-                  <span className="truncate">{donor.district || "Unknown"}</span>
+        {filteredDonors.map((donor) => {
+          // Get note content for Instagram Notes bubble
+          const getNoteContent = () => {
+            if (donor.availability_status === "reserved" && donor.reserved_until) {
+              const date = new Date(donor.reserved_until);
+              const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+              const year = date.getFullYear();
+              return `Reserved for ${monthName} ${year}`;
+            }
+            if (donor.availability_status === "unavailable" && donor.status_note) {
+              return donor.status_note;
+            }
+            return null;
+          };
+          
+          const noteContent = getNoteContent();
+          
+          return (
+            <div key={donor.id} className="relative">
+              {/* Instagram Notes style floating bubble ABOVE card */}
+              {noteContent && (
+                <div className="flex justify-center mb-2">
+                  <div className="relative bg-muted/80 rounded-full px-3 py-1 text-xs text-muted-foreground shadow-sm max-w-[80%] truncate">
+                    {noteContent}
+                    {/* Bubble tail pointing down */}
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-muted/80 rotate-45" />
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs mt-1.5">
-                  <Phone className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                  <a href={`tel:${donor.phone}`} className="text-primary hover:underline">
-                    {donor.phone}
-                  </a>
+              )}
+              
+              {/* Card content */}
+              <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-colors">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm truncate">{donor.full_name}</h3>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                      <MapPin className="h-3 w-3 flex-shrink-0" />
+                      <span className="truncate">{donor.district || "Unknown"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs mt-1.5">
+                      <Phone className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      <a href={`tel:${donor.phone}`} className="text-primary hover:underline">
+                        {donor.phone}
+                      </a>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <Badge className="bg-primary text-primary-foreground text-xs px-2 py-0.5">
+                      <Droplet className="h-3 w-3 mr-1" />
+                      {donor.blood_group}
+                    </Badge>
+                    {getStatusBadge(donor)}
+                  </div>
                 </div>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <Badge className="bg-primary text-primary-foreground text-xs px-2 py-0.5">
-                  <Droplet className="h-3 w-3 mr-1" />
-                  {donor.blood_group}
-                </Badge>
-                {getStatusBadge(donor)}
+                {donor.address && (
+                  <p className="text-xs text-muted-foreground mt-2 line-clamp-1">{donor.address}</p>
+                )}
               </div>
             </div>
-            {/* Instagram Notes style speech bubble for status note */}
-            {donor.availability_status === "unavailable" && donor.status_note && (
-              <div className="mt-2 relative inline-block max-w-full">
-                <div className="bg-muted/60 rounded-xl px-3 py-1.5 relative">
-                  <p className="text-xs text-muted-foreground line-clamp-1">
-                    {donor.status_note}
-                  </p>
-                  {/* Speech bubble tail */}
-                  <div className="absolute -top-1 left-3 w-2 h-2 bg-muted/60 rotate-45" />
-                </div>
-              </div>
-            )}
-            {donor.address && !(donor.availability_status === "unavailable" && donor.status_note) && (
-              <p className="text-xs text-muted-foreground mt-2 line-clamp-1">{donor.address}</p>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {filteredDonors.length === 0 && (
