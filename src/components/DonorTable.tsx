@@ -25,6 +25,8 @@ interface Donor {
   source?: string;
   is_registered?: boolean;
   title?: string | null;
+  reserved_until?: string | null;
+  status_note?: string | null;
 }
 
 interface DonorTableProps {
@@ -210,11 +212,18 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
         ringColor: "ring-amber-500/50"
       };
     } else if (status === 'reserved') {
+      let label = "Reserved";
+      if (donor.reserved_until) {
+        const date = new Date(donor.reserved_until);
+        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+        const year = date.getFullYear();
+        label = `Reserved for ${monthName} ${year}`;
+      }
       return { 
         color: "bg-blue-500", 
         textColor: "text-blue-600 dark:text-blue-400",
         icon: <CalendarCheck className="h-3 w-3" />, 
-        label: "Reserved",
+        label: label,
         ringColor: "ring-blue-500/50"
       };
     }
@@ -280,12 +289,40 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
           const topDonorRank = getTopDonorRank(donor.id, topDonors);
           const statusConfig = getStatusConfig(donor);
           
+          // Get note content for Instagram Notes bubble
+          const getNoteContent = () => {
+            if (donor.availability_status === "reserved" && donor.reserved_until) {
+              const date = new Date(donor.reserved_until);
+              const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+              const year = date.getFullYear();
+              return `Reserved for ${monthName} ${year}`;
+            }
+            if (donor.availability_status === "unavailable" && donor.status_note) {
+              return donor.status_note;
+            }
+            return null;
+          };
+          
+          const noteContent = getNoteContent();
+          
           return (
-            <div 
-              key={donor.id} 
-              className="group flex items-center gap-3 p-3 hover:bg-muted/40 active:bg-muted/60 transition-colors cursor-pointer"
-              onClick={() => setSelectedDonor(donor)}
-            >
+            <div key={donor.id}>
+              {/* Instagram Notes bubble ABOVE card */}
+              {noteContent && (
+                <div className="flex justify-center py-2 px-3 bg-muted/20">
+                  <div className="relative bg-muted/80 rounded-full px-3 py-1 text-xs text-muted-foreground shadow-sm max-w-[80%] text-center">
+                    {noteContent}
+                    {/* Bubble tail pointing down */}
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-muted/80 rotate-45" />
+                  </div>
+                </div>
+              )}
+              
+              {/* Card content */}
+              <div 
+                className="group flex items-center gap-3 p-3 hover:bg-muted/40 active:bg-muted/60 transition-colors cursor-pointer"
+                onClick={() => setSelectedDonor(donor)}
+              >
               {/* Avatar with Status */}
               <div className="relative flex-shrink-0">
                 <Avatar className={`h-12 w-12 ring-2 ${statusConfig.ringColor} ring-offset-2 ring-offset-background ${donor.source === 'directory' ? "opacity-75" : ""}`}>
@@ -352,6 +389,7 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
                 >
                   <MessageSquare className="h-4 w-4" />
                 </Button>
+                </div>
               </div>
             </div>
           );
