@@ -307,13 +307,13 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
           
           return (
             <div key={donor.id}>
-              {/* Instagram Notes bubble ABOVE card */}
+              {/* Instagram Notes bubble ABOVE card - positioned over avatar */}
               {noteContent && (
-                <div className="flex justify-center py-2 px-3 bg-muted/20">
-                  <div className="relative bg-muted/80 rounded-full px-3 py-1 text-xs text-muted-foreground shadow-sm max-w-[80%] text-center">
+                <div className="flex justify-start pl-7 pt-2 pb-0.5">
+                  <div className="relative bg-gray-100 dark:bg-muted border border-gray-200 dark:border-muted-foreground/20 rounded-xl px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
                     {noteContent}
-                    {/* Bubble tail pointing down */}
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-muted/80 rotate-45" />
+                    {/* Bubble tail pointing down - aligned with avatar */}
+                    <div className="absolute -bottom-1.5 left-4 w-2.5 h-2.5 bg-gray-100 dark:bg-muted border-r border-b border-gray-200 dark:border-muted-foreground/20 rotate-45" />
                   </div>
                 </div>
               )}
