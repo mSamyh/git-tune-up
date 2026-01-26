@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Droplet, Search, Heart, UserCheck, X, Users, BarChart3, GitCompare, ArrowRight, Sparkles, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Droplet, Search, Heart, UserCheck, X, Users, BarChart3, GitCompare, ArrowRight, Sparkles, Shield, SlidersHorizontal } from "lucide-react";
 import { DonorTable } from "@/components/DonorTable";
 import { DonorStatsDashboard } from "@/components/DonorStatsDashboard";
 import BloodCompatibilityChecker from "@/components/BloodCompatibilityChecker";
@@ -12,6 +13,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { BloodGroupFilter } from "@/components/BloodGroupFilter";
 import { AppHeader } from "@/components/AppHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DonorFilterSheet } from "@/components/DonorFilterSheet";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -20,6 +22,12 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Filter states
+  const [selectedAtoll, setSelectedAtoll] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [atolls, setAtolls] = useState<{ id: string; name: string }[]>([]);
   const navigate = useNavigate();
 
   const toggleSearch = () => {
@@ -46,6 +54,23 @@ const Index = () => {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Fetch atolls for filter
+  useEffect(() => {
+    const fetchAtolls = async () => {
+      const { data } = await supabase
+        .from("atolls")
+        .select("id, name")
+        .order("name");
+      if (data) setAtolls(data);
+    };
+    fetchAtolls();
+  }, []);
+
+  // Count active filters
+  const activeFilterCount = 
+    (selectedAtoll !== "all" ? 1 : 0) + 
+    (selectedStatus !== "all" ? 1 : 0);
 
   // Unauthenticated landing page
   if (!session) {
@@ -215,25 +240,85 @@ const Index = () => {
                 </div>
 
                 {!isSearchExpanded && (
-                  <div className="flex-1">
-                    <h2 className="font-display font-semibold text-lg flex items-center gap-2">
-                      <span className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Users className="h-4 w-4 text-primary" />
-                      </span>
-                      Donor Directory
-                    </h2>
-                  </div>
+                  <>
+                    <div className="flex-1">
+                      <h2 className="font-display font-semibold text-lg flex items-center gap-2">
+                        <span className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Users className="h-4 w-4 text-primary" />
+                        </span>
+                        Donor Directory
+                      </h2>
+                    </div>
+                    
+                    {/* Filter Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFilterSheetOpen(true)}
+                      className="h-10 rounded-xl gap-1.5 border-border/50 bg-muted/30 hover:bg-muted/50"
+                    >
+                      <SlidersHorizontal className="h-4 w-4" />
+                      <span className="hidden sm:inline">Filters</span>
+                      {activeFilterCount > 0 && (
+                        <Badge className="h-5 min-w-5 p-0 text-xs flex items-center justify-center rounded-full">
+                          {activeFilterCount}
+                        </Badge>
+                      )}
+                    </Button>
+                  </>
                 )}
               </div>
 
               <BloodGroupFilter selectedGroup={selectedBloodGroup} onSelectGroup={setSelectedBloodGroup} />
+              
+              {/* Active filter chips */}
+              {(selectedAtoll !== "all" || selectedStatus !== "all") && (
+                <div className="flex gap-2 mt-3 flex-wrap">
+                  {selectedAtoll !== "all" && (
+                    <Badge 
+                      variant="secondary" 
+                      className="gap-1.5 cursor-pointer hover:bg-secondary/80 pr-1.5"
+                      onClick={() => setSelectedAtoll("all")}
+                    >
+                      {selectedAtoll}
+                      <X className="h-3 w-3" />
+                    </Badge>
+                  )}
+                  {selectedStatus !== "all" && (
+                    <Badge 
+                      variant="secondary" 
+                      className="gap-1.5 cursor-pointer hover:bg-secondary/80 pr-1.5 capitalize"
+                      onClick={() => setSelectedStatus("all")}
+                    >
+                      {selectedStatus}
+                      <X className="h-3 w-3" />
+                    </Badge>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Donor Table - Card container */}
             <div className="bg-card rounded-2xl border border-border/50 overflow-hidden mt-4 shadow-sm">
-              <DonorTable bloodGroupFilter={selectedBloodGroup} searchTerm={searchTerm} />
+              <DonorTable 
+                bloodGroupFilter={selectedBloodGroup} 
+                searchTerm={searchTerm}
+                atollFilter={selectedAtoll}
+                statusFilter={selectedStatus}
+              />
             </div>
           </TabsContent>
+          
+          {/* Filter Sheet */}
+          <DonorFilterSheet
+            open={filterSheetOpen}
+            onOpenChange={setFilterSheetOpen}
+            selectedAtoll={selectedAtoll}
+            onAtollChange={setSelectedAtoll}
+            selectedStatus={selectedStatus}
+            onStatusChange={setSelectedStatus}
+            atolls={atolls}
+          />
 
           {/* Stats Tab */}
           <TabsContent value="stats" className="mt-0 animate-fade-in">
