@@ -25,6 +25,7 @@ const Index = () => {
   
   // Filter states
   const [selectedAtoll, setSelectedAtoll] = useState("all");
+  const [selectedIsland, setSelectedIsland] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [atolls, setAtolls] = useState<{ id: string; name: string }[]>([]);
@@ -70,7 +71,14 @@ const Index = () => {
   // Count active filters
   const activeFilterCount = 
     (selectedAtoll !== "all" ? 1 : 0) + 
+    (selectedIsland !== "all" ? 1 : 0) +
     (selectedStatus !== "all" ? 1 : 0);
+  
+  // Reset island when atoll changes
+  const handleAtollChange = (atoll: string) => {
+    setSelectedAtoll(atoll);
+    setSelectedIsland("all");
+  };
 
   // Unauthenticated landing page
   if (!session) {
@@ -272,15 +280,25 @@ const Index = () => {
               <BloodGroupFilter selectedGroup={selectedBloodGroup} onSelectGroup={setSelectedBloodGroup} />
               
               {/* Active filter chips */}
-              {(selectedAtoll !== "all" || selectedStatus !== "all") && (
+              {(selectedAtoll !== "all" || selectedIsland !== "all" || selectedStatus !== "all") && (
                 <div className="flex gap-2 mt-3 flex-wrap">
                   {selectedAtoll !== "all" && (
                     <Badge 
                       variant="secondary" 
                       className="gap-1.5 cursor-pointer hover:bg-secondary/80 pr-1.5"
-                      onClick={() => setSelectedAtoll("all")}
+                      onClick={() => handleAtollChange("all")}
                     >
                       {selectedAtoll}
+                      <X className="h-3 w-3" />
+                    </Badge>
+                  )}
+                  {selectedIsland !== "all" && (
+                    <Badge 
+                      variant="secondary" 
+                      className="gap-1.5 cursor-pointer hover:bg-secondary/80 pr-1.5"
+                      onClick={() => setSelectedIsland("all")}
+                    >
+                      {selectedIsland}
                       <X className="h-3 w-3" />
                     </Badge>
                   )}
@@ -304,6 +322,7 @@ const Index = () => {
                 bloodGroupFilter={selectedBloodGroup} 
                 searchTerm={searchTerm}
                 atollFilter={selectedAtoll}
+                islandFilter={selectedIsland}
                 statusFilter={selectedStatus}
               />
             </div>
@@ -314,7 +333,9 @@ const Index = () => {
             open={filterSheetOpen}
             onOpenChange={setFilterSheetOpen}
             selectedAtoll={selectedAtoll}
-            onAtollChange={setSelectedAtoll}
+            onAtollChange={handleAtollChange}
+            selectedIsland={selectedIsland}
+            onIslandChange={setSelectedIsland}
             selectedStatus={selectedStatus}
             onStatusChange={setSelectedStatus}
             atolls={atolls}
