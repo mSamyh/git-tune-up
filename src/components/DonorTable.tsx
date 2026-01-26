@@ -32,11 +32,13 @@ interface Donor {
 interface DonorTableProps {
   bloodGroupFilter?: string;
   searchTerm?: string;
+  atollFilter?: string;
+  statusFilter?: string;
 }
 
 const ITEMS_PER_PAGE = 15;
 
-export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorTableProps) => {
+export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "", atollFilter = "all", statusFilter = "all" }: DonorTableProps) => {
   const [donors, setDonors] = useState<Donor[]>([]);
   const [filteredDonors, setFilteredDonors] = useState<Donor[]>([]);
   const [paginatedDonors, setPaginatedDonors] = useState<Donor[]>([]);
@@ -51,7 +53,7 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
 
   useEffect(() => {
     filterAndSortDonors();
-  }, [donors, searchTerm, bloodGroupFilter]);
+  }, [donors, searchTerm, bloodGroupFilter, atollFilter, statusFilter]);
 
   useEffect(() => {
     paginateDonors();
@@ -101,6 +103,20 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "" }: DonorT
 
     if (bloodGroupFilter !== "all") {
       filtered = filtered.filter(donor => donor.blood_group === bloodGroupFilter);
+    }
+
+    // Atoll filter - match against district field (format: "Atoll - Island")
+    if (atollFilter && atollFilter !== "all") {
+      filtered = filtered.filter(donor =>
+        donor.district?.startsWith(atollFilter + " -") || donor.district === atollFilter
+      );
+    }
+
+    // Status filter
+    if (statusFilter && statusFilter !== "all") {
+      filtered = filtered.filter(donor =>
+        donor.availability_status === statusFilter
+      );
     }
 
     filtered.sort((a, b) => {
