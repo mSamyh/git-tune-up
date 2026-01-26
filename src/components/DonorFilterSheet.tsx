@@ -1,15 +1,25 @@
+import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Check, Ban, Clock, MapPin } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Island {
+  id: string;
+  atoll_id: string;
+  name: string;
+}
 
 interface DonorFilterSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedAtoll: string;
   onAtollChange: (atoll: string) => void;
+  selectedIsland: string;
+  onIslandChange: (island: string) => void;
   selectedStatus: string;
   onStatusChange: (status: string) => void;
   atolls: { id: string; name: string }[];
@@ -20,16 +30,46 @@ export const DonorFilterSheet = ({
   onOpenChange,
   selectedAtoll,
   onAtollChange,
+  selectedIsland,
+  onIslandChange,
   selectedStatus,
   onStatusChange,
   atolls,
 }: DonorFilterSheetProps) => {
+  const [islands, setIslands] = useState<Island[]>([]);
+
+  // Fetch islands when atoll changes
+  useEffect(() => {
+    const fetchIslands = async () => {
+      if (selectedAtoll && selectedAtoll !== "all") {
+        const selectedAtollData = atolls.find(a => a.name === selectedAtoll);
+        if (selectedAtollData) {
+          const { data } = await supabase
+            .from("islands")
+            .select("*")
+            .eq("atoll_id", selectedAtollData.id)
+            .order("name");
+          if (data) setIslands(data);
+        }
+      } else {
+        setIslands([]);
+      }
+    };
+    fetchIslands();
+  }, [selectedAtoll, atolls]);
+
   const clearFilters = () => {
     onAtollChange("all");
+    onIslandChange("all");
     onStatusChange("all");
   };
 
-  const hasActiveFilters = selectedAtoll !== "all" || selectedStatus !== "all";
+  const handleAtollChange = (atoll: string) => {
+    onAtollChange(atoll);
+    onIslandChange("all"); // Reset island when atoll changes
+  };
+
+  const hasActiveFilters = selectedAtoll !== "all" || selectedIsland !== "all" || selectedStatus !== "all";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -78,25 +118,45 @@ export const DonorFilterSheet = ({
             </ToggleGroup>
           </div>
 
-          {/* Location/Atoll */}
+          {/* Location: Atoll & Island */}
           <div className="space-y-3">
             <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              Atoll / Location
+              Location
             </Label>
-            <Select value={selectedAtoll} onValueChange={onAtollChange}>
-              <SelectTrigger className="h-11 rounded-xl">
-                <SelectValue placeholder="All Atolls" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                <SelectItem value="all">All Atolls</SelectItem>
-                {atolls.map((atoll) => (
-                  <SelectItem key={atoll.id} value={atoll.name}>
-                    {atoll.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <Select value={selectedAtoll} onValueChange={handleAtollChange}>
+                <SelectTrigger className="h-11 rounded-xl">
+                  <SelectValue placeholder="All Atolls" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  <SelectItem value="all">All Atolls</SelectItem>
+                  {atolls.map((atoll) => (
+                    <SelectItem key={atoll.id} value={atoll.name}>
+                      {atoll.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select 
+                value={selectedIsland} 
+                onValueChange={onIslandChange}
+                disabled={selectedAtoll === "all"}
+              >
+                <SelectTrigger className="h-11 rounded-xl">
+                  <SelectValue placeholder="All Islands" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  <SelectItem value="all">All Islands</SelectItem>
+                  {islands.map((island) => (
+                    <SelectItem key={island.id} value={island.name}>
+                      {island.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
