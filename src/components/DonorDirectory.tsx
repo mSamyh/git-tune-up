@@ -272,13 +272,13 @@ const DonorDirectory = () => {
           
           return (
             <div key={donor.id} className="relative">
-              {/* Instagram Notes style floating bubble ABOVE card */}
+              {/* Instagram Notes style floating bubble ABOVE card - positioned over avatar */}
               {noteContent && (
-                <div className="flex justify-center mb-2">
-                  <div className="relative bg-muted/80 rounded-full px-3 py-1 text-xs text-muted-foreground shadow-sm max-w-[80%] truncate">
+                <div className="flex justify-start pl-2 mb-1">
+                  <div className="relative bg-gray-100 dark:bg-muted border border-gray-200 dark:border-muted-foreground/20 rounded-xl px-3 py-1.5 text-xs text-muted-foreground shadow-sm max-w-[80%] truncate">
                     {noteContent}
-                    {/* Bubble tail pointing down */}
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-muted/80 rotate-45" />
+                    {/* Bubble tail pointing down - aligned with avatar */}
+                    <div className="absolute -bottom-1.5 left-4 w-2.5 h-2.5 bg-gray-100 dark:bg-muted border-r border-b border-gray-200 dark:border-muted-foreground/20 rotate-45" />
                   </div>
                 </div>
               )}
