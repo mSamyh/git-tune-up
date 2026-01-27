@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 interface PointsResult {
   success: boolean;
@@ -14,7 +15,7 @@ export async function getPointsPerDonation(): Promise<number> {
   const { data, error } = await supabase.rpc('get_points_per_donation');
   
   if (error) {
-    console.error('Error fetching points per donation:', error);
+    logger.error('Error fetching points per donation:', error);
     return 100;
   }
   
@@ -39,20 +40,20 @@ export async function awardDonationPoints(
     });
 
     if (error) {
-      console.error('Error awarding points:', error);
+      logger.error('Error awarding points:', error);
       return false;
     }
 
     const result = data as unknown as PointsResult;
     if (result?.reason === 'already_awarded') {
-      console.log('Points already awarded for donation:', donationId);
+      logger.log('Points already awarded for donation:', donationId);
       return true;
     }
 
-    console.log('Points awarded successfully:', result?.points);
+    logger.log('Points awarded successfully:', result?.points);
     return result?.success ?? false;
   } catch (error) {
-    console.error('Exception awarding points:', error);
+    logger.error('Exception awarding points:', error);
     return false;
   }
 }
@@ -75,20 +76,20 @@ export async function deductDonationPoints(
     });
 
     if (error) {
-      console.error('Error deducting points:', error);
+      logger.error('Error deducting points:', error);
       return false;
     }
 
     const result = data as unknown as PointsResult;
     if (result?.reason === 'already_deducted') {
-      console.log('Points already deducted for donation:', donationId);
+      logger.log('Points already deducted for donation:', donationId);
       return true;
     }
 
-    console.log('Points deducted successfully:', result?.points);
+    logger.log('Points deducted successfully:', result?.points);
     return result?.success ?? false;
   } catch (error) {
-    console.error('Exception deducting points:', error);
+    logger.error('Exception deducting points:', error);
     return false;
   }
 }
@@ -104,9 +105,9 @@ export async function syncLastDonationDate(donorId: string): Promise<void> {
     });
 
     if (error) {
-      console.error('Error syncing last donation date:', error);
+      logger.error('Error syncing last donation date:', error);
     }
   } catch (error) {
-    console.error('Exception syncing last donation date:', error);
+    logger.error('Exception syncing last donation date:', error);
   }
 }

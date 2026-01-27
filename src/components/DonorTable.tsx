@@ -49,7 +49,61 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "", atollFil
   const [totalDonors, setTotalDonors] = useState(0);
 
   useEffect(() => {
-    fetchDonors();
+    let isMounted = true;
+    
+    const loadDonors = async () => {
+      try {
+        const { data: profileDonors } = await supabase
+          .from("profiles")
+          .select("*")
+          .in("user_type", ["donor", "both"]);
+
+        const { data: directoryDonors } = await supabase
+          .from("donor_directory")
+          .select("*");
+
+        if (!isMounted) return;
+
+        const unlinkedDirectoryDonors = (directoryDonors || []).filter(d => !d.linked_profile_id);
+
+        const profileDonorsList = (profileDonors || []).map(d => ({ ...d, source: 'profile', is_registered: true }));
+        const directoryDonorsList = unlinkedDirectoryDonors.map(d => ({ ...d, source: 'directory', is_registered: false }));
+
+        // Use bulk RPC functions instead of N+1 queries
+        const profileIds = profileDonorsList.map(d => d.id);
+        const directoryIds = directoryDonorsList.map(d => d.id);
+
+        const [profileCountsResult, directoryCountsResult] = await Promise.all([
+          profileIds.length > 0 
+            ? supabase.rpc('get_bulk_donation_counts', { donor_ids: profileIds })
+            : { data: [] },
+          directoryIds.length > 0 
+            ? supabase.rpc('get_bulk_directory_donation_counts', { donor_ids: directoryIds })
+            : { data: [] }
+        ]);
+
+        if (!isMounted) return;
+
+        // Create lookup maps for counts
+        const profileCountMap = new Map((profileCountsResult.data || []).map((r: { donor_id: string; donation_count: number }) => [r.donor_id, r.donation_count]));
+        const directoryCountMap = new Map((directoryCountsResult.data || []).map((r: { donor_id: string; donation_count: number }) => [r.donor_id, r.donation_count]));
+
+        // Merge counts with donors
+        const allDonors = [
+          ...profileDonorsList.map(d => ({ ...d, donation_count: profileCountMap.get(d.id) || 0 })),
+          ...directoryDonorsList.map(d => ({ ...d, donation_count: directoryCountMap.get(d.id) || 0 }))
+        ];
+
+        setDonors(allDonors);
+      } catch (error) {
+        console.error("Error fetching donors:", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadDonors();
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
@@ -61,6 +115,7 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "", atollFil
   }, [filteredDonors, currentPage]);
 
   const fetchDonors = async () => {
+    setLoading(true);
     const { data: profileDonors } = await supabase
       .from("profiles")
       .select("*")
@@ -72,24 +127,31 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "", atollFil
 
     const unlinkedDirectoryDonors = (directoryDonors || []).filter(d => !d.linked_profile_id);
 
+    const profileDonorsList = (profileDonors || []).map(d => ({ ...d, source: 'profile', is_registered: true }));
+    const directoryDonorsList = unlinkedDirectoryDonors.map(d => ({ ...d, source: 'directory', is_registered: false }));
+
+    // Use bulk RPC functions
+    const profileIds = profileDonorsList.map(d => d.id);
+    const directoryIds = directoryDonorsList.map(d => d.id);
+
+    const [profileCountsResult, directoryCountsResult] = await Promise.all([
+      profileIds.length > 0 
+        ? supabase.rpc('get_bulk_donation_counts', { donor_ids: profileIds })
+        : { data: [] },
+      directoryIds.length > 0 
+        ? supabase.rpc('get_bulk_directory_donation_counts', { donor_ids: directoryIds })
+        : { data: [] }
+    ]);
+
+    const profileCountMap = new Map((profileCountsResult.data || []).map((r: { donor_id: string; donation_count: number }) => [r.donor_id, r.donation_count]));
+    const directoryCountMap = new Map((directoryCountsResult.data || []).map((r: { donor_id: string; donation_count: number }) => [r.donor_id, r.donation_count]));
+
     const allDonors = [
-      ...(profileDonors || []).map(d => ({ ...d, source: 'profile', is_registered: true })),
-      ...unlinkedDirectoryDonors.map(d => ({ ...d, source: 'directory', is_registered: false }))
+      ...profileDonorsList.map(d => ({ ...d, donation_count: profileCountMap.get(d.id) || 0 })),
+      ...directoryDonorsList.map(d => ({ ...d, donation_count: directoryCountMap.get(d.id) || 0 }))
     ];
 
-    const donorsWithCounts = await Promise.all(
-      allDonors.map(async (donor) => {
-        if (donor.source === 'profile') {
-          const { data: countData } = await supabase.rpc('get_donation_count', { donor_uuid: donor.id });
-          return { ...donor, donation_count: countData || 0 };
-        } else {
-          const { data: countData } = await supabase.rpc('get_directory_donation_count', { donor_uuid: donor.id });
-          return { ...donor, donation_count: countData || 0 };
-        }
-      })
-    );
-
-    setDonors(donorsWithCounts);
+    setDonors(allDonors);
     setLoading(false);
   };
 

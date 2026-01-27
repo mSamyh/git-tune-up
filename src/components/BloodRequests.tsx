@@ -133,7 +133,6 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
       
       const expiredCount = data as number;
       if (expiredCount > 0) {
-        console.log(`Auto-expired ${expiredCount} requests via RPC`);
         toast({
           title: `${expiredCount} request${expiredCount > 1 ? 's' : ''} expired`,
           description: "Moved to Expired tab",
@@ -150,30 +149,46 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
   };
 
   const fetchRequests = async () => {
-    const { data, error } = await supabase
-      .from("blood_requests")
-      .select("*")
-      .eq("status", status)
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("blood_requests")
+        .select("*")
+        .eq("status", status)
+        .order("created_at", { ascending: false });
 
-    if (!error && data) {
-      // Fetch poster names for requests with requested_by
-      const requestsWithPosters = await Promise.all(
-        data.map(async (request) => {
-          if (request.requested_by) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("full_name")
-              .eq("id", request.requested_by)
-              .single();
-            return { ...request, poster_name: profile?.full_name };
-          }
-          return request;
-        })
-      );
+      if (error) throw error;
+      if (!data) {
+        setRequests([]);
+        return;
+      }
+
+      // Collect unique requested_by IDs and batch fetch profiles
+      const uniqueRequestedByIds = [...new Set(data.filter(r => r.requested_by).map(r => r.requested_by as string))];
+      
+      let profilesMap = new Map<string, string>();
+      if (uniqueRequestedByIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", uniqueRequestedByIds);
+        
+        if (profiles) {
+          profilesMap = new Map(profiles.map(p => [p.id, p.full_name]));
+        }
+      }
+
+      // Map poster names using the batch-fetched data
+      const requestsWithPosters = data.map(request => ({
+        ...request,
+        poster_name: request.requested_by ? profilesMap.get(request.requested_by) : undefined
+      }));
+
       setRequests(requestsWithPosters);
+    } catch (error) {
+      console.error("Error fetching blood requests:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchResponses = async (requestId: string) => {

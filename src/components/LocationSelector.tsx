@@ -29,56 +29,75 @@ export const LocationSelector = ({
 }: LocationSelectorProps) => {
   const [atolls, setAtolls] = useState<Atoll[]>([]);
   const [islands, setIslands] = useState<Island[]>([]);
-
-  useEffect(() => {
-    fetchAtolls();
-  }, []);
-
-  useEffect(() => {
-    if (selectedAtoll) {
-      fetchIslands(selectedAtoll);
-    } else {
-      setIslands([]);
-      onIslandChange("");
-    }
-  }, [selectedAtoll]);
-
+  
   // Geographic order from north to south
   const atollOrder = ['Ha', 'Hdh', 'Sh', 'N', 'R', 'B', 'Lh', 'K', 'Aa', 'Adh', 'V', 'M', 'F', 'Dh', 'Th', 'L', 'Ga', 'Gdh', 'Gn', 'S'];
 
-  const fetchAtolls = async () => {
-    const { data } = await supabase
-      .from("atolls")
-      .select("*");
+  useEffect(() => {
+    let isMounted = true;
     
-    if (data) {
-      // Sort atolls by geographic order (north to south)
-      const sorted = data.sort((a, b) => {
-        const indexA = atollOrder.indexOf(a.name);
-        const indexB = atollOrder.indexOf(b.name);
-        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-      });
-      setAtolls(sorted);
-    }
-  };
+    const fetchAtolls = async () => {
+      try {
+        const { data, error } = await supabase.from("atolls").select("*");
+        
+        if (error) throw error;
+        
+        if (isMounted && data) {
+          // Sort atolls by geographic order (north to south)
+          const sorted = data.sort((a, b) => {
+            const indexA = atollOrder.indexOf(a.name);
+            const indexB = atollOrder.indexOf(b.name);
+            return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+          });
+          setAtolls(sorted);
+        }
+      } catch (error) {
+        console.error("Error fetching atolls:", error);
+      }
+    };
+    
+    fetchAtolls();
+    return () => { isMounted = false; };
+  }, []);
 
-  const fetchIslands = async (atollName: string) => {
-    const { data: atollData } = await supabase
-      .from("atolls")
-      .select("id")
-      .eq("name", atollName)
-      .single();
-
-    if (atollData) {
-      const { data: islandsData } = await supabase
-        .from("islands")
-        .select("*")
-        .eq("atoll_id", atollData.id)
-        .order("name");
-      
-      if (islandsData) setIslands(islandsData);
+  useEffect(() => {
+    let isMounted = true;
+    
+    if (!selectedAtoll) {
+      setIslands([]);
+      onIslandChange("");
+      return;
     }
-  };
+    
+    const fetchIslands = async () => {
+      try {
+        const { data: atollData, error: atollError } = await supabase
+          .from("atolls")
+          .select("id")
+          .eq("name", selectedAtoll)
+          .single();
+
+        if (atollError) throw atollError;
+
+        if (atollData && isMounted) {
+          const { data: islandsData, error: islandsError } = await supabase
+            .from("islands")
+            .select("*")
+            .eq("atoll_id", atollData.id)
+            .order("name");
+          
+          if (islandsError) throw islandsError;
+          if (isMounted && islandsData) setIslands(islandsData);
+        }
+      } catch (error) {
+        console.error("Error fetching islands:", error);
+        if (isMounted) setIslands([]);
+      }
+    };
+    
+    fetchIslands();
+    return () => { isMounted = false; };
+  }, [selectedAtoll]);
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
