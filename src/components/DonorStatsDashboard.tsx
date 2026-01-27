@@ -34,81 +34,90 @@ export const DonorStatsDashboard = () => {
   };
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    let isMounted = true;
+    
+    const fetchStats = async () => {
+      try {
+        const [profilesResult, directoryResult, donationsResult, directoryDonationsResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("blood_group, availability_status, user_type")
+            .in("user_type", ["donor", "both"]),
+          supabase
+            .from("donor_directory")
+            .select("blood_group, availability_status, linked_profile_id"),
+          supabase
+            .from("donation_history")
+            .select("donation_date")
+            .order("donation_date", { ascending: false }),
+          supabase
+            .from("donor_directory_history")
+            .select("donation_date")
+            .order("donation_date", { ascending: false })
+        ]);
 
-  const fetchStats = async () => {
-    try {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("blood_group, availability_status, user_type")
-        .in("user_type", ["donor", "both"]);
+        if (!isMounted) return;
 
-      const { data: directory } = await supabase
-        .from("donor_directory")
-        .select("blood_group, availability_status, linked_profile_id");
+        const profiles = profilesResult.data;
+        const directory = directoryResult.data;
+        const donations = donationsResult.data;
+        const directoryDonations = directoryDonationsResult.data;
 
-      const { data: donations } = await supabase
-        .from("donation_history")
-        .select("donation_date")
-        .order("donation_date", { ascending: false });
+        const registeredDonors = profiles || [];
+        const unlinkedDirectory = (directory || []).filter(d => !d.linked_profile_id);
+        const allDonors = [...registeredDonors, ...unlinkedDirectory];
+        const allDonationsData = [...(donations || []), ...(directoryDonations || [])];
 
-      const { data: directoryDonations } = await supabase
-        .from("donor_directory_history")
-        .select("donation_date")
-        .order("donation_date", { ascending: false });
+        const bloodGroupCounts: Record<string, number> = {};
+        bloodGroups.forEach(bg => bloodGroupCounts[bg] = 0);
+        allDonors.forEach(d => {
+          if (d.blood_group && bloodGroupCounts[d.blood_group] !== undefined) {
+            bloodGroupCounts[d.blood_group]++;
+          }
+        });
 
-      const registeredDonors = profiles || [];
-      const unlinkedDirectory = (directory || []).filter(d => !d.linked_profile_id);
-      const allDonors = [...registeredDonors, ...unlinkedDirectory];
-      const allDonationsData = [...(donations || []), ...(directoryDonations || [])];
+        const available = registeredDonors.filter(d => d.availability_status === 'available').length;
+        const unavailable = registeredDonors.filter(d => d.availability_status !== 'available').length;
 
-      const bloodGroupCounts: Record<string, number> = {};
-      bloodGroups.forEach(bg => bloodGroupCounts[bg] = 0);
-      allDonors.forEach(d => {
-        if (d.blood_group && bloodGroupCounts[d.blood_group] !== undefined) {
-          bloodGroupCounts[d.blood_group]++;
+        const monthlyDonations: { month: string; count: number }[] = [];
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+          const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const monthName = monthDate.toLocaleString('default', { month: 'short' });
+          const year = monthDate.getFullYear();
+          const monthStart = new Date(year, monthDate.getMonth(), 1);
+          const monthEnd = new Date(year, monthDate.getMonth() + 1, 0);
+          
+          const count = allDonationsData.filter(d => {
+            const donationDate = new Date(d.donation_date);
+            return donationDate >= monthStart && donationDate <= monthEnd;
+          }).length;
+
+          monthlyDonations.push({ month: `${monthName}`, count });
         }
-      });
 
-      const available = registeredDonors.filter(d => d.availability_status === 'available').length;
-      const unavailable = registeredDonors.filter(d => d.availability_status !== 'available').length;
-
-      const monthlyDonations: { month: string; count: number }[] = [];
-      const now = new Date();
-      for (let i = 5; i >= 0; i--) {
-        const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthName = monthDate.toLocaleString('default', { month: 'short' });
-        const year = monthDate.getFullYear();
-        const monthStart = new Date(year, monthDate.getMonth(), 1);
-        const monthEnd = new Date(year, monthDate.getMonth() + 1, 0);
-        
-        const count = allDonationsData.filter(d => {
-          const donationDate = new Date(d.donation_date);
-          return donationDate >= monthStart && donationDate <= monthEnd;
-        }).length;
-
-        monthlyDonations.push({ month: `${monthName}`, count });
+        setStats({
+          totalDonors: allDonors.length,
+          registeredDonors: registeredDonors.length,
+          availableDonors: available,
+          unavailableDonors: unavailable,
+          bloodGroupCounts,
+          availabilityRate: registeredDonors.length > 0 
+            ? Math.round((available / registeredDonors.length) * 100) 
+            : 0,
+          totalDonations: allDonationsData.length,
+          monthlyDonations,
+        });
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        if (isMounted) setLoading(false);
       }
+    };
 
-      setStats({
-        totalDonors: allDonors.length,
-        registeredDonors: registeredDonors.length,
-        availableDonors: available,
-        unavailableDonors: unavailable,
-        bloodGroupCounts,
-        availabilityRate: registeredDonors.length > 0 
-          ? Math.round((available / registeredDonors.length) * 100) 
-          : 0,
-        totalDonations: allDonationsData.length,
-        monthlyDonations,
-      });
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchStats();
+    return () => { isMounted = false; };
+  }, []);
 
   const maxBloodGroupCount = useMemo(() => {
     if (!stats) return 0;

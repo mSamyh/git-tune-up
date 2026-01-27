@@ -56,16 +56,26 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch atolls for filter
+  // Fetch atolls for filter with isMounted cleanup
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchAtolls = async () => {
-      const { data } = await supabase
-        .from("atolls")
-        .select("id, name")
-        .order("name");
-      if (data) setAtolls(data);
+      try {
+        const { data, error } = await supabase
+          .from("atolls")
+          .select("id, name")
+          .order("name");
+        
+        if (error) throw error;
+        if (isMounted && data) setAtolls(data);
+      } catch (error) {
+        console.error("Error fetching atolls:", error);
+      }
     };
+    
     fetchAtolls();
+    return () => { isMounted = false; };
   }, []);
 
   // Count active filters

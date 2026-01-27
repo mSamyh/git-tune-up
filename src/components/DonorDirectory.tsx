@@ -36,16 +36,76 @@ const DonorDirectory = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetchDonors();
-    fetchAtolls();
+    let isMounted = true;
+    
+    const loadData = async () => {
+      try {
+        const [donorsResult, atollsResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("*")
+            .in("user_type", ["donor", "both"]),
+          supabase.from("atolls").select("name").order("name")
+        ]);
+
+        if (!isMounted) return;
+
+        if (atollsResult.data) {
+          setAtolls(["All", ...atollsResult.data.map(a => a.name)]);
+        }
+
+        if (donorsResult.data) {
+          const sortedData = donorsResult.data.sort((a, b) => {
+            const getDaysUntilAvailable = (availableDate: string | null) => {
+              if (!availableDate) return 0;
+              const diff = Math.floor(
+                (new Date(availableDate).getTime() - new Date().getTime()) /
+                (1000 * 60 * 60 * 24)
+              );
+              return Math.max(0, diff);
+            };
+
+            const getPriority = (donor: any) => {
+              const status = donor.availability_status as string | null;
+              const daysUntil = getDaysUntilAvailable(donor.available_date);
+
+              if (status === "available") return 1;
+              if (status === "unavailable" && daysUntil > 0) return 2;
+              if (status === "reserved") return 3;
+              if (status === "unavailable") return 4;
+              return 5;
+            };
+
+            const priorityA = getPriority(a);
+            const priorityB = getPriority(b);
+
+            if (priorityA !== priorityB) {
+              return priorityA - priorityB;
+            }
+
+            if (priorityA === 2 && priorityB === 2) {
+              const daysA = getDaysUntilAvailable(a.available_date);
+              const daysB = getDaysUntilAvailable(b.available_date);
+              if (daysA !== daysB) {
+                return daysA - daysB;
+              }
+            }
+
+            return a.full_name.localeCompare(b.full_name);
+          });
+
+          setDonors(sortedData);
+        }
+      } catch (error) {
+        console.error("Error loading donor directory:", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadData();
+    return () => { isMounted = false; };
   }, []);
-  
-  const fetchAtolls = async () => {
-    const { data } = await supabase.from("atolls").select("name").order("name");
-    if (data) {
-      setAtolls(["All", ...data.map(a => a.name)]);
-    }
-  };
 
   useEffect(() => {
     filterDonors();
@@ -56,57 +116,6 @@ const DonorDirectory = () => {
       searchInputRef.current.focus();
     }
   }, [isSearchExpanded]);
-
-  const fetchDonors = async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .in("user_type", ["donor", "both"]);
-
-    if (!error && data) {
-      const sortedData = data.sort((a, b) => {
-        const getDaysUntilAvailable = (availableDate: string | null) => {
-          if (!availableDate) return 0;
-          const diff = Math.floor(
-            (new Date(availableDate).getTime() - new Date().getTime()) /
-            (1000 * 60 * 60 * 24)
-          );
-          return Math.max(0, diff);
-        };
-
-        const getPriority = (donor: any) => {
-          const status = donor.availability_status as string | null;
-          const daysUntil = getDaysUntilAvailable(donor.available_date);
-
-          if (status === "available") return 1;
-          if (status === "unavailable" && daysUntil > 0) return 2;
-          if (status === "reserved") return 3;
-          if (status === "unavailable") return 4;
-          return 5;
-        };
-
-        const priorityA = getPriority(a);
-        const priorityB = getPriority(b);
-
-        if (priorityA !== priorityB) {
-          return priorityA - priorityB;
-        }
-
-        if (priorityA === 2 && priorityB === 2) {
-          const daysA = getDaysUntilAvailable(a.available_date);
-          const daysB = getDaysUntilAvailable(b.available_date);
-          if (daysA !== daysB) {
-            return daysA - daysB;
-          }
-        }
-
-        return a.full_name.localeCompare(b.full_name);
-      });
-
-      setDonors(sortedData);
-    }
-    setLoading(false);
-  };
 
   const filterDonors = () => {
     let filtered = donors;
