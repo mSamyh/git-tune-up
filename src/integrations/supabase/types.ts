@@ -366,6 +366,75 @@ export type Database = {
           },
         ]
       }
+      donor_health_records: {
+        Row: {
+          blood_pressure_diastolic: number | null
+          blood_pressure_systolic: number | null
+          created_at: string | null
+          deferral_duration_days: number | null
+          deferral_reason: string | null
+          donation_id: string | null
+          donor_id: string
+          health_notes: string | null
+          hemoglobin_level: number | null
+          id: string
+          pulse_rate: number | null
+          record_date: string
+          recorded_by: string | null
+          updated_at: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          blood_pressure_diastolic?: number | null
+          blood_pressure_systolic?: number | null
+          created_at?: string | null
+          deferral_duration_days?: number | null
+          deferral_reason?: string | null
+          donation_id?: string | null
+          donor_id: string
+          health_notes?: string | null
+          hemoglobin_level?: number | null
+          id?: string
+          pulse_rate?: number | null
+          record_date: string
+          recorded_by?: string | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          blood_pressure_diastolic?: number | null
+          blood_pressure_systolic?: number | null
+          created_at?: string | null
+          deferral_duration_days?: number | null
+          deferral_reason?: string | null
+          donation_id?: string | null
+          donor_id?: string
+          health_notes?: string | null
+          hemoglobin_level?: number | null
+          id?: string
+          pulse_rate?: number | null
+          record_date?: string
+          recorded_by?: string | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donor_health_records_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: false
+            referencedRelation: "donation_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_health_records_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       donor_points: {
         Row: {
           created_at: string

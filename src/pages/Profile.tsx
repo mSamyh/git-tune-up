@@ -14,7 +14,7 @@ import {
   Droplet, MapPin, Phone, Edit2, Settings, Gift, QrCode, LogOut, 
   Calendar, Award, Heart, Shield, ChevronRight, X, Check, Clock,
   User, Grid3X3, Bookmark, MoreHorizontal, Sparkles, MessageCircle, Link2,
-  Share2, ExternalLink
+  Share2, ExternalLink, Activity
 } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { AvatarUpload } from "@/components/AvatarUpload";
@@ -24,6 +24,7 @@ import { RewardsSection } from "@/components/RewardsSection";
 import { AvailabilityToggle } from "@/components/AvailabilityToggle";
 import { DonorQRCard } from "@/components/DonorQRCard";
 import { AchievementsPreview } from "@/components/AchievementsPreview";
+import { HealthTimeline } from "@/components/health/HealthTimeline";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Profile {
@@ -466,6 +467,14 @@ const Profile = () => {
             >
               <Grid3X3 className="h-5 w-5" />
             </TabsTrigger>
+            {isDonor && (
+              <TabsTrigger 
+                value="health" 
+                className="flex-1 rounded-none h-full text-muted-foreground data-[state=active]:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              >
+                <Activity className="h-5 w-5" />
+              </TabsTrigger>
+            )}
             <TabsTrigger 
               value="saved" 
               className="flex-1 rounded-none h-full text-muted-foreground data-[state=active]:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
@@ -529,6 +538,13 @@ const Profile = () => {
               </button>
             </Card>
           </TabsContent>
+
+          {/* Health Tab */}
+          {isDonor && (
+            <TabsContent value="health" className="mt-4">
+              <HealthTimeline userId={profile.id} />
+            </TabsContent>
+          )}
 
           {/* Saved Tab */}
           <TabsContent value="saved" className="mt-4">
