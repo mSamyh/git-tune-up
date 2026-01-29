@@ -733,6 +733,7 @@ export type Database = {
           status_note: string | null
           title: string | null
           title_color: string | null
+          unavailable_until: string | null
           updated_at: string | null
           user_type: string | null
         }
@@ -757,6 +758,7 @@ export type Database = {
           status_note?: string | null
           title?: string | null
           title_color?: string | null
+          unavailable_until?: string | null
           updated_at?: string | null
           user_type?: string | null
         }
@@ -781,6 +783,7 @@ export type Database = {
           status_note?: string | null
           title?: string | null
           title_color?: string | null
+          unavailable_until?: string | null
           updated_at?: string | null
           user_type?: string | null
         }

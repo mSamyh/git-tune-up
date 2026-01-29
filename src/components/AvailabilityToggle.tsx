@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, Clock, Ban } from "lucide-react";
+import { Check, Clock, Ban, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useReferenceData } from "@/contexts/ReferenceDataContext";
 import { LucideIcon } from "lucide-react";
@@ -21,10 +21,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format, addDays, addMonths } from "date-fns";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface AvailabilityToggleProps {
   value: string;
-  onChange: (status: string, metadata?: { reservedUntil?: string; statusNote?: string }) => void;
+  onChange: (status: string, metadata?: { reservedUntil?: string; statusNote?: string; unavailableUntil?: string }) => void;
   canSetAvailable: boolean;
   daysUntilAvailable?: number;
   reservedUntil?: string | null;
@@ -84,6 +92,14 @@ const QUICK_NOTES = [
   "Busy period",
 ];
 
+// Duration options for unavailable status
+const DURATION_OPTIONS = [
+  { value: "1week", label: "1 Week", days: 7 },
+  { value: "1month", label: "1 Month", days: 30 },
+  { value: "custom", label: "Until...", days: null },
+  { value: "indefinite", label: "Indefinite", days: null },
+];
+
 // Generate months for selector
 const MONTHS = [
   { value: "01", label: "January" },
@@ -140,6 +156,9 @@ export const AvailabilityToggle = ({
   
   // Unavailable dialog state
   const [noteInput, setNoteInput] = useState(statusNote || "");
+  const [selectedDuration, setSelectedDuration] = useState<string>("indefinite");
+  const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const MAX_NOTE_LENGTH = 60;
 
   // Use database statuses if available, otherwise fallback
@@ -169,6 +188,8 @@ export const AvailabilityToggle = ({
     
     if (status === "unavailable") {
       setNoteInput(statusNote || "");
+      setSelectedDuration("indefinite");
+      setCustomDate(undefined);
       setShowUnavailableDialog(true);
       return;
     }
@@ -191,8 +212,22 @@ export const AvailabilityToggle = ({
   };
   
   const handleSaveUnavailable = () => {
+    let unavailableUntilDate: string | undefined = undefined;
+    
+    if (selectedDuration === "1week") {
+      unavailableUntilDate = format(addDays(new Date(), 7), "yyyy-MM-dd");
+    } else if (selectedDuration === "1month") {
+      unavailableUntilDate = format(addMonths(new Date(), 1), "yyyy-MM-dd");
+    } else if (selectedDuration === "custom" && customDate) {
+      unavailableUntilDate = format(customDate, "yyyy-MM-dd");
+    }
+    // "indefinite" means no date is set
+    
     setAnimatingStatus("unavailable");
-    onChange("unavailable", { statusNote: noteInput.trim() || undefined });
+    onChange("unavailable", { 
+      statusNote: noteInput.trim() || undefined,
+      unavailableUntil: unavailableUntilDate 
+    });
     setShowUnavailableDialog(false);
   };
   
@@ -202,6 +237,17 @@ export const AvailabilityToggle = ({
     } else {
       setNoteInput(note);
     }
+  };
+
+  const getCalculatedAvailableDate = () => {
+    if (selectedDuration === "1week") {
+      return format(addDays(new Date(), 7), "MMM d, yyyy");
+    } else if (selectedDuration === "1month") {
+      return format(addMonths(new Date(), 1), "MMM d, yyyy");
+    } else if (selectedDuration === "custom" && customDate) {
+      return format(customDate, "MMM d, yyyy");
+    }
+    return null;
   };
 
   useEffect(() => {
@@ -266,7 +312,7 @@ export const AvailabilityToggle = ({
           
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Reserved until</Label>
+              <Label className="text-sm text-muted-foreground">Reserved for</Label>
               <div className="flex gap-2">
                 <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                   <SelectTrigger className="flex-1">
@@ -297,7 +343,7 @@ export const AvailabilityToggle = ({
             </div>
             
             <p className="text-xs text-muted-foreground">
-              This will be visible to others looking for donors.
+              You'll automatically become available after this month ends (unless you've donated recently).
             </p>
           </div>
           
@@ -312,18 +358,78 @@ export const AvailabilityToggle = ({
         </DialogContent>
       </Dialog>
       
-      {/* Unavailable Note Dialog */}
+      {/* Unavailable Note Dialog - Enhanced with Duration Options */}
       <Dialog open={showUnavailableDialog} onOpenChange={setShowUnavailableDialog}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Ban className="h-5 w-5 text-red-500" />
-              Add a note (optional)
+              Set Unavailable Period
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 py-2">
+            {/* Duration Selection */}
             <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">How long?</Label>
+              <ToggleGroup 
+                type="single" 
+                value={selectedDuration} 
+                onValueChange={(val) => val && setSelectedDuration(val)}
+                className="grid grid-cols-2 gap-2"
+              >
+                {DURATION_OPTIONS.map((opt) => (
+                  <ToggleGroupItem 
+                    key={opt.value} 
+                    value={opt.value}
+                    className={cn(
+                      "h-10 rounded-xl border data-[state=on]:bg-red-500 data-[state=on]:text-white data-[state=on]:border-red-500",
+                      "hover:bg-muted"
+                    )}
+                  >
+                    {opt.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+            
+            {/* Custom Date Picker */}
+            {selectedDuration === "custom" && (
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Until date</Label>
+                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal h-11 rounded-xl",
+                        !customDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarDays className="mr-2 h-4 w-4" />
+                      {customDate ? format(customDate, "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={customDate}
+                      onSelect={(date) => {
+                        setCustomDate(date);
+                        setDatePickerOpen(false);
+                      }}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+            
+            {/* Reason Input */}
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Reason (optional)</Label>
               <div className="relative">
                 <Input
                   placeholder="What's happening?"
@@ -338,6 +444,7 @@ export const AvailabilityToggle = ({
               </div>
             </div>
             
+            {/* Quick Notes */}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Quick options</Label>
               <div className="flex flex-wrap gap-2">
@@ -359,16 +466,32 @@ export const AvailabilityToggle = ({
               </div>
             </div>
             
-            <p className="text-xs text-muted-foreground">
-              This note will be visible to others looking for donors.
-            </p>
+            {/* Info Message */}
+            {getCalculatedAvailableDate() && (
+              <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                <p className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5" />
+                  You'll automatically become available on {getCalculatedAvailableDate()}
+                </p>
+              </div>
+            )}
+            
+            {selectedDuration === "indefinite" && (
+              <p className="text-xs text-muted-foreground">
+                You'll need to manually set yourself as available again.
+              </p>
+            )}
           </div>
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowUnavailableDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveUnavailable} className="bg-red-500 hover:bg-red-600">
+            <Button 
+              onClick={handleSaveUnavailable} 
+              className="bg-red-500 hover:bg-red-600"
+              disabled={selectedDuration === "custom" && !customDate}
+            >
               Save
             </Button>
           </DialogFooter>

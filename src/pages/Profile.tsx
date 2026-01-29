@@ -148,7 +148,7 @@ const Profile = () => {
     return Math.max(0, 90 - daysSinceLastDonation);
   };
 
-  const updateAvailability = async (status: string, metadata?: { reservedUntil?: string; statusNote?: string }) => {
+  const updateAvailability = async (status: string, metadata?: { reservedUntil?: string; statusNote?: string; unavailableUntil?: string }) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -169,8 +169,9 @@ const Profile = () => {
     }
     
     // Add metadata for unavailable status
-    if (status === 'unavailable' && metadata?.statusNote !== undefined) {
-      updateData.status_note = metadata.statusNote || null;
+    if (status === 'unavailable') {
+      updateData.status_note = metadata?.statusNote || null;
+      updateData.unavailable_until = metadata?.unavailableUntil || null;
     }
 
     const { error } = await supabase
@@ -350,7 +351,7 @@ const Profile = () => {
                 <p className="text-xl font-bold">{donationCount}</p>
                 <p className="text-xs text-muted-foreground">Donations</p>
               </button>
-              <button onClick={() => setShowRewardsDialog(true)} className="text-center hover:opacity-70 transition-opacity">
+              <button onClick={() => navigate('/rewards')} className="text-center hover:opacity-70 transition-opacity">
                 <p className="text-xl font-bold">{totalPoints}</p>
                 <p className="text-xs text-muted-foreground">Points</p>
               </button>
@@ -421,7 +422,7 @@ const Profile = () => {
             <Button 
               variant="secondary" 
               className="flex-1 rounded-xl h-10 text-sm font-medium"
-              onClick={() => setShowRewardsDialog(true)}
+              onClick={() => navigate('/rewards')}
             >
               <Gift className="h-4 w-4 mr-1.5" />
               Rewards
