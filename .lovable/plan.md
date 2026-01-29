@@ -1,332 +1,325 @@
 
-
-# Donor Health Timeline - Implementation Plan
+# Rewards Page Redesign & Status Duration Enhancement
 
 ## Overview
 
-Create a private, advanced health timeline dashboard for donors that tracks hemoglobin levels, donation intervals, deferral history, and health notes. This feature encourages safe, responsible donation by providing donors with visibility into their health metrics over time.
+This plan covers two major enhancements:
+1. **Redesign Rewards Page**: Transform the popup dialog into a dedicated full-page rewards experience at `/rewards`
+2. **Enhanced Availability Status**: Add time-based duration options for "Unavailable" and automatic reversion for "Reserved" with 90-day rule integration
 
 ---
 
-## Design Approach
+## Part 1: Rewards Page Redesign
 
-Following the existing Instagram-inspired UI patterns, the Health Timeline will be a new tab in the Profile page with a modern, visually-rich design featuring:
+### Current State
+- Rewards are displayed in a Dialog popup triggered from Profile page
+- Content is cramped in a modal with scrolling
+- All sections (Points, Achievements, Rewards, Vouchers, History) are collapsible
 
-- **Timeline visualization** with connected health entries
-- **Interactive charts** for hemoglobin trends using Recharts (already installed)
-- **Collapsible sections** for detailed health records
-- **Color-coded status indicators** for health metrics
+### New Design: Full-Page Rewards Experience
 
----
+**Route:** `/rewards`
 
-## Database Schema Changes
-
-### New Table: `donor_health_records`
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | uuid (PK) | Primary key |
-| `donor_id` | uuid (FK) | References profiles.id |
-| `donation_id` | uuid (FK, nullable) | References donation_history.id |
-| `record_date` | date | Date of the health record |
-| `hemoglobin_level` | numeric(4,1) | Hemoglobin in g/dL (e.g., 13.5) |
-| `blood_pressure_systolic` | integer | Optional: systolic BP |
-| `blood_pressure_diastolic` | integer | Optional: diastolic BP |
-| `pulse_rate` | integer | Optional: pulse in BPM |
-| `weight_kg` | numeric(5,2) | Optional: weight in kg |
-| `deferral_reason` | text | If deferred, the reason |
-| `deferral_duration_days` | integer | Days of deferral |
-| `health_notes` | text | Private notes |
-| `recorded_by` | text | 'self' or 'hospital' |
-| `created_at` | timestamptz | Auto timestamp |
-| `updated_at` | timestamptz | Auto timestamp |
-
-### RLS Policies
-
-```sql
--- Users can only view their own health records
-CREATE POLICY "Users can view own health records"
-ON donor_health_records FOR SELECT
-USING (auth.uid() = donor_id);
-
--- Users can insert their own health records
-CREATE POLICY "Users can insert own health records"
-ON donor_health_records FOR INSERT
-WITH CHECK (auth.uid() = donor_id);
-
--- Users can update their own health records
-CREATE POLICY "Users can update own health records"
-ON donor_health_records FOR UPDATE
-USING (auth.uid() = donor_id);
-
--- Users can delete their own health records
-CREATE POLICY "Users can delete own health records"
-ON donor_health_records FOR DELETE
-USING (auth.uid() = donor_id);
-
--- Admins can manage all records
-CREATE POLICY "Admins can manage all health records"
-ON donor_health_records FOR ALL
-USING (has_role(auth.uid(), 'admin'));
-```
-
----
-
-## Component Architecture
-
-### New Components
-
-```
-src/components/
-├── health/
-│   ├── HealthTimeline.tsx          # Main timeline component
-│   ├── HealthTimelineEntry.tsx     # Individual timeline entry
-│   ├── HemoglobinChart.tsx         # Recharts line chart for Hb trends
-│   ├── DonationIntervalStats.tsx   # Interval analysis component
-│   ├── DeferralHistory.tsx         # Deferral records section
-│   ├── AddHealthRecordSheet.tsx    # Bottom sheet for adding records
-│   └── HealthInsightsCard.tsx      # AI-powered health insights
-```
-
----
-
-## UI/UX Design
-
-### Profile Page Tab Addition
-
-Add a new "Health" tab (Heart icon) to the existing Profile tabs:
-
-```
-[Posts] [Saved] [Health] [Settings]
-  📸      🔖      ❤️       ⚙️
-```
-
-### Health Timeline Tab Content
-
+**Layout Structure:**
 ```text
 ┌─────────────────────────────────────────────┐
-│  ❤️ Health Timeline                         │
-│  Private health dashboard                   │
+│  🎁 My Rewards                    [← Back]  │
 ├─────────────────────────────────────────────┤
 │                                             │
-│  ┌─ Hemoglobin Trend ─────────────────────┐ │
-│  │  📈 Line chart (last 12 months)        │ │
-│  │  Current: 14.2 g/dL  ✅ Normal         │ │
-│  └────────────────────────────────────────┘ │
+│  ┌─ Points Card ────────────────────────┐   │
+│  │  🏆 1,250 points         Gold Member │   │
+│  │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━       │   │
+│  │  850 pts to Platinum                 │   │
+│  └──────────────────────────────────────┘   │
 │                                             │
-│  ┌─ Quick Stats ──────────────────────────┐ │
-│  │  [⏱️ Avg Interval] [📊 Records] [⚠️ ]  │ │
-│  │    102 days         12          0 def. │ │
-│  └────────────────────────────────────────┘ │
+│  ┌─ Tab Navigation ─────────────────────┐   │
+│  │ [🎁 Rewards] [🎫 Vouchers] [📊 Stats]│   │
+│  └──────────────────────────────────────┘   │
 │                                             │
-│  ┌─ Health Records ───────────────────────┐ │
-│  │  🔴 Jan 15, 2025                       │ │
-│  │  ├─ Hb: 14.2 g/dL (Normal)             │ │
-│  │  ├─ BP: 120/80 mmHg                    │ │
-│  │  └─ Hospital donation                   │ │
-│  │                                         │ │
-│  │  🔴 Oct 08, 2024                       │ │
-│  │  ├─ Hb: 13.8 g/dL (Normal)             │ │
-│  │  └─ Self-recorded                       │ │
-│  │                                         │ │
-│  │  ⚠️ Jul 22, 2024 - DEFERRED            │ │
-│  │  ├─ Hb: 11.5 g/dL (Low)                │ │
-│  │  └─ Reason: Low hemoglobin             │ │
-│  └────────────────────────────────────────┘ │
+│  ┌─ Rewards Tab Content ────────────────┐   │
+│  │                                      │   │
+│  │  Filter: [All ▾] [Category ▾]        │   │
+│  │                                      │   │
+│  │  ┌─ Reward Card ──────────────────┐  │   │
+│  │  │ [Logo] Title          500 pts  │  │   │
+│  │  │        Description    [Redeem] │  │   │
+│  │  │        🎁 10% discount applies  │  │   │
+│  │  └────────────────────────────────┘  │   │
+│  │                                      │   │
+│  └──────────────────────────────────────┘   │
 │                                             │
-│           [+ Add Health Record]             │
 └─────────────────────────────────────────────┘
 ```
 
-### Add Health Record Sheet
-
-```text
-┌─────────────────────────────────────────────┐
-│           Add Health Record                 │
-│  Track your donation health metrics         │
-├─────────────────────────────────────────────┤
-│                                             │
-│  Record Date                                │
-│  [📅 Jan 28, 2026                    ▼]    │
-│                                             │
-│  ─ Hemoglobin ───────────────────────────  │
-│  [    14.2    ] g/dL                       │
-│  Normal: 12.0-17.5 for adults              │
-│                                             │
-│  ─ Blood Pressure (optional) ────────────  │
-│  [  120  ] / [  80  ] mmHg                 │
-│                                             │
-│  ─ Other Metrics ────────────────────────  │
-│  Pulse: [  72  ] BPM                       │
-│  Weight: [  65.5  ] kg                     │
-│                                             │
-│  ─ Deferral Info ────────────────────────  │
-│  [ ] I was deferred from donating          │
-│                                             │
-│  ─ Health Notes (private) ───────────────  │
-│  [                                    ]    │
-│  [                                    ]    │
-│                                             │
-├─────────────────────────────────────────────┤
-│  [Cancel]              [Save Record]        │
-└─────────────────────────────────────────────┘
-```
-
----
-
-## Key Features
-
-### 1. Hemoglobin Trend Chart
-- Line chart using Recharts (already installed)
-- Shows last 12 months of hemoglobin readings
-- Color-coded zones: Green (normal), Yellow (borderline), Red (low)
-- Normal range indicator bands
-
-### 2. Donation Interval Analysis
-- Calculate average days between donations
-- Show consistency patterns
-- Alert if donating too frequently (< 56 days)
-
-### 3. Deferral Tracking
-- Log deferral reasons (low hemoglobin, medication, travel, illness, etc.)
-- Track deferral duration
-- Show deferral history with reasons
-
-### 4. Health Insights Card
-- AI-powered insights using Lovable AI
-- "Your hemoglobin has been stable for 6 months"
-- "Consider increasing iron-rich foods before next donation"
-- "You've maintained healthy donation intervals"
-
-### 5. Privacy First
-- All health data is private (RLS enforced)
-- Option to add private notes
-- No health data visible to other users
-
----
-
-## File Changes Summary
+### File Changes
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/pages/Profile.tsx` | MODIFY | Add "Health" tab and integrate HealthTimeline |
-| `src/components/health/HealthTimeline.tsx` | CREATE | Main health timeline component |
-| `src/components/health/HealthTimelineEntry.tsx` | CREATE | Individual entry in timeline |
-| `src/components/health/HemoglobinChart.tsx` | CREATE | Recharts hemoglobin trend line chart |
-| `src/components/health/DonationIntervalStats.tsx` | CREATE | Interval statistics component |
-| `src/components/health/DeferralHistory.tsx` | CREATE | Deferral records display |
-| `src/components/health/AddHealthRecordSheet.tsx` | CREATE | Sheet for adding health records |
-| `src/components/health/HealthInsightsCard.tsx` | CREATE | AI-powered health insights |
+| `src/pages/Rewards.tsx` | CREATE | New full-page rewards experience |
+| `src/App.tsx` | MODIFY | Add `/rewards` route |
+| `src/pages/Profile.tsx` | MODIFY | Change "Rewards" button to navigate to /rewards |
+| `src/components/RewardsSection.tsx` | MODIFY | Adapt for both dialog and full-page use |
+
+### Technical Implementation
+
+**New `/rewards` Route Features:**
+- Full-screen page with AppHeader and BottomNav
+- Sticky points summary card at top
+- Tab navigation: Rewards, My Vouchers, Achievements, History
+- Category filters with horizontal scrolling chips
+- Pull-to-refresh capability
+- Animated reward cards with modern design
+- QR code generation inline (no dialog)
 
 ---
 
-## Migration SQL
+## Part 2: Enhanced Availability Status
 
+### Current State
+- "Unavailable" status has optional note only
+- "Reserved" status has month/year selection but no auto-reversion
+- No automatic status changes after time periods
+
+### New Features
+
+#### 2.1 Unavailable Duration Options
+
+When user selects "Unavailable", show enhanced dialog:
+
+```text
+┌─────────────────────────────────────────────┐
+│  🚫 Set Unavailable Period                  │
+├─────────────────────────────────────────────┤
+│                                             │
+│  ─ Duration ─────────────────────────────  │
+│  [1 Week] [1 Month] [Until Date] [Indefinite]│
+│                                             │
+│  📅 If "Until Date" selected:               │
+│  [Select Date Picker]                       │
+│                                             │
+│  ─ Reason (optional) ────────────────────  │
+│  [What's happening?                    ]    │
+│                                             │
+│  Quick: [Out of town] [Medical] [Personal]  │
+│                                             │
+│  ℹ️ You'll automatically become available   │
+│     on [calculated date]                    │
+│                                             │
+├─────────────────────────────────────────────┤
+│  [Cancel]              [Save]               │
+└─────────────────────────────────────────────┘
+```
+
+**Duration Options:**
+- **1 Week**: `unavailable_until = CURRENT_DATE + 7`
+- **1 Month**: `unavailable_until = CURRENT_DATE + 30`
+- **Until Date**: User picks specific date
+- **Indefinite**: No auto-reversion (current behavior)
+
+#### 2.2 Reserved Status Auto-Reversion
+
+When reserved period ends:
+1. System automatically sets status to "available"
+2. BUT if a donation is logged during reserved period → apply 90-day rule
+
+#### 2.3 Database Changes
+
+**Add column to profiles:**
 ```sql
--- Create donor_health_records table
-CREATE TABLE public.donor_health_records (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  donor_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  donation_id UUID REFERENCES donation_history(id) ON DELETE SET NULL,
-  record_date DATE NOT NULL,
-  hemoglobin_level NUMERIC(4,1),
-  blood_pressure_systolic INTEGER,
-  blood_pressure_diastolic INTEGER,
-  pulse_rate INTEGER,
-  weight_kg NUMERIC(5,2),
-  deferral_reason TEXT,
-  deferral_duration_days INTEGER,
-  health_notes TEXT,
-  recorded_by TEXT DEFAULT 'self',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE donor_health_records ENABLE ROW LEVEL SECURITY;
-
--- Create indexes for performance
-CREATE INDEX idx_health_records_donor ON donor_health_records(donor_id);
-CREATE INDEX idx_health_records_date ON donor_health_records(donor_id, record_date DESC);
-
--- Add updated_at trigger
-CREATE TRIGGER update_health_records_updated_at
-  BEFORE UPDATE ON donor_health_records
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+ALTER TABLE profiles ADD COLUMN unavailable_until DATE;
 ```
 
----
-
-## Technical Implementation Details
-
-### HealthTimeline Component Structure
-
-```tsx
-// Main component with data fetching and state management
-const HealthTimeline = ({ userId }: { userId: string }) => {
-  const [records, setRecords] = useState<HealthRecord[]>([]);
-  const [showAddSheet, setShowAddSheet] = useState(false);
+**Updated trigger function:**
+```sql
+CREATE OR REPLACE FUNCTION auto_revert_availability_status()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Check if reserved period has ended
+  IF NEW.availability_status = 'reserved' 
+     AND NEW.reserved_until IS NOT NULL 
+     AND NEW.reserved_until < CURRENT_DATE THEN
+    -- Check if there's a recent donation requiring 90-day wait
+    IF NEW.last_donation_date IS NOT NULL 
+       AND (CURRENT_DATE - NEW.last_donation_date) < 90 THEN
+      NEW.availability_status := 'unavailable';
+      NEW.reserved_until := NULL;
+    ELSE
+      NEW.availability_status := 'available';
+      NEW.reserved_until := NULL;
+    END IF;
+  END IF;
   
-  // Fetch health records with isMounted pattern
-  // Calculate statistics (avg Hb, avg interval, deferral count)
-  // Render chart, stats, and timeline entries
-};
+  -- Check if unavailable period has ended
+  IF NEW.availability_status = 'unavailable' 
+     AND NEW.unavailable_until IS NOT NULL 
+     AND NEW.unavailable_until < CURRENT_DATE THEN
+    -- Check 90-day rule
+    IF NEW.last_donation_date IS NOT NULL 
+       AND (CURRENT_DATE - NEW.last_donation_date) < 90 THEN
+      -- Keep unavailable, but clear the until date
+      NEW.unavailable_until := NULL;
+    ELSE
+      NEW.availability_status := 'available';
+      NEW.unavailable_until := NULL;
+      NEW.status_note := NULL;
+    END IF;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 ```
 
-### Hemoglobin Chart Configuration
-
-```tsx
-// Using Recharts with gradient fill
-<ResponsiveContainer width="100%" height={180}>
-  <LineChart data={hemoglobinData}>
-    <defs>
-      <linearGradient id="hbGradient" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-        <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-      </linearGradient>
-    </defs>
-    <XAxis dataKey="date" />
-    <YAxis domain={[10, 18]} />
-    <ReferenceLine y={12} stroke="#fbbf24" strokeDasharray="3 3" />
-    <Line type="monotone" dataKey="hemoglobin" stroke="#ef4444" />
-    <Area type="monotone" dataKey="hemoglobin" fill="url(#hbGradient)" />
-  </LineChart>
-</ResponsiveContainer>
+**Scheduled job for auto-reversion:**
+```sql
+-- Run daily to auto-revert expired statuses
+SELECT cron.schedule(
+  'auto-revert-availability',
+  '0 0 * * *', -- Every day at midnight
+  $$
+  UPDATE profiles 
+  SET availability_status = CASE
+    WHEN last_donation_date IS NOT NULL AND (CURRENT_DATE - last_donation_date) < 90 
+    THEN 'unavailable'
+    ELSE 'available'
+  END,
+  reserved_until = NULL,
+  unavailable_until = NULL,
+  status_note = NULL
+  WHERE (
+    (availability_status = 'reserved' AND reserved_until < CURRENT_DATE)
+    OR (availability_status = 'unavailable' AND unavailable_until IS NOT NULL AND unavailable_until < CURRENT_DATE)
+  );
+  $$
+);
 ```
 
-### Health Status Indicators
+### File Changes
+
+| File | Action | Description |
+|------|--------|-------------|
+| `src/components/AvailabilityToggle.tsx` | MODIFY | Add duration options for unavailable |
+| Database migration | CREATE | Add `unavailable_until` column and cron job |
+
+---
+
+## Part 3: Updated AvailabilityToggle Component
+
+### New Unavailable Dialog Design
 
 ```tsx
-// Hemoglobin status helper
-const getHemoglobinStatus = (level: number) => {
-  if (level < 12.0) return { status: 'low', color: 'red', label: 'Low' };
-  if (level < 12.5) return { status: 'borderline', color: 'amber', label: 'Borderline' };
-  return { status: 'normal', color: 'green', label: 'Normal' };
+// Duration options
+const UNAVAILABLE_DURATIONS = [
+  { value: "1week", label: "1 Week", days: 7 },
+  { value: "1month", label: "1 Month", days: 30 },
+  { value: "custom", label: "Until Date", days: null },
+  { value: "indefinite", label: "Indefinite", days: null },
+];
+```
+
+**Enhanced onChange callback:**
+```typescript
+onChange: (status: string, metadata?: { 
+  reservedUntil?: string; 
+  statusNote?: string;
+  unavailableUntil?: string; // NEW
+}) => void;
+```
+
+---
+
+## UI Component Updates
+
+### Profile.tsx Updates
+
+```tsx
+// Update updateAvailability function
+const updateAvailability = async (status: string, metadata?: { 
+  reservedUntil?: string; 
+  statusNote?: string;
+  unavailableUntil?: string; // NEW
+}) => {
+  const updateData: Record<string, any> = { availability_status: status };
+  
+  if (status === 'reserved' && metadata?.reservedUntil) {
+    updateData.reserved_until = metadata.reservedUntil;
+  }
+  
+  if (status === 'unavailable') {
+    updateData.status_note = metadata?.statusNote || null;
+    updateData.unavailable_until = metadata?.unavailableUntil || null; // NEW
+  }
+  
+  // ... rest of function
 };
 ```
 
 ---
 
-## Design Consistency
+## Summary of Changes
 
-Following existing patterns from the codebase:
+### New Files
+1. `src/pages/Rewards.tsx` - Full-page rewards experience
 
-- **Cards**: `rounded-2xl border-border/50 shadow-soft`
-- **Inner sections**: `rounded-xl bg-muted/30`
-- **Icons in containers**: `w-10 h-10 rounded-xl bg-primary/10`
-- **Buttons**: `h-11 rounded-xl`
-- **Badge styling**: Following PointsHistoryPanel patterns
-- **Timeline design**: Similar to DonationHistoryByYear collapsible year groups
-- **Sheet component**: `side="bottom" className="rounded-t-3xl"`
+### Modified Files
+1. `src/App.tsx` - Add `/rewards` route
+2. `src/pages/Profile.tsx` - Navigate to /rewards instead of dialog, update availability function
+3. `src/components/AvailabilityToggle.tsx` - Add duration options for unavailable
+4. `src/components/RewardsSection.tsx` - Minor adaptations
+
+### Database Changes
+1. Add `unavailable_until DATE` column to profiles
+2. Update `clear_status_metadata()` trigger to clear `unavailable_until`
+3. Create cron job for daily auto-reversion of expired statuses
 
 ---
 
-## Privacy & Security Considerations
+## Visual Mockups
 
-1. **RLS Policies**: Strict row-level security ensuring users only access their own health data
-2. **No Public Visibility**: Health data is never exposed in donor directory or public profiles
-3. **Optional Fields**: Most fields are optional to respect user privacy
-4. **Private Notes**: Health notes are for personal use only
-5. **Admin Access**: Admins can view for support purposes but limited to necessity
+### Rewards Page Mobile View
+```text
+┌─────────────────────────┐
+│ ← My Rewards            │
+├─────────────────────────┤
+│ ┌─────────────────────┐ │
+│ │  🏆 1,250 pts       │ │
+│ │  Gold Member        │ │
+│ │  ━━━━━━━━━━━━━━━━━ │ │
+│ │  850 to Platinum    │ │
+│ └─────────────────────┘ │
+│                         │
+│ [🎁][🎫][🏆][📊]       │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ [🍔] Coffee Voucher │ │
+│ │ Partner Cafe        │ │
+│ │ 100pts     [Redeem] │ │
+│ └─────────────────────┘ │
+│ ┌─────────────────────┐ │
+│ │ [🏥] Health Check   │ │
+│ │ Partner Hospital    │ │
+│ │ 500pts     [Redeem] │ │
+│ └─────────────────────┘ │
+└─────────────────────────┘
+```
 
+### Enhanced Unavailable Dialog
+```text
+┌─────────────────────────┐
+│ 🚫 Set Unavailable     │
+├─────────────────────────┤
+│ How long?               │
+│ [1 Week●] [1 Month]     │
+│ [Until...] [Indefinite] │
+│                         │
+│ Reason (optional)       │
+│ [________________]      │
+│                         │
+│ [Medical] [Travel]      │
+│ [Personal] [Busy]       │
+│                         │
+│ ℹ️ Available on Feb 5   │
+├─────────────────────────┤
+│ [Cancel]    [Save]      │
+└─────────────────────────┘
+```
