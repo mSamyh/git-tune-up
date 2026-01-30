@@ -47,3 +47,9 @@ verify_jwt = false
 
 [functions.send-telegram-notification]
 verify_jwt = false
+
+[functions.verify-hospital-pin]
+verify_jwt = false
+
+[functions.update-blood-stock]
+verify_jwt = false

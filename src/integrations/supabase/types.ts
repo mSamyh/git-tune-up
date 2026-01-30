@@ -218,6 +218,107 @@ export type Database = {
         }
         Relationships: []
       }
+      blood_stock: {
+        Row: {
+          blood_group: string
+          created_at: string
+          expiry_date: string | null
+          hospital_id: string
+          id: string
+          last_updated: string
+          notes: string | null
+          status: string
+          units_available: number
+          units_reserved: number
+          updated_at: string
+        }
+        Insert: {
+          blood_group: string
+          created_at?: string
+          expiry_date?: string | null
+          hospital_id: string
+          id?: string
+          last_updated?: string
+          notes?: string | null
+          status?: string
+          units_available?: number
+          units_reserved?: number
+          updated_at?: string
+        }
+        Update: {
+          blood_group?: string
+          created_at?: string
+          expiry_date?: string | null
+          hospital_id?: string
+          id?: string
+          last_updated?: string
+          notes?: string | null
+          status?: string
+          units_available?: number
+          units_reserved?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_stock_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blood_stock_history: {
+        Row: {
+          blood_group: string
+          blood_stock_id: string | null
+          change_reason: string | null
+          change_type: string
+          changed_at: string
+          hospital_id: string
+          id: string
+          new_units: number
+          previous_units: number
+        }
+        Insert: {
+          blood_group: string
+          blood_stock_id?: string | null
+          change_reason?: string | null
+          change_type: string
+          changed_at?: string
+          hospital_id: string
+          id?: string
+          new_units?: number
+          previous_units?: number
+        }
+        Update: {
+          blood_group?: string
+          blood_stock_id?: string | null
+          change_reason?: string | null
+          change_type?: string
+          changed_at?: string
+          hospital_id?: string
+          id?: string
+          new_units?: number
+          previous_units?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_stock_history_blood_stock_id_fkey"
+            columns: ["blood_stock_id"]
+            isOneToOne: false
+            referencedRelation: "blood_stock"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blood_stock_history_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       donation_history: {
         Row: {
           blood_request_id: string | null
@@ -486,6 +587,51 @@ export type Database = {
           is_active?: boolean | null
           label?: string
           sort_order?: number | null
+        }
+        Relationships: []
+      }
+      hospitals: {
+        Row: {
+          address: string | null
+          atoll: string | null
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          island: string | null
+          logo_url: string | null
+          name: string
+          phone: string | null
+          pin_hash: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          atoll?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          island?: string | null
+          logo_url?: string | null
+          name: string
+          phone?: string | null
+          pin_hash: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          atoll?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          island?: string | null
+          logo_url?: string | null
+          name?: string
+          phone?: string | null
+          pin_hash?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1189,6 +1335,10 @@ export type Database = {
           p_hospital_name: string
         }
         Returns: Json
+      }
+      calculate_blood_stock_status: {
+        Args: { blood_group: string; units: number }
+        Returns: string
       }
       deduct_donation_points_secure: {
         Args: {
