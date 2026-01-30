@@ -1,325 +1,369 @@
 
-# Rewards Page Redesign & Status Duration Enhancement
+
+# Advanced Hospital Portal & Blood Stock Management
 
 ## Overview
 
-This plan covers two major enhancements:
-1. **Redesign Rewards Page**: Transform the popup dialog into a dedicated full-page rewards experience at `/rewards`
-2. **Enhanced Availability Status**: Add time-based duration options for "Unavailable" and automatic reversion for "Reserved" with 90-day rule integration
+Create a comprehensive hospital portal system that allows hospitals to manage their blood stock inventory while providing public visibility of blood availability to all users. This feature will help patients and requesters find blood at specific hospitals and enable hospitals to keep their stock information current.
 
 ---
 
-## Part 1: Rewards Page Redesign
+## System Architecture
 
-### Current State
-- Rewards are displayed in a Dialog popup triggered from Profile page
-- Content is cramped in a modal with scrolling
-- All sections (Points, Achievements, Rewards, Vouchers, History) are collapsible
+### User Roles & Access
 
-### New Design: Full-Page Rewards Experience
+| Role | Capabilities |
+|------|-------------|
+| **Hospital Staff** | Full CRUD on their hospital's blood stock, update contact info, view analytics |
+| **Admin** | Manage all hospitals, add/remove hospital accounts, view all stocks |
+| **Public Users** | View blood stock levels (read-only) from all hospitals |
 
-**Route:** `/rewards`
+### Portal Features
 
-**Layout Structure:**
+1. **Hospital Registration & Authentication** (PIN-based like Merchant Portal)
+2. **Blood Stock Management** (Add, Edit, Delete stock entries)
+3. **Real-time Stock Display** (Public visibility on main app)
+4. **Stock Analytics** (Usage trends, expiry alerts)
+5. **Contact Information Management**
+
+---
+
+## Database Schema
+
+### New Table: `hospitals`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid (PK) | Primary key |
+| `name` | text | Hospital name |
+| `address` | text | Full address |
+| `atoll` | text | Atoll location |
+| `island` | text | Island location |
+| `phone` | text | Contact phone |
+| `email` | text | Contact email (optional) |
+| `pin_hash` | text | Hashed 6-digit PIN for authentication |
+| `is_active` | boolean | Whether hospital is active |
+| `logo_url` | text | Hospital logo (optional) |
+| `created_at` | timestamptz | Creation timestamp |
+| `updated_at` | timestamptz | Last update timestamp |
+
+### New Table: `blood_stock`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid (PK) | Primary key |
+| `hospital_id` | uuid (FK) | References hospitals.id |
+| `blood_group` | text | Blood type (A+, A-, B+, etc.) |
+| `units_available` | integer | Current units available |
+| `units_reserved` | integer | Units reserved for pending surgeries |
+| `expiry_date` | date | Earliest expiry date in this batch |
+| `last_updated` | timestamptz | When stock was last updated |
+| `notes` | text | Optional notes (e.g., "Low - need donations") |
+| `status` | text | 'available', 'low', 'critical', 'out_of_stock' |
+| `created_at` | timestamptz | Creation timestamp |
+| `updated_at` | timestamptz | Last update timestamp |
+
+### New Table: `blood_stock_history`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid (PK) | Primary key |
+| `blood_stock_id` | uuid (FK) | References blood_stock.id |
+| `hospital_id` | uuid (FK) | References hospitals.id |
+| `blood_group` | text | Blood type |
+| `previous_units` | integer | Units before change |
+| `new_units` | integer | Units after change |
+| `change_type` | text | 'add', 'remove', 'adjust', 'expire' |
+| `change_reason` | text | Reason for change |
+| `changed_at` | timestamptz | When change occurred |
+
+---
+
+## RLS Policies
+
+### hospitals table
+```sql
+-- Public can view active hospitals
+CREATE POLICY "Public can view active hospitals"
+ON hospitals FOR SELECT USING (is_active = true);
+
+-- Admins can manage all hospitals
+CREATE POLICY "Admins can manage hospitals"
+ON hospitals FOR ALL USING (has_role(auth.uid(), 'admin'));
+```
+
+### blood_stock table
+```sql
+-- Everyone can view blood stock (public health information)
+CREATE POLICY "Public can view blood stock"
+ON blood_stock FOR SELECT USING (true);
+
+-- Hospital can only manage their own stock (via edge function)
+-- Direct updates blocked, all modifications via edge function
+```
+
+### blood_stock_history table
+```sql
+-- Admins can view history
+CREATE POLICY "Admins can view stock history"
+ON blood_stock_history FOR SELECT
+USING (has_role(auth.uid(), 'admin'));
+```
+
+---
+
+## Component Architecture
+
+### New Pages & Components
+
+```
+src/pages/
+├── HospitalPortal.tsx          # Main hospital portal (PIN auth + stock management)
+├── BloodStock.tsx              # Public blood stock viewer
+
+src/components/
+├── hospital/
+│   ├── HospitalStockManager.tsx    # CRUD interface for stock
+│   ├── BloodStockCard.tsx          # Individual blood type stock card
+│   ├── StockUpdateSheet.tsx        # Bottom sheet for updating stock
+│   ├── StockAnalytics.tsx          # Usage trends and analytics
+│   ├── ExpiryAlerts.tsx            # Upcoming expiry warnings
+│   └── HospitalInfo.tsx            # Hospital details display
+├── BloodStockOverview.tsx          # Public view of all hospital stocks
+├── HospitalBloodStockCard.tsx      # Public card showing hospital stock
+```
+
+---
+
+## UI Design
+
+### Hospital Portal (PIN Authentication)
+
 ```text
 ┌─────────────────────────────────────────────┐
-│  🎁 My Rewards                    [← Back]  │
+│  🏥 Hospital Portal                         │
 ├─────────────────────────────────────────────┤
 │                                             │
-│  ┌─ Points Card ────────────────────────┐   │
-│  │  🏆 1,250 points         Gold Member │   │
-│  │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━       │   │
-│  │  850 pts to Platinum                 │   │
-│  └──────────────────────────────────────┘   │
+│       [Hospital Icon]                       │
 │                                             │
-│  ┌─ Tab Navigation ─────────────────────┐   │
-│  │ [🎁 Rewards] [🎫 Vouchers] [📊 Stats]│   │
-│  └──────────────────────────────────────┘   │
+│    Enter your 6-digit Hospital PIN          │
+│    [○][○][○][○][○][○]                       │
 │                                             │
-│  ┌─ Rewards Tab Content ────────────────┐   │
-│  │                                      │   │
-│  │  Filter: [All ▾] [Category ▾]        │   │
-│  │                                      │   │
-│  │  ┌─ Reward Card ──────────────────┐  │   │
-│  │  │ [Logo] Title          500 pts  │  │   │
-│  │  │        Description    [Redeem] │  │   │
-│  │  │        🎁 10% discount applies  │  │   │
-│  │  └────────────────────────────────┘  │   │
-│  │                                      │   │
-│  └──────────────────────────────────────┘   │
+│    [━━━━━━ Verify PIN ━━━━━━]               │
+│                                             │
+│    Contact admin for portal access          │
+└─────────────────────────────────────────────┘
+```
+
+### Hospital Dashboard (After Authentication)
+
+```text
+┌─────────────────────────────────────────────┐
+│  🏥 IGM Hospital                   [Logout] │
+├─────────────────────────────────────────────┤
+│                                             │
+│  ┌─ Quick Stats ──────────────────────────┐ │
+│  │ [8 Types] [156 Units] [3 Critical]     │ │
+│  └────────────────────────────────────────┘ │
+│                                             │
+│  ┌─ Blood Stock ──────────────────────────┐ │
+│  │                                         │ │
+│  │  [A+]     45 units    ✅ Available     │ │
+│  │  [A-]     12 units    ⚠️ Low           │ │
+│  │  [B+]     38 units    ✅ Available     │ │
+│  │  [B-]     2 units     🔴 Critical      │ │
+│  │  [O+]     52 units    ✅ Available     │ │
+│  │  [O-]     0 units     ❌ Out           │ │
+│  │  [AB+]    7 units     ⚠️ Low           │ │
+│  │  [AB-]    0 units     ❌ Out           │ │
+│  │                                         │ │
+│  └────────────────────────────────────────┘ │
+│                                             │
+│        [+ Add/Update Stock]                 │
+│                                             │
+│  ┌─ Expiring Soon ────────────────────────┐ │
+│  │  ⚠️ 5 units A+ expire in 3 days        │ │
+│  │  ⚠️ 2 units B- expire in 5 days        │ │
+│  └────────────────────────────────────────┘ │
 │                                             │
 └─────────────────────────────────────────────┘
 ```
 
-### File Changes
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/pages/Rewards.tsx` | CREATE | New full-page rewards experience |
-| `src/App.tsx` | MODIFY | Add `/rewards` route |
-| `src/pages/Profile.tsx` | MODIFY | Change "Rewards" button to navigate to /rewards |
-| `src/components/RewardsSection.tsx` | MODIFY | Adapt for both dialog and full-page use |
-
-### Technical Implementation
-
-**New `/rewards` Route Features:**
-- Full-screen page with AppHeader and BottomNav
-- Sticky points summary card at top
-- Tab navigation: Rewards, My Vouchers, Achievements, History
-- Category filters with horizontal scrolling chips
-- Pull-to-refresh capability
-- Animated reward cards with modern design
-- QR code generation inline (no dialog)
-
----
-
-## Part 2: Enhanced Availability Status
-
-### Current State
-- "Unavailable" status has optional note only
-- "Reserved" status has month/year selection but no auto-reversion
-- No automatic status changes after time periods
-
-### New Features
-
-#### 2.1 Unavailable Duration Options
-
-When user selects "Unavailable", show enhanced dialog:
+### Stock Update Sheet
 
 ```text
 ┌─────────────────────────────────────────────┐
-│  🚫 Set Unavailable Period                  │
+│           Update Blood Stock                │
+│           A+ (A Positive)                   │
 ├─────────────────────────────────────────────┤
 │                                             │
-│  ─ Duration ─────────────────────────────  │
-│  [1 Week] [1 Month] [Until Date] [Indefinite]│
+│  Current Stock: 45 units                    │
 │                                             │
-│  📅 If "Until Date" selected:               │
-│  [Select Date Picker]                       │
+│  ─ Update Type ──────────────────────────  │
+│  [➕ Add] [➖ Remove] [📝 Set Total]         │
 │                                             │
-│  ─ Reason (optional) ────────────────────  │
-│  [What's happening?                    ]    │
+│  Units                                      │
+│  [-] [_____10_____] [+]                    │
 │                                             │
-│  Quick: [Out of town] [Medical] [Personal]  │
+│  ─ Expiry Date (optional) ───────────────  │
+│  [📅 Select earliest expiry date    ▼]     │
 │                                             │
-│  ℹ️ You'll automatically become available   │
-│     on [calculated date]                    │
+│  ─ Reason ───────────────────────────────  │
+│  [Donation received ▼]                      │
+│  Options: Donation, Transfusion, Expired,   │
+│           Transfer, Correction              │
+│                                             │
+│  ─ Notes (optional) ─────────────────────  │
+│  [                                    ]     │
 │                                             │
 ├─────────────────────────────────────────────┤
-│  [Cancel]              [Save]               │
+│  [Cancel]              [Update Stock]       │
 └─────────────────────────────────────────────┘
 ```
 
-**Duration Options:**
-- **1 Week**: `unavailable_until = CURRENT_DATE + 7`
-- **1 Month**: `unavailable_until = CURRENT_DATE + 30`
-- **Until Date**: User picks specific date
-- **Indefinite**: No auto-reversion (current behavior)
+### Public Blood Stock Page
 
-#### 2.2 Reserved Status Auto-Reversion
-
-When reserved period ends:
-1. System automatically sets status to "available"
-2. BUT if a donation is logged during reserved period → apply 90-day rule
-
-#### 2.3 Database Changes
-
-**Add column to profiles:**
-```sql
-ALTER TABLE profiles ADD COLUMN unavailable_until DATE;
+```text
+┌─────────────────────────────────────────────┐
+│  🩸 Blood Availability                      │
+├─────────────────────────────────────────────┤
+│                                             │
+│  [Filter: All ▾] [Blood Type: All ▾]       │
+│                                             │
+│  ┌─ IGM Hospital ─────────────────────────┐ │
+│  │  📍 Malé, Malé Atoll                   │ │
+│  │  📞 3335335                            │ │
+│  │                                         │ │
+│  │  [A+:45] [A-:12] [B+:38] [B-:2]        │ │
+│  │  [O+:52] [O-:0]  [AB+:7] [AB-:0]       │ │
+│  │                                         │ │
+│  │  🔴 2 types critical  ⏱️ 10 min ago    │ │
+│  └────────────────────────────────────────┘ │
+│                                             │
+│  ┌─ ADK Hospital ─────────────────────────┐ │
+│  │  📍 Malé, Malé Atoll                   │ │
+│  │  📞 3313553                            │ │
+│  │                                         │ │
+│  │  [A+:32] [A-:8]  [B+:25] [B-:5]        │ │
+│  │  [O+:41] [O-:3]  [AB+:12][AB-:2]       │ │
+│  │                                         │ │
+│  │  ✅ All available  ⏱️ 2 hours ago      │ │
+│  └────────────────────────────────────────┘ │
+│                                             │
+└─────────────────────────────────────────────┘
 ```
-
-**Updated trigger function:**
-```sql
-CREATE OR REPLACE FUNCTION auto_revert_availability_status()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Check if reserved period has ended
-  IF NEW.availability_status = 'reserved' 
-     AND NEW.reserved_until IS NOT NULL 
-     AND NEW.reserved_until < CURRENT_DATE THEN
-    -- Check if there's a recent donation requiring 90-day wait
-    IF NEW.last_donation_date IS NOT NULL 
-       AND (CURRENT_DATE - NEW.last_donation_date) < 90 THEN
-      NEW.availability_status := 'unavailable';
-      NEW.reserved_until := NULL;
-    ELSE
-      NEW.availability_status := 'available';
-      NEW.reserved_until := NULL;
-    END IF;
-  END IF;
-  
-  -- Check if unavailable period has ended
-  IF NEW.availability_status = 'unavailable' 
-     AND NEW.unavailable_until IS NOT NULL 
-     AND NEW.unavailable_until < CURRENT_DATE THEN
-    -- Check 90-day rule
-    IF NEW.last_donation_date IS NOT NULL 
-       AND (CURRENT_DATE - NEW.last_donation_date) < 90 THEN
-      -- Keep unavailable, but clear the until date
-      NEW.unavailable_until := NULL;
-    ELSE
-      NEW.availability_status := 'available';
-      NEW.unavailable_until := NULL;
-      NEW.status_note := NULL;
-    END IF;
-  END IF;
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-```
-
-**Scheduled job for auto-reversion:**
-```sql
--- Run daily to auto-revert expired statuses
-SELECT cron.schedule(
-  'auto-revert-availability',
-  '0 0 * * *', -- Every day at midnight
-  $$
-  UPDATE profiles 
-  SET availability_status = CASE
-    WHEN last_donation_date IS NOT NULL AND (CURRENT_DATE - last_donation_date) < 90 
-    THEN 'unavailable'
-    ELSE 'available'
-  END,
-  reserved_until = NULL,
-  unavailable_until = NULL,
-  status_note = NULL
-  WHERE (
-    (availability_status = 'reserved' AND reserved_until < CURRENT_DATE)
-    OR (availability_status = 'unavailable' AND unavailable_until IS NOT NULL AND unavailable_until < CURRENT_DATE)
-  );
-  $$
-);
-```
-
-### File Changes
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/components/AvailabilityToggle.tsx` | MODIFY | Add duration options for unavailable |
-| Database migration | CREATE | Add `unavailable_until` column and cron job |
 
 ---
 
-## Part 3: Updated AvailabilityToggle Component
+## Edge Functions
 
-### New Unavailable Dialog Design
+### `verify-hospital-pin`
+Verifies hospital PIN and returns hospital details with session token.
 
-```tsx
-// Duration options
-const UNAVAILABLE_DURATIONS = [
-  { value: "1week", label: "1 Week", days: 7 },
-  { value: "1month", label: "1 Month", days: 30 },
-  { value: "custom", label: "Until Date", days: null },
-  { value: "indefinite", label: "Indefinite", days: null },
-];
-```
+### `update-blood-stock`
+Securely updates blood stock with validation, logging, and status calculation.
 
-**Enhanced onChange callback:**
+---
+
+## Integration with Existing App
+
+### Home Page Enhancement
+Add "Blood Stock" tab or section in the authenticated home page showing quick stock overview.
+
+### Blood Requests Page Integration
+Show nearby hospital stock availability when creating a blood request.
+
+### Navigation Updates
+- Add Hospital icon in BottomNav (optional, could be in more menu)
+- Add "Blood Stock" link in the app for public access
+- Add "Hospital Portal" in footer/settings for hospital staff
+
+---
+
+## Stock Status Logic
+
 ```typescript
-onChange: (status: string, metadata?: { 
-  reservedUntil?: string; 
-  statusNote?: string;
-  unavailableUntil?: string; // NEW
-}) => void;
-```
-
----
-
-## UI Component Updates
-
-### Profile.tsx Updates
-
-```tsx
-// Update updateAvailability function
-const updateAvailability = async (status: string, metadata?: { 
-  reservedUntil?: string; 
-  statusNote?: string;
-  unavailableUntil?: string; // NEW
-}) => {
-  const updateData: Record<string, any> = { availability_status: status };
+const getStockStatus = (units: number, bloodGroup: string) => {
+  // Different thresholds for different blood types (rarer types have lower thresholds)
+  const isRare = ['AB-', 'B-', 'O-', 'A-'].includes(bloodGroup);
+  const criticalThreshold = isRare ? 2 : 5;
+  const lowThreshold = isRare ? 5 : 15;
   
-  if (status === 'reserved' && metadata?.reservedUntil) {
-    updateData.reserved_until = metadata.reservedUntil;
-  }
-  
-  if (status === 'unavailable') {
-    updateData.status_note = metadata?.statusNote || null;
-    updateData.unavailable_until = metadata?.unavailableUntil || null; // NEW
-  }
-  
-  // ... rest of function
+  if (units === 0) return 'out_of_stock';
+  if (units <= criticalThreshold) return 'critical';
+  if (units <= lowThreshold) return 'low';
+  return 'available';
 };
 ```
 
 ---
 
-## Summary of Changes
+## File Changes Summary
 
 ### New Files
-1. `src/pages/Rewards.tsx` - Full-page rewards experience
+
+| File | Description |
+|------|-------------|
+| `src/pages/HospitalPortal.tsx` | Hospital staff portal with PIN auth |
+| `src/pages/BloodStock.tsx` | Public blood stock viewer page |
+| `src/components/hospital/HospitalStockManager.tsx` | Stock CRUD interface |
+| `src/components/hospital/BloodStockCard.tsx` | Individual blood type card |
+| `src/components/hospital/StockUpdateSheet.tsx` | Update stock bottom sheet |
+| `src/components/hospital/ExpiryAlerts.tsx` | Expiry warning component |
+| `src/components/BloodStockOverview.tsx` | Public stock overview |
+| `supabase/functions/verify-hospital-pin/index.ts` | Hospital PIN verification |
+| `supabase/functions/update-blood-stock/index.ts` | Secure stock update |
 
 ### Modified Files
-1. `src/App.tsx` - Add `/rewards` route
-2. `src/pages/Profile.tsx` - Navigate to /rewards instead of dialog, update availability function
-3. `src/components/AvailabilityToggle.tsx` - Add duration options for unavailable
-4. `src/components/RewardsSection.tsx` - Minor adaptations
 
-### Database Changes
-1. Add `unavailable_until DATE` column to profiles
-2. Update `clear_status_metadata()` trigger to clear `unavailable_until`
-3. Create cron job for daily auto-reversion of expired statuses
+| File | Changes |
+|------|---------|
+| `src/App.tsx` | Add `/hospital` and `/blood-stock` routes |
+| `src/components/BottomNav.tsx` | Consider adding Hospital/Stock icon |
+| `src/pages/Index.tsx` | Add blood stock quick view tab/section |
+| `src/pages/Admin.tsx` | Add hospital management section |
+
+### Database Migrations
+
+1. Create `hospitals` table with RLS
+2. Create `blood_stock` table with RLS
+3. Create `blood_stock_history` table with RLS
+4. Add function for auto status calculation
+5. Add trigger for stock history logging
 
 ---
 
-## Visual Mockups
+## Security Considerations
 
-### Rewards Page Mobile View
-```text
-┌─────────────────────────┐
-│ ← My Rewards            │
-├─────────────────────────┤
-│ ┌─────────────────────┐ │
-│ │  🏆 1,250 pts       │ │
-│ │  Gold Member        │ │
-│ │  ━━━━━━━━━━━━━━━━━ │ │
-│ │  850 to Platinum    │ │
-│ └─────────────────────┘ │
-│                         │
-│ [🎁][🎫][🏆][📊]       │
-│                         │
-│ ┌─────────────────────┐ │
-│ │ [🍔] Coffee Voucher │ │
-│ │ Partner Cafe        │ │
-│ │ 100pts     [Redeem] │ │
-│ └─────────────────────┘ │
-│ ┌─────────────────────┐ │
-│ │ [🏥] Health Check   │ │
-│ │ Partner Hospital    │ │
-│ │ 500pts     [Redeem] │ │
-│ └─────────────────────┘ │
-└─────────────────────────┘
+1. **PIN Authentication**: Hospitals authenticate via 6-digit PIN (hashed, like merchant portal)
+2. **Stock Updates**: All stock modifications go through edge function with validation
+3. **Audit Trail**: All stock changes logged in `blood_stock_history`
+4. **RLS Policies**: Public can only read, updates require hospital verification
+5. **Rate Limiting**: Prevent brute-force PIN attempts
+
+---
+
+## Visual Design Tokens
+
+Following existing app patterns:
+- **Cards**: `rounded-2xl border-border/50 shadow-soft`
+- **Status Colors**: 
+  - Available: `emerald-500`
+  - Low: `amber-500`
+  - Critical: `red-500`
+  - Out of Stock: `gray-400`
+- **Blood Type Pills**: Compact badges with blood group colors
+- **Animations**: `animate-fade-in`, `animate-pulse-soft` for alerts
+
+---
+
+## Real-time Updates
+
+Enable real-time subscriptions for blood stock changes:
+
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE blood_stock;
 ```
 
-### Enhanced Unavailable Dialog
-```text
-┌─────────────────────────┐
-│ 🚫 Set Unavailable     │
-├─────────────────────────┤
-│ How long?               │
-│ [1 Week●] [1 Month]     │
-│ [Until...] [Indefinite] │
-│                         │
-│ Reason (optional)       │
-│ [________________]      │
-│                         │
-│ [Medical] [Travel]      │
-│ [Personal] [Busy]       │
-│                         │
-│ ℹ️ Available on Feb 5   │
-├─────────────────────────┤
-│ [Cancel]    [Save]      │
-└─────────────────────────┘
-```
+This allows the public blood stock page to update automatically when hospitals modify their inventory.
+
