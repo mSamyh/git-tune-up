@@ -1,10 +1,11 @@
 import { NavLink as RouterNavLink } from "react-router-dom";
-import { Home, Droplet, User, History } from "lucide-react";
+import { Home, Droplet, User, History, Droplets } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/", icon: Home, label: "Home", end: true },
   { to: "/blood-requests", icon: Droplet, label: "Requests" },
+  { to: "/blood-stock", icon: Droplets, label: "Stock" },
   { to: "/history", icon: History, label: "History" },
   { to: "/profile", icon: User, label: "Profile" },
 ];
