@@ -5,7 +5,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Droplet, Search, Heart, UserCheck, X, Users, BarChart3, GitCompare, ArrowRight, Sparkles, Shield, SlidersHorizontal } from "lucide-react";
+import { Droplet, Search, Heart, UserCheck, X, Users, BarChart3, GitCompare, ArrowRight, Sparkles, Shield, SlidersHorizontal, Droplets } from "lucide-react";
 import { DonorTable } from "@/components/DonorTable";
 import { DonorStatsDashboard } from "@/components/DonorStatsDashboard";
 import BloodCompatibilityChecker from "@/components/BloodCompatibilityChecker";
@@ -14,6 +14,7 @@ import { BloodGroupFilter } from "@/components/BloodGroupFilter";
 import { AppHeader } from "@/components/AppHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DonorFilterSheet } from "@/components/DonorFilterSheet";
+import { BloodStockOverview } from "@/components/BloodStockOverview";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -193,7 +194,7 @@ const Index = () => {
       <main className="container mx-auto px-4 py-4 max-w-2xl">
         {/* Tabs Navigation - Modern Pill Style */}
         <Tabs defaultValue="directory" className="w-full">
-          <TabsList className="w-full grid grid-cols-3 h-12 rounded-2xl bg-muted/60 p-1.5 mb-5 shadow-inner">
+          <TabsList className="w-full grid grid-cols-4 h-12 rounded-2xl bg-muted/60 p-1.5 mb-5 shadow-inner">
             <TabsTrigger 
               value="directory" 
               className="rounded-xl flex items-center gap-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all"
@@ -201,6 +202,14 @@ const Index = () => {
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Directory</span>
               <span className="sm:hidden">Donors</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="bloodstock" 
+              className="rounded-xl flex items-center gap-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-primary transition-all"
+            >
+              <Droplets className="h-4 w-4" />
+              <span className="hidden sm:inline">Blood Stock</span>
+              <span className="sm:hidden">Stock</span>
             </TabsTrigger>
             <TabsTrigger 
               value="stats" 
@@ -350,6 +359,11 @@ const Index = () => {
             onStatusChange={setSelectedStatus}
             atolls={atolls}
           />
+
+          {/* Blood Stock Tab */}
+          <TabsContent value="bloodstock" className="mt-0 animate-fade-in">
+            <BloodStockOverview />
+          </TabsContent>
 
           {/* Stats Tab */}
           <TabsContent value="stats" className="mt-0 animate-fade-in">

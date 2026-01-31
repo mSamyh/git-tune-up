@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.update-blood-stock]
 verify_jwt = false
+
+[functions.create-hospital]
+verify_jwt = false

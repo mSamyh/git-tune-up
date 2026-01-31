@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown, Gift, Settings as SettingsIcon, Shield, Droplet, TrendingUp, Store, FileText, Activity, Clock, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Heart, History, Edit, Trash2, Plus, ChevronDown, Gift, Settings as SettingsIcon, Shield, Droplet, TrendingUp, Store, FileText, Activity, Clock, CheckCircle2, ChevronLeft, ChevronRight, Building2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { SwipeableTabsContainer } from "@/components/admin/SwipeableTabsContainer";
@@ -22,6 +22,7 @@ import { TelegramConfigManager } from "@/components/TelegramConfigManager";
 import { RewardsAdminPanel } from "@/components/RewardsAdminPanel";
 import { AchievementsAdminPanel } from "@/components/AchievementsAdminPanel";
 import { MerchantAdminPanel } from "@/components/MerchantAdminPanel";
+import { HospitalAdminPanel } from "@/components/HospitalAdminPanel";
 import { RedemptionAuditPanel } from "@/components/RedemptionAuditPanel";
 import { Textarea } from "@/components/ui/textarea";
 import { AppHeader } from "@/components/AppHeader";
@@ -49,7 +50,7 @@ interface DonorProfile {
 }
 
 // Tab order for navigation
-const TAB_ORDER = ["donors", "requests", "donations", "rewards", "merchants", "audit", "settings", "admins"] as const;
+const TAB_ORDER = ["donors", "requests", "donations", "rewards", "merchants", "hospitals", "audit", "settings", "admins"] as const;
 type TabValue = typeof TAB_ORDER[number];
 
 const Admin = () => {
@@ -684,6 +685,7 @@ const Admin = () => {
     { value: "donations", label: "Donations", icon: Droplet },
     { value: "rewards", label: "Rewards", icon: Gift },
     { value: "merchants", label: "Merchants", icon: Store },
+    { value: "hospitals", label: "Hospitals", icon: Building2 },
     { value: "audit", label: "Audit", icon: FileText },
     { value: "settings", label: "Settings", icon: SettingsIcon },
     { value: "admins", label: "Admins", icon: Shield },
@@ -1307,6 +1309,11 @@ const Admin = () => {
           {/* Merchants Tab */}
           <TabsContent value="merchants" className="mt-0">
             <MerchantAdminPanel />
+          </TabsContent>
+
+          {/* Hospitals Tab */}
+          <TabsContent value="hospitals" className="mt-0">
+            <HospitalAdminPanel />
           </TabsContent>
 
           {/* Audit Tab */}
