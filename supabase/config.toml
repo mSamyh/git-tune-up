@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.create-hospital]
 verify_jwt = false
+
+[functions.manage-blood-unit]
+verify_jwt = false

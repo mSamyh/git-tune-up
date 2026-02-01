@@ -319,6 +319,137 @@ export type Database = {
           },
         ]
       }
+      blood_unit_history: {
+        Row: {
+          action: string
+          blood_group: string
+          blood_unit_id: string | null
+          hospital_id: string
+          id: string
+          new_status: string | null
+          notes: string | null
+          patient_name: string | null
+          performed_at: string
+          performed_by: string | null
+          previous_status: string | null
+        }
+        Insert: {
+          action: string
+          blood_group: string
+          blood_unit_id?: string | null
+          hospital_id: string
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          patient_name?: string | null
+          performed_at?: string
+          performed_by?: string | null
+          previous_status?: string | null
+        }
+        Update: {
+          action?: string
+          blood_group?: string
+          blood_unit_id?: string | null
+          hospital_id?: string
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          patient_name?: string | null
+          performed_at?: string
+          performed_by?: string | null
+          previous_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_unit_history_blood_unit_id_fkey"
+            columns: ["blood_unit_id"]
+            isOneToOne: false
+            referencedRelation: "blood_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blood_unit_history_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blood_units: {
+        Row: {
+          bag_number: string | null
+          batch_number: string | null
+          blood_group: string
+          collection_date: string
+          component_type: string | null
+          created_at: string
+          created_by: string | null
+          donor_id: string | null
+          donor_name: string | null
+          expiry_date: string
+          hospital_id: string
+          id: string
+          remarks: string | null
+          reserved_at: string | null
+          reserved_for: string | null
+          status: string
+          updated_at: string
+          used_at: string | null
+          volume_ml: number | null
+        }
+        Insert: {
+          bag_number?: string | null
+          batch_number?: string | null
+          blood_group: string
+          collection_date: string
+          component_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          donor_id?: string | null
+          donor_name?: string | null
+          expiry_date: string
+          hospital_id: string
+          id?: string
+          remarks?: string | null
+          reserved_at?: string | null
+          reserved_for?: string | null
+          status?: string
+          updated_at?: string
+          used_at?: string | null
+          volume_ml?: number | null
+        }
+        Update: {
+          bag_number?: string | null
+          batch_number?: string | null
+          blood_group?: string
+          collection_date?: string
+          component_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          donor_id?: string | null
+          donor_name?: string | null
+          expiry_date?: string
+          hospital_id?: string
+          id?: string
+          remarks?: string | null
+          reserved_at?: string | null
+          reserved_for?: string | null
+          status?: string
+          updated_at?: string
+          used_at?: string | null
+          volume_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_units_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       donation_history: {
         Row: {
           blood_request_id: string | null
@@ -594,11 +725,13 @@ export type Database = {
         Row: {
           address: string | null
           atoll: string | null
+          auth_user_id: string | null
           created_at: string
           email: string | null
           id: string
           is_active: boolean
           island: string | null
+          login_email: string | null
           logo_url: string | null
           name: string
           phone: string | null
@@ -608,11 +741,13 @@ export type Database = {
         Insert: {
           address?: string | null
           atoll?: string | null
+          auth_user_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
           is_active?: boolean
           island?: string | null
+          login_email?: string | null
           logo_url?: string | null
           name: string
           phone?: string | null
@@ -622,11 +757,13 @@ export type Database = {
         Update: {
           address?: string | null
           atoll?: string | null
+          auth_user_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
           is_active?: boolean
           island?: string | null
+          login_email?: string | null
           logo_url?: string | null
           name?: string
           phone?: string | null

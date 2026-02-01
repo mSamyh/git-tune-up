@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Plus, Pencil, Trash2, Copy, Eye, EyeOff, RefreshCw, MapPin, Phone, Mail, Droplets } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2, Copy, Eye, EyeOff, RefreshCw, MapPin, Phone, Mail, Key } from "lucide-react";
 
 interface Hospital {
   id: string;
@@ -20,6 +20,7 @@ interface Hospital {
   island: string | null;
   phone: string | null;
   email: string | null;
+  login_email: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -40,8 +41,8 @@ export const HospitalAdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingHospital, setEditingHospital] = useState<Hospital | null>(null);
-  const [showPins, setShowPins] = useState<Record<string, boolean>>({});
-  const [hospitalPins, setHospitalPins] = useState<Record<string, string>>({});
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [hospitalPasswords, setHospitalPasswords] = useState<Record<string, string>>({});
   const [atolls, setAtolls] = useState<Atoll[]>([]);
   const [islands, setIslands] = useState<Island[]>([]);
   const [filteredIslands, setFilteredIslands] = useState<Island[]>([]);
@@ -49,10 +50,10 @@ export const HospitalAdminPanel = () => {
     name: "",
     phone: "",
     email: "",
+    password: "",
     atoll: "",
     island: "",
     address: "",
-    pin: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
@@ -93,19 +94,28 @@ export const HospitalAdminPanel = () => {
     setLoading(false);
   };
 
-  const generatePin = () => {
-    const pin = Math.floor(100000 + Math.random() * 900000).toString();
-    setFormData({ ...formData, pin });
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setFormData({ ...formData, password });
   };
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.pin) {
-      toast({ variant: "destructive", title: "Error", description: "Name and PIN are required" });
+    if (!formData.name || !formData.email) {
+      toast({ variant: "destructive", title: "Error", description: "Name and email are required" });
       return;
     }
 
-    if (formData.pin.length !== 6) {
-      toast({ variant: "destructive", title: "Error", description: "PIN must be 6 digits" });
+    if (!editingHospital && !formData.password) {
+      toast({ variant: "destructive", title: "Error", description: "Password is required for new hospitals" });
+      return;
+    }
+
+    if (formData.password && formData.password.length < 8) {
+      toast({ variant: "destructive", title: "Error", description: "Password must be at least 8 characters" });
       return;
     }
 
@@ -120,19 +130,21 @@ export const HospitalAdminPanel = () => {
             hospitalId: editingHospital.id,
             name: formData.name,
             phone: formData.phone || null,
-            email: formData.email || null,
+            email: formData.email,
+            password: formData.password || undefined, // Only send if provided
             atoll: formData.atoll || null,
             island: formData.island || null,
             address: formData.address || null,
-            pin: formData.pin,
           },
         });
 
         if (error) throw error;
 
         toast({ title: "Updated", description: "Hospital updated successfully" });
-        // Store the PIN for display
-        setHospitalPins(prev => ({ ...prev, [editingHospital.id]: formData.pin }));
+        // Store the password for display if new one was set
+        if (formData.password) {
+          setHospitalPasswords(prev => ({ ...prev, [editingHospital.id]: formData.password }));
+        }
       } else {
         // Create new hospital via edge function
         const { data, error } = await supabase.functions.invoke("create-hospital", {
@@ -140,20 +152,20 @@ export const HospitalAdminPanel = () => {
             action: "create",
             name: formData.name,
             phone: formData.phone || null,
-            email: formData.email || null,
+            email: formData.email,
+            password: formData.password,
             atoll: formData.atoll || null,
             island: formData.island || null,
             address: formData.address || null,
-            pin: formData.pin,
           },
         });
 
         if (error) throw error;
 
         toast({ title: "Created", description: "Hospital created successfully" });
-        // Store the PIN for display
+        // Store the password for display
         if (data?.hospital?.id) {
-          setHospitalPins(prev => ({ ...prev, [data.hospital.id]: formData.pin }));
+          setHospitalPasswords(prev => ({ ...prev, [data.hospital.id]: formData.password }));
         }
       }
 
@@ -169,7 +181,7 @@ export const HospitalAdminPanel = () => {
   };
 
   const resetForm = () => {
-    setFormData({ name: "", phone: "", email: "", atoll: "", island: "", address: "", pin: "" });
+    setFormData({ name: "", phone: "", email: "", password: "", atoll: "", island: "", address: "" });
   };
 
   const handleEdit = (hospital: Hospital) => {
@@ -177,11 +189,11 @@ export const HospitalAdminPanel = () => {
     setFormData({
       name: hospital.name,
       phone: hospital.phone || "",
-      email: hospital.email || "",
+      email: hospital.login_email || hospital.email || "",
+      password: "", // Don't populate password - let them set new one if needed
       atoll: hospital.atoll || "",
       island: hospital.island || "",
       address: hospital.address || "",
-      pin: hospitalPins[hospital.id] || "",
     });
     setShowAddDialog(true);
   };
@@ -212,9 +224,38 @@ export const HospitalAdminPanel = () => {
     }
   };
 
-  const copyPin = (pin: string) => {
-    navigator.clipboard.writeText(pin);
-    toast({ title: "Copied", description: "PIN copied to clipboard" });
+  const copyCredentials = (email: string, password: string) => {
+    navigator.clipboard.writeText(`Email: ${email}\nPassword: ${password}`);
+    toast({ title: "Copied", description: "Credentials copied to clipboard" });
+  };
+
+  const handleResetPassword = async (hospital: Hospital) => {
+    const newPassword = prompt("Enter new password (min 8 characters):");
+    if (!newPassword || newPassword.length < 8) {
+      if (newPassword) {
+        toast({ variant: "destructive", title: "Error", description: "Password must be at least 8 characters" });
+      }
+      return;
+    }
+
+    try {
+      const { error } = await supabase.functions.invoke("create-hospital", {
+        body: {
+          action: "reset_password",
+          hospitalId: hospital.id,
+          email: hospital.login_email || hospital.email,
+          password: newPassword,
+          name: hospital.name,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Success", description: "Password reset successfully" });
+      setHospitalPasswords(prev => ({ ...prev, [hospital.id]: newPassword }));
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message || "Failed to reset password" });
+    }
   };
 
   return (
@@ -226,7 +267,7 @@ export const HospitalAdminPanel = () => {
               <Building2 className="h-5 w-5" />
               Hospital Management
             </CardTitle>
-            <CardDescription>Manage hospitals and their access PINs for blood stock updates</CardDescription>
+            <CardDescription>Manage hospitals with email/password login for blood stock updates</CardDescription>
           </div>
           <Dialog open={showAddDialog} onOpenChange={(open) => {
             setShowAddDialog(open);
@@ -245,7 +286,7 @@ export const HospitalAdminPanel = () => {
               <DialogHeader>
                 <DialogTitle>{editingHospital ? "Edit" : "Add"} Hospital</DialogTitle>
                 <DialogDescription>
-                  {editingHospital ? "Update hospital details" : "Create a new hospital with access PIN"}
+                  {editingHospital ? "Update hospital details" : "Create a new hospital with login credentials"}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 pt-4">
@@ -305,48 +346,57 @@ export const HospitalAdminPanel = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Phone</Label>
-                    <Input
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="3xxxxxx"
-                      className="rounded-xl"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="hospital@example.com"
-                      className="rounded-xl"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Phone</Label>
+                  <Input
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="3xxxxxx"
+                    className="rounded-xl"
+                  />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>6-Digit PIN *</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.pin}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                        setFormData({ ...formData, pin: val });
-                      }}
-                      placeholder="123456"
-                      className="rounded-xl font-mono text-center text-lg"
-                      maxLength={6}
-                    />
-                    <Button variant="outline" size="icon" onClick={generatePin} className="rounded-xl">
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
+                {/* Login Credentials Section */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Key className="h-4 w-4" />
+                    Login Credentials
+                  </h4>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Login Email *</Label>
+                      <Input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="hospital@example.com"
+                        className="rounded-xl"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Password {!editingHospital && "*"}</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          value={formData.password}
+                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                          placeholder={editingHospital ? "Leave empty to keep current" : "Min 8 characters"}
+                          className="rounded-xl font-mono"
+                        />
+                        <Button variant="outline" size="icon" onClick={generatePassword} className="rounded-xl shrink-0">
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {editingHospital 
+                          ? "Leave empty to keep current password, or enter new password to change it"
+                          : "Share these credentials with hospital staff to access the portal"
+                        }
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Share this PIN with hospital staff to access the stock management portal
-                  </p>
                 </div>
 
                 <Button onClick={handleSubmit} className="w-full rounded-xl" disabled={submitting}>
@@ -389,33 +439,44 @@ export const HospitalAdminPanel = () => {
                     </div>
                   </div>
                   
-                  {hospitalPins[hospital.id] && (
-                    <div className="flex items-center gap-2">
-                      <code className="bg-muted px-2 py-1 rounded text-sm font-mono flex-1 text-center">
-                        {showPins[hospital.id] ? hospitalPins[hospital.id] : "••••••"}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setShowPins({ ...showPins, [hospital.id]: !showPins[hospital.id] })}
-                      >
-                        {showPins[hospital.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => copyPin(hospitalPins[hospital.id])}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                  {hospital.login_email && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Mail className="h-3 w-3" />
+                        {hospital.login_email}
+                      </p>
+                      {hospitalPasswords[hospital.id] && (
+                        <div className="flex items-center gap-2">
+                          <code className="bg-muted px-2 py-1 rounded text-xs font-mono flex-1">
+                            {showPasswords[hospital.id] ? hospitalPasswords[hospital.id] : "••••••••"}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => setShowPasswords({ ...showPasswords, [hospital.id]: !showPasswords[hospital.id] })}
+                          >
+                            {showPasswords[hospital.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => copyCredentials(hospital.login_email!, hospitalPasswords[hospital.id])}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
                   
                   <div className="flex gap-2 pt-2 border-t">
                     <Button size="sm" variant="outline" className="flex-1 h-9 rounded-xl" onClick={() => handleEdit(hospital)}>
                       <Pencil className="h-4 w-4 mr-1.5" /> Edit
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-9 rounded-xl" onClick={() => handleResetPassword(hospital)}>
+                      <Key className="h-4 w-4" />
                     </Button>
                     <Button 
                       size="sm" 
@@ -438,7 +499,7 @@ export const HospitalAdminPanel = () => {
                     <TableHead>Hospital</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Contact</TableHead>
-                    <TableHead>PIN</TableHead>
+                    <TableHead>Login</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -465,38 +526,40 @@ export const HospitalAdminPanel = () => {
                               <Phone className="h-3 w-3" /> {hospital.phone}
                             </p>
                           )}
-                          {hospital.email && (
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Mail className="h-3 w-3" /> {hospital.email}
-                            </p>
-                          )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        {hospitalPins[hospital.id] ? (
-                          <div className="flex items-center gap-2">
-                            <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
-                              {showPins[hospital.id] ? hospitalPins[hospital.id] : "••••••"}
-                            </code>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => setShowPins({ ...showPins, [hospital.id]: !showPins[hospital.id] })}
-                            >
-                              {showPins[hospital.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => copyPin(hospitalPins[hospital.id])}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
+                        {hospital.login_email ? (
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Mail className="h-3 w-3" /> {hospital.login_email}
+                            </p>
+                            {hospitalPasswords[hospital.id] && (
+                              <div className="flex items-center gap-1">
+                                <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
+                                  {showPasswords[hospital.id] ? hospitalPasswords[hospital.id] : "••••••••"}
+                                </code>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => setShowPasswords({ ...showPasswords, [hospital.id]: !showPasswords[hospital.id] })}
+                                >
+                                  {showPasswords[hospital.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => copyCredentials(hospital.login_email!, hospitalPasswords[hospital.id])}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground">Edit to set PIN</span>
+                          <span className="text-xs text-muted-foreground">Edit to set credentials</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -517,14 +580,25 @@ export const HospitalAdminPanel = () => {
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => handleEdit(hospital)}
+                            title="Edit"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleResetPassword(hospital)}
+                            title="Reset Password"
+                          >
+                            <Key className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={() => handleDelete(hospital.id)}
+                            title="Delete"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

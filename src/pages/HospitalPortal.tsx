@@ -1,12 +1,13 @@
-import { useState } from "react";
-import { Building2, LogOut, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Building2, LogOut, ArrowLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import HospitalStockManager from "@/components/hospital/HospitalStockManager";
+import BloodUnitManager from "@/components/hospital/BloodUnitManager";
 
 interface Hospital {
   id: string;
@@ -19,68 +20,115 @@ interface Hospital {
   logo_url: string | null;
 }
 
-interface BloodStock {
-  id: string;
-  blood_group: string;
-  units_available: number;
-  units_reserved: number;
-  expiry_date: string | null;
-  status: string;
-  notes: string | null;
-  last_updated: string;
-}
-
 const HospitalPortal = () => {
   const navigate = useNavigate();
-  const [pin, setPin] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [hospital, setHospital] = useState<Hospital | null>(null);
-  const [bloodStock, setBloodStock] = useState<BloodStock[]>([]);
-  const [storedPin, setStoredPin] = useState("");
 
-  const handleVerifyPin = async () => {
-    if (pin.length !== 6) {
-      toast.error("Please enter a 6-digit PIN");
+  useEffect(() => {
+    checkExistingSession();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setHospital(null);
+      } else if (event === 'SIGNED_IN' && session?.user?.user_metadata?.hospital_id) {
+        fetchHospitalData(session.user.user_metadata.hospital_id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkExistingSession = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user?.user_metadata?.hospital_id) {
+        await fetchHospitalData(session.user.user_metadata.hospital_id);
+      }
+    } catch (error) {
+      console.error("Error checking session:", error);
+    } finally {
+      setIsCheckingSession(false);
+    }
+  };
+
+  const fetchHospitalData = async (hospitalId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("hospitals")
+        .select("*")
+        .eq("id", hospitalId)
+        .single();
+
+      if (error) throw error;
+      
+      if (data) {
+        setHospital(data);
+      }
+    } catch (error: any) {
+      console.error("Error fetching hospital:", error);
+      toast.error("Failed to load hospital data");
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      toast.error("Please enter email and password");
       return;
     }
 
-    setIsVerifying(true);
+    setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("verify-hospital-pin", {
-        body: { pin },
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
       if (error) throw error;
 
-      if (data.success) {
-        setHospital(data.hospital);
-        setBloodStock(data.bloodStock || []);
-        setStoredPin(pin);
-        toast.success(`Welcome, ${data.hospital.name}!`);
-      } else {
-        toast.error(data.error || "Invalid PIN");
+      // Verify this is a hospital account
+      if (!data.user?.user_metadata?.hospital_id) {
+        await supabase.auth.signOut();
+        toast.error("This account is not authorized for hospital portal");
+        return;
       }
+
+      await fetchHospitalData(data.user.user_metadata.hospital_id);
+      toast.success("Welcome!");
     } catch (error: any) {
-      console.error("Error verifying PIN:", error);
-      toast.error(error.message || "Failed to verify PIN");
+      console.error("Login error:", error);
+      toast.error(error.message || "Login failed");
     } finally {
-      setIsVerifying(false);
+      setIsLoading(false);
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setHospital(null);
-    setBloodStock([]);
-    setStoredPin("");
-    setPin("");
+    setEmail("");
+    setPassword("");
     toast.info("Logged out successfully");
   };
 
-  const handleStockUpdate = (newStock: BloodStock[]) => {
-    setBloodStock(newStock);
-  };
+  // Loading state
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center">
+        <div className="text-center">
+          <Building2 className="h-12 w-12 mx-auto text-primary animate-pulse" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // PIN Entry Screen
+  // Login Screen
   if (!hospital) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex flex-col">
@@ -101,42 +149,65 @@ const HospitalPortal = () => {
         </div>
 
         <div className="flex-1 flex items-center justify-center p-6">
-          <Card className="w-full max-w-md">
+          <Card className="w-full max-w-md rounded-2xl">
             <CardHeader className="text-center space-y-4">
               <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
                 <Building2 className="h-10 w-10 text-primary" />
               </div>
               <CardTitle className="text-2xl">Hospital Portal</CardTitle>
-              <p className="text-muted-foreground text-sm">
-                Enter your 6-digit hospital PIN to manage blood stock
-              </p>
+              <CardDescription>
+                Login with your hospital credentials to manage blood stock
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex justify-center">
-                <InputOTP
-                  value={pin}
-                  onChange={setPin}
-                  maxLength={6}
-                  disabled={isVerifying}
-                >
-                  <InputOTPGroup>
-                    {[0, 1, 2, 3, 4, 5].map((index) => (
-                      <InputOTPSlot
-                        key={index}
-                        index={index}
-                        className="w-12 h-14 text-xl"
-                      />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="hospital@example.com"
+                      className="pl-10 rounded-xl"
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter password"
+                      className="pl-10 pr-10 rounded-xl"
+                      disabled={isLoading}
+                      onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               <Button
-                onClick={handleVerifyPin}
-                disabled={pin.length !== 6 || isVerifying}
-                className="w-full h-12"
+                onClick={handleLogin}
+                disabled={!email || !password || isLoading}
+                className="w-full h-12 rounded-xl"
               >
-                {isVerifying ? "Verifying..." : "Verify PIN"}
+                {isLoading ? "Logging in..." : "Login"}
               </Button>
 
               <p className="text-center text-xs text-muted-foreground">
@@ -177,14 +248,9 @@ const HospitalPortal = () => {
         </div>
       </div>
 
-      {/* Stock Manager */}
+      {/* Blood Unit Manager */}
       <div className="p-4">
-        <HospitalStockManager
-          hospitalId={hospital.id}
-          hospitalPin={storedPin}
-          bloodStock={bloodStock}
-          onStockUpdate={handleStockUpdate}
-        />
+        <BloodUnitManager hospitalId={hospital.id} />
       </div>
     </div>
   );
