@@ -59,3 +59,6 @@ verify_jwt = false
 
 [functions.manage-blood-unit]
 verify_jwt = false
+
+[functions.delete-hospital]
+verify_jwt = false

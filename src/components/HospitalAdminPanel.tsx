@@ -199,15 +199,19 @@ export const HospitalAdminPanel = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this hospital? This will also delete all blood stock records.")) return;
+    if (!confirm("Are you sure you want to delete this hospital? This will also delete all blood stock records and the login account.")) return;
 
-    const { error } = await supabase.from("hospitals").delete().eq("id", id);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-hospital", {
+        body: { hospital_id: id },
+      });
 
-    if (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message });
-    } else {
+      if (error) throw error;
+
       toast({ title: "Deleted", description: "Hospital deleted successfully" });
       fetchData();
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message || "Failed to delete hospital" });
     }
   };
 
