@@ -53,6 +53,55 @@ async function logHistory(
   });
 }
 
+// Sync blood_stock table after unit changes
+async function syncBloodStock(supabase: any, hospitalId: string, bloodGroup: string) {
+  try {
+    // Count available units for this hospital/blood group
+    const { count } = await supabase
+      .from("blood_units")
+      .select("*", { count: "exact", head: true })
+      .eq("hospital_id", hospitalId)
+      .eq("blood_group", bloodGroup)
+      .eq("status", "available");
+
+    const availableCount = count || 0;
+
+    // Check if blood_stock record exists
+    const { data: existing } = await supabase
+      .from("blood_stock")
+      .select("id")
+      .eq("hospital_id", hospitalId)
+      .eq("blood_group", bloodGroup)
+      .single();
+
+    if (existing) {
+      // Update existing record
+      await supabase
+        .from("blood_stock")
+        .update({
+          units_available: availableCount,
+          last_updated: new Date().toISOString(),
+        })
+        .eq("hospital_id", hospitalId)
+        .eq("blood_group", bloodGroup);
+    } else {
+      // Insert new record
+      await supabase
+        .from("blood_stock")
+        .insert({
+          hospital_id: hospitalId,
+          blood_group: bloodGroup,
+          units_available: availableCount,
+          status: availableCount === 0 ? "out_of_stock" : "available",
+        });
+    }
+
+    console.log(`Synced blood_stock: ${hospitalId}/${bloodGroup} = ${availableCount} units`);
+  } catch (error) {
+    console.error("Error syncing blood_stock:", error);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -138,6 +187,7 @@ Deno.serve(async (req) => {
         }
 
         await logHistory(supabase, unit.id, hospital_id, blood_group, "created", null, "available", null, remarks, userId);
+        await syncBloodStock(supabase, hospital_id, blood_group);
 
         return new Response(
           JSON.stringify({ success: true, unit }),
@@ -223,6 +273,7 @@ Deno.serve(async (req) => {
         }
 
         await logHistory(supabase, unit_id, hospital_id, unit.blood_group, "reserved", existingUnit?.status, "reserved", body.patient_name, body.notes, userId);
+        await syncBloodStock(supabase, hospital_id, unit.blood_group);
 
         return new Response(
           JSON.stringify({ success: true, unit }),
@@ -265,6 +316,7 @@ Deno.serve(async (req) => {
         }
 
         await logHistory(supabase, unit_id, hospital_id, unit.blood_group, "unreserved", existingUnit?.status, "available", null, body.notes, userId);
+        await syncBloodStock(supabase, hospital_id, unit.blood_group);
 
         return new Response(
           JSON.stringify({ success: true, unit }),
@@ -306,6 +358,7 @@ Deno.serve(async (req) => {
         }
 
         await logHistory(supabase, unit_id, hospital_id, unit.blood_group, "transfused", existingUnit?.status, "transfused", body.patient_name || unit.reserved_for, body.notes, userId);
+        await syncBloodStock(supabase, hospital_id, unit.blood_group);
 
         return new Response(
           JSON.stringify({ success: true, unit }),
@@ -346,6 +399,7 @@ Deno.serve(async (req) => {
         }
 
         await logHistory(supabase, unit_id, hospital_id, unit.blood_group, "discarded", existingUnit?.status, "discarded", null, body.notes || body.remarks, userId);
+        await syncBloodStock(supabase, hospital_id, unit.blood_group);
 
         return new Response(
           JSON.stringify({ success: true, unit }),
@@ -382,6 +436,7 @@ Deno.serve(async (req) => {
 
         if (existingUnit) {
           await logHistory(supabase, null, hospital_id, existingUnit.blood_group, "deleted", existingUnit.status, null, null, body.notes, userId);
+          await syncBloodStock(supabase, hospital_id, existingUnit.blood_group);
         }
 
         return new Response(
