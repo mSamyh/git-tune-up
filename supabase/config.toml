@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.delete-hospital]
 verify_jwt = false
+
+[functions.donor-wellness-check]
+verify_jwt = false

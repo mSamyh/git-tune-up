@@ -694,6 +694,50 @@ export type Database = {
         }
         Relationships: []
       }
+      donor_wellness_logs: {
+        Row: {
+          created_at: string | null
+          donor_id: string
+          error_message: string | null
+          id: string
+          message_sent: string | null
+          notification_type: string
+          sent_at: string
+          sent_via: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          donor_id: string
+          error_message?: string | null
+          id?: string
+          message_sent?: string | null
+          notification_type: string
+          sent_at?: string
+          sent_via?: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          donor_id?: string
+          error_message?: string | null
+          id?: string
+          message_sent?: string | null
+          notification_type?: string
+          sent_at?: string
+          sent_via?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donor_wellness_logs_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emergency_types: {
         Row: {
           code: string
@@ -847,6 +891,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_messages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_enabled: boolean | null
+          message_key: string
+          message_template: string
+          message_title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          message_key: string
+          message_template: string
+          message_title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          message_key?: string
+          message_template?: string
+          message_title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -1010,6 +1087,7 @@ export type Database = {
           is_available: boolean | null
           island: string | null
           last_donation_date: string | null
+          last_wellness_check: string | null
           notification_preferences: Json | null
           phone: string
           reserved_until: string | null
@@ -1035,6 +1113,7 @@ export type Database = {
           is_available?: boolean | null
           island?: string | null
           last_donation_date?: string | null
+          last_wellness_check?: string | null
           notification_preferences?: Json | null
           phone: string
           reserved_until?: string | null
@@ -1060,6 +1139,7 @@ export type Database = {
           is_available?: boolean | null
           island?: string | null
           last_donation_date?: string | null
+          last_wellness_check?: string | null
           notification_preferences?: Json | null
           phone?: string
           reserved_until?: string | null

@@ -18,6 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { UserRoleManager } from "@/components/UserRoleManager";
 import { TelegramConfigManager } from "@/components/TelegramConfigManager";
+import { NotificationMessagesManager } from "@/components/NotificationMessagesManager";
+import { WellnessCheckHistory } from "@/components/WellnessCheckHistory";
 
 import { RewardsAdminPanel } from "@/components/RewardsAdminPanel";
 import { AchievementsAdminPanel } from "@/components/AchievementsAdminPanel";
@@ -1296,6 +1298,10 @@ const Admin = () => {
                 </Card>
 
                 <TelegramConfigManager />
+                
+                <NotificationMessagesManager />
+                
+                <WellnessCheckHistory />
               </div>
             </div>
           </TabsContent>
