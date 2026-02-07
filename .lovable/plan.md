@@ -1,379 +1,216 @@
 
-# Donor Wellness Check & Availability Notification System
+# Hospital Portal: Full System Audit & Fix
 
-## Overview
+## Issues Discovered
 
-This plan implements an automated notification system to:
-1. **Notify donors when their 90-day waiting period is complete** - Congratulate them on being eligible to donate again
-2. **Monthly wellness check-ins for unavailable donors** - Send caring messages to donors who set themselves as unavailable to check on their well-being
+### CRITICAL: Hospital Deletion Fails
+**Root Cause**: The `blood_unit_history` table has a foreign key to `hospitals(id)` **without** `ON DELETE CASCADE`. When the `delete-hospital` function tries to delete the hospital record, it fails with:
+```
+Key (id)=(b6f8ba7c-...) is still referenced from table "blood_unit_history"
+```
 
-All message templates will be fully configurable by admins.
+The delete function cleans up `blood_units` and `blood_stock`, but misses `blood_unit_history`. Even if it did delete those records, the FK constraint without CASCADE would still block the hospital deletion.
+
+**Current FK cascade status**:
+| Table | FK to hospitals | ON DELETE |
+|-------|----------------|-----------|
+| blood_units | hospital_id | CASCADE |
+| blood_stock | hospital_id | CASCADE |
+| blood_stock_history | hospital_id | CASCADE |
+| blood_unit_history | hospital_id | **NONE (BUG)** |
+
+### CRITICAL: Blood Stock Not Showing After Adding Units
+**Root Cause**: The `syncBloodStock` function in `manage-blood-unit` works correctly in logic, but there are two problems:
+
+1. **`functions.invoke` error handling bug**: The Supabase JS client's `functions.invoke` does NOT throw on HTTP errors (4xx/5xx). Instead, it returns `{ data: null, error: FunctionsHttpError }`. The frontend code checks `if (error) throw error` which is correct, BUT the edge function returns errors in the response body with non-200 status codes. The client SDK treats 2xx as success and puts the parsed JSON in `data`, and treats non-2xx as error. So the error handling is actually fine. However, there is a more subtle issue...
+
+2. **The `syncBloodStock` function uses upsert-like logic but without proper conflict handling**: It does a `select().single()` first, then either updates or inserts. Between the select and the insert/update, there could be a race condition. More importantly, the insert doesn't set `last_updated`, and the existing `blood_stock_history` trigger fires on every insert/update, which could fail if the `blood_stock_id` reference is NULL for newly created records.
+
+3. **Test data is in broken state**: The test hospital has had its `blood_stock` and `blood_units` deleted (from previous deletion attempts) but `blood_unit_history` records remain, preventing the hospital from being deleted. Meanwhile no stock records exist, so nothing shows on the public page.
+
+### Password Update Issues
+- The `handleResetPassword` function uses `window.prompt()` which is poor UX and inconsistent with the rest of the admin panel
+- When the auth user doesn't exist (orphaned `auth_user_id`), the reset silently fails with a confusing error
+
+### Realtime Stock Visibility
+- The `blood_stock` table IS in the realtime publication (confirmed)
+- But `BloodUnitManager.tsx` (hospital portal) does NOT subscribe to realtime -- it only fetches once on mount
+- When a hospital adds a unit, other viewers of the stock page WILL see updates (realtime works on `blood_stock`) but the hospital's own view doesn't auto-refresh
+
+### Legacy Dead Code
+- `update-blood-stock` edge function still uses old PIN-based authentication (dead code)
+- `verify-hospital-pin` edge function is no longer used
+- `HospitalStockManager.tsx` and `StockUpdateSheet.tsx` still reference the old PIN system and are imported nowhere actively
+
+### AddBloodUnitSheet State Bug
+- When `editingUnit` changes, the component's state fields (bloodGroup, collectionDate, etc.) are initialized in `useState` with `editingUnit` values, but `useState` only runs on initial mount. So editing a unit shows stale/default values instead of the selected unit's data.
 
 ---
 
-## System Architecture
+## Fix Plan
 
-The system uses a **scheduled Edge Function** that runs daily (via pg_cron) to:
-1. Check all donor profiles for eligibility transitions
-2. Send SMS notifications via the existing Textbee integration
-3. Log all notifications for audit purposes
+### Part 1: Database Migration
 
----
-
-## Part 1: Database Schema
-
-### 1.1 Create `notification_messages` Table
-
-Store configurable message templates:
+Fix the foreign key constraint and clean up orphaned data:
 
 ```sql
-CREATE TABLE notification_messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  message_key TEXT NOT NULL UNIQUE,
-  message_title TEXT NOT NULL,
-  message_template TEXT NOT NULL,
-  description TEXT,
-  is_enabled BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE notification_messages ENABLE ROW LEVEL SECURITY;
-
--- Policies
-CREATE POLICY "Admins can manage notification messages"
-ON notification_messages FOR ALL
-USING (has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Anyone can view notification messages"
-ON notification_messages FOR SELECT
-USING (true);
+-- Fix: Add ON DELETE CASCADE to blood_unit_history -> hospitals FK
+ALTER TABLE blood_unit_history 
+  DROP CONSTRAINT blood_unit_history_hospital_id_fkey;
+ALTER TABLE blood_unit_history 
+  ADD CONSTRAINT blood_unit_history_hospital_id_fkey 
+  FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE CASCADE;
 ```
 
-### 1.2 Create `donor_wellness_logs` Table
+### Part 2: Fix delete-hospital Edge Function
 
-Track sent notifications to prevent duplicates and enable check-in history:
+Update the function to:
+1. Delete `blood_unit_history` records BEFORE the hospital
+2. Delete `blood_stock_history` records (safety net)
+3. Handle "auth user not found" gracefully
+4. Add proper logging for each step
 
-```sql
-CREATE TABLE donor_wellness_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  donor_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  notification_type TEXT NOT NULL, -- 'availability_restored', 'wellness_check'
-  sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  sent_via TEXT NOT NULL DEFAULT 'sms', -- 'sms', 'telegram', 'in_app'
-  message_sent TEXT,
-  status TEXT DEFAULT 'sent', -- 'sent', 'failed', 'delivered'
-  error_message TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE INDEX idx_wellness_logs_donor ON donor_wellness_logs(donor_id);
-CREATE INDEX idx_wellness_logs_type_date ON donor_wellness_logs(notification_type, sent_at);
-
--- RLS
-ALTER TABLE donor_wellness_logs ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Admins can manage wellness logs"
-ON donor_wellness_logs FOR ALL
-USING (has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Users can view own logs"
-ON donor_wellness_logs FOR SELECT
-USING (auth.uid() = donor_id);
-```
-
-### 1.3 Add Tracking Column to Profiles
-
-Track last wellness check date:
-
-```sql
-ALTER TABLE profiles ADD COLUMN last_wellness_check TIMESTAMPTZ;
-```
-
-### 1.4 Insert Default Message Templates
-
-```sql
-INSERT INTO notification_messages (message_key, message_title, message_template, description) VALUES
-(
-  'availability_restored',
-  'Ready to Donate Again',
-  'Hi {full_name}! Great news - your 90-day waiting period is complete. You are now eligible to donate blood again! Your blood type ({blood_group}) can save lives. Thank you for being a hero! - LeyHadhiyaMv',
-  'Sent when a donor becomes eligible after 90-day cooldown'
-),
-(
-  'wellness_check_first',
-  'First Wellness Check',
-  'Hi {full_name}, we noticed you''ve been unavailable for a while. We hope everything is okay! When you''re feeling better, we''d love to have you back. Take care! - LeyHadhiyaMv',
-  'First wellness check after 30 days of being unavailable'
-),
-(
-  'wellness_check_followup',
-  'Follow-up Wellness Check',
-  'Hi {full_name}, just checking in! We miss you in our donor community. If there''s anything we can help with, please reach out. Hope to see you soon! - LeyHadhiyaMv',
-  'Monthly follow-up for donors still unavailable'
-);
-```
-
----
-
-## Part 2: Edge Function - `donor-wellness-check`
-
-Create `supabase/functions/donor-wellness-check/index.ts`:
-
-**Functionality:**
-
-1. **Availability Restoration Notifications**
-   - Query donors where `available_date` = today and `availability_status` = 'unavailable'
-   - Check they haven't been notified (no recent log entry)
-   - Send SMS using existing Textbee integration
-   - Log the notification
-
-2. **Monthly Wellness Checks**
-   - Query donors where:
-     - `availability_status` = 'unavailable' 
-     - `unavailable_until` is NULL or in the past (indefinite unavailability)
-     - Last wellness check was > 30 days ago OR never sent
-   - Send caring check-in message
-   - Update `last_wellness_check` timestamp
-
-**Key Logic:**
-```typescript
-// Find donors who became available today
-const { data: newlyAvailable } = await supabase
-  .from('profiles')
-  .select('*')
-  .eq('availability_status', 'unavailable')
-  .eq('available_date', new Date().toISOString().split('T')[0])
-  .not('phone', 'is', null);
-
-// Find donors for wellness check (unavailable for 30+ days without check)
-const thirtyDaysAgo = new Date();
-thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-const { data: needsWellnessCheck } = await supabase
-  .from('profiles')
-  .select('*')
-  .eq('availability_status', 'unavailable')
-  .or(`unavailable_until.is.null,unavailable_until.lt.${new Date().toISOString()}`)
-  .or(`last_wellness_check.is.null,last_wellness_check.lt.${thirtyDaysAgo.toISOString()}`);
-```
-
----
-
-## Part 3: Scheduled Job Setup
-
-Use pg_cron to run the function daily:
-
-```sql
--- Enable pg_cron and pg_net extensions
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-CREATE EXTENSION IF NOT EXISTS pg_net;
-
--- Schedule daily at 9 AM Maldives time (4 AM UTC)
-SELECT cron.schedule(
-  'donor-wellness-check-daily',
-  '0 4 * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://jfiepcajyctszbfskgfu.supabase.co/functions/v1/donor-wellness-check',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer ANON_KEY"}'::jsonb,
-    body := '{}'::jsonb
-  ) AS request_id;
-  $$
-);
-```
-
----
-
-## Part 4: Admin UI - Message Template Manager
-
-### 4.1 Create `NotificationMessagesManager.tsx`
-
-**Features:**
-- List all notification message templates
-- Edit message templates with preview
-- Enable/disable individual message types
-- Support template variables: `{full_name}`, `{blood_group}`, `{phone}`
-- Show description and usage context
-- Preview how message will look with sample data
-
-**UI Layout:**
 ```text
-┌─────────────────────────────────────────────────┐
-│  Notification Messages                          │
-├─────────────────────────────────────────────────┤
-│  Configure automated SMS messages sent to donors│
-├─────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────┐    │
-│  │ ✅ Ready to Donate Again               │    │
-│  │    Sent when 90-day waiting ends        │    │
-│  │                                         │    │
-│  │ Template:                               │    │
-│  │ [Hi {full_name}! Great news - your 90-  │    │
-│  │  day waiting period is complete...]     │    │
-│  │                                         │    │
-│  │ Variables: {full_name}, {blood_group}   │    │
-│  │ [Edit] [Test]                           │    │
-│  └─────────────────────────────────────────┘    │
-│                                                 │
-│  ┌─────────────────────────────────────────┐    │
-│  │ ✅ First Wellness Check                │    │
-│  │    Sent after 30 days unavailable       │    │
-│  │    ...                                  │    │
-│  └─────────────────────────────────────────┘    │
-│                                                 │
-│  ┌─────────────────────────────────────────┐    │
-│  │ ✅ Follow-up Wellness Check            │    │
-│  │    Monthly check for unavailable donors │    │
-│  │    ...                                  │    │
-│  └─────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────┘
+Deletion order:
+1. Get hospital details (auth_user_id)
+2. Delete auth user (ignore "not found" errors)
+3. Delete blood_unit_history  <-- NEW
+4. Delete blood_units
+5. Delete blood_stock_history  <-- NEW
+6. Delete blood_stock
+7. Delete hospital record
 ```
 
-### 4.2 Add to Admin Settings Tab
+### Part 3: Fix manage-blood-unit syncBloodStock
 
-Integrate into the existing Admin page settings tab alongside TelegramConfigManager:
+Improve the sync function to use proper upsert:
+```typescript
+async function syncBloodStock(supabase, hospitalId, bloodGroup) {
+  const { count } = await supabase
+    .from("blood_units")
+    .select("*", { count: "exact", head: true })
+    .eq("hospital_id", hospitalId)
+    .eq("blood_group", bloodGroup)
+    .eq("status", "available");
 
-```tsx
-// In Admin.tsx settings tab
-<Accordion type="multiple">
-  <AccordionItem value="telegram">
-    <AccordionTrigger>Telegram Notifications</AccordionTrigger>
-    <AccordionContent>
-      <TelegramConfigManager />
-    </AccordionContent>
-  </AccordionItem>
-  
-  <AccordionItem value="donor-notifications">
-    <AccordionTrigger>Donor Notification Messages</AccordionTrigger>
-    <AccordionContent>
-      <NotificationMessagesManager />
-    </AccordionContent>
-  </AccordionItem>
-  
-  {/* ... existing accordion items */}
-</Accordion>
+  const availableCount = count || 0;
+
+  // Use upsert with the unique constraint
+  const { error } = await supabase
+    .from("blood_stock")
+    .upsert(
+      {
+        hospital_id: hospitalId,
+        blood_group: bloodGroup,
+        units_available: availableCount,
+        last_updated: new Date().toISOString(),
+      },
+      { onConflict: "hospital_id,blood_group" }
+    );
+    
+  if (error) console.error("Sync error:", error);
+  else console.log(`Synced: ${hospitalId}/${bloodGroup} = ${availableCount}`);
+}
 ```
 
----
+### Part 4: Fix AddBloodUnitSheet State Initialization
 
-## Part 5: Wellness Check History Panel
+Add a `useEffect` to re-initialize form state when `editingUnit` changes:
 
-### 5.1 Create `WellnessCheckHistory.tsx`
+```typescript
+useEffect(() => {
+  if (editingUnit) {
+    setBloodGroup(editingUnit.blood_group);
+    setCollectionDate(new Date(editingUnit.collection_date));
+    setExpiryDate(new Date(editingUnit.expiry_date));
+    setDonorId(editingUnit.donor_id || "");
+    setDonorName(editingUnit.donor_name || "");
+    setBagNumber(editingUnit.bag_number || "");
+    setVolumeMl(editingUnit.volume_ml?.toString() || "450");
+    setBatchNumber(editingUnit.batch_number || "");
+    setComponentType(editingUnit.component_type || "whole_blood");
+    setRemarks(editingUnit.remarks || "");
+  }
+}, [editingUnit]);
+```
 
-Display log of all sent wellness notifications:
+### Part 5: Fix Password Reset UX
 
-**Features:**
-- Table showing: Donor Name, Type, Sent At, Status
-- Filter by notification type
-- Search by donor name
-- Pagination
-- Export capability
+Replace `window.prompt()` with a proper dialog component:
+- Add a `resetPasswordDialog` state with `{ open, hospital, newPassword }` fields
+- Create a dialog with password input, generate button, and confirm button
+- Show success feedback with option to copy credentials
+
+### Part 6: Add Realtime to BloodUnitManager
+
+Add a realtime subscription so the hospital portal auto-refreshes when units change:
+
+```typescript
+useEffect(() => {
+  fetchUnits();
+  
+  const channel = supabase
+    .channel(`blood-units-${hospitalId}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'blood_units',
+      filter: `hospital_id=eq.${hospitalId}`,
+    }, () => {
+      fetchUnits();
+    })
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [hospitalId]);
+```
+
+### Part 7: Clean Up Legacy Code
+
+Remove unused edge functions and components:
+- Delete `supabase/functions/update-blood-stock/` (PIN-based, replaced by manage-blood-unit)
+- Delete `supabase/functions/verify-hospital-pin/` (PIN auth is deprecated)
+- Remove their entries from `supabase/config.toml`
+- Note: Keep `HospitalStockManager.tsx`, `StockUpdateSheet.tsx`, `BloodStockCard.tsx`, `ExpiryAlerts.tsx` for now as they may still be imported elsewhere -- but they are effectively dead code
 
 ---
 
 ## File Changes Summary
 
-### New Files
-| File | Description |
-|------|-------------|
-| `supabase/functions/donor-wellness-check/index.ts` | Scheduled function for availability & wellness checks |
-| `src/components/NotificationMessagesManager.tsx` | Admin UI for message template management |
-| `src/components/WellnessCheckHistory.tsx` | Audit log of sent notifications |
+### Database
+| Change | Purpose |
+|--------|---------|
+| Fix `blood_unit_history_hospital_id_fkey` to CASCADE | Allow hospital deletion |
 
-### Modified Files
+### Edge Functions
 | File | Changes |
 |------|---------|
-| `src/pages/Admin.tsx` | Add NotificationMessagesManager to settings tab |
-| `supabase/config.toml` | Register donor-wellness-check function |
+| `supabase/functions/delete-hospital/index.ts` | Add blood_unit_history & blood_stock_history cleanup, better error handling |
+| `supabase/functions/manage-blood-unit/index.ts` | Fix syncBloodStock to use upsert |
+| `supabase/functions/update-blood-stock/` | DELETE (legacy) |
+| `supabase/functions/verify-hospital-pin/` | DELETE (legacy) |
 
-### Database Changes
-| Change | Description |
-|--------|-------------|
-| New table `notification_messages` | Store configurable message templates |
-| New table `donor_wellness_logs` | Track sent notifications |
-| New column `profiles.last_wellness_check` | Track last wellness check timestamp |
-| New cron job | Schedule daily wellness check |
-
----
-
-## Message Template Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `{full_name}` | Donor's full name | Ahmed Ibrahim |
-| `{blood_group}` | Donor's blood type | O+ |
-| `{phone}` | Donor's phone number | 7915563 |
-| `{days_unavailable}` | Days since set unavailable | 45 |
-| `{last_donation}` | Last donation date | Jan 15, 2026 |
-
----
-
-## Notification Flow Diagram
-
-```text
-┌─────────────┐
-│  pg_cron    │
-│  (Daily)    │
-└──────┬──────┘
-       │ 9 AM MVT
-       ▼
-┌────────────────────────┐
-│ donor-wellness-check   │
-│ Edge Function          │
-└──────┬─────────────────┘
-       │
-       ├─────────────────────────────────────┐
-       │                                     │
-       ▼                                     ▼
-┌────────────────────┐            ┌────────────────────┐
-│ Check Available    │            │ Check Wellness     │
-│ Date = Today       │            │ 30+ days inactive  │
-└────────┬───────────┘            └────────┬───────────┘
-         │                                 │
-         ▼                                 ▼
-┌────────────────────┐            ┌────────────────────┐
-│ Get Message:       │            │ Get Message:       │
-│ availability_      │            │ wellness_check_    │
-│ restored           │            │ first/followup     │
-└────────┬───────────┘            └────────┬───────────┘
-         │                                 │
-         └─────────────┬───────────────────┘
-                       │
-                       ▼
-              ┌────────────────┐
-              │ Send SMS via   │
-              │ Textbee API    │
-              └────────┬───────┘
-                       │
-                       ▼
-              ┌────────────────┐
-              │ Log to         │
-              │ wellness_logs  │
-              └────────────────┘
-```
-
----
-
-## Security Considerations
-
-1. **Message Templates**: Only admins can modify templates (RLS protected)
-2. **Scheduled Job**: Uses anon key with no sensitive data in request
-3. **SMS Rate Limiting**: One notification per donor per type per day
-4. **Logging**: Full audit trail of all sent messages
-5. **Opt-out**: Future enhancement could add SMS opt-out preference
+### Frontend
+| File | Changes |
+|------|---------|
+| `src/components/hospital/AddBloodUnitSheet.tsx` | Fix state initialization with useEffect |
+| `src/components/hospital/BloodUnitManager.tsx` | Add realtime subscription |
+| `src/components/HospitalAdminPanel.tsx` | Replace prompt() with proper reset password dialog |
+| `supabase/config.toml` | Remove legacy function entries |
 
 ---
 
 ## Testing Checklist
 
-1. Admin can view and edit notification message templates
-2. Message variables are correctly replaced with donor data
-3. Scheduled function identifies correct donors for availability notification
-4. Scheduled function identifies correct donors for wellness check
-5. SMS is sent successfully via Textbee
-6. Notifications are logged correctly
-7. Duplicate notifications are prevented
-8. Disabled messages are not sent
-9. Telegram admin notification summarizes daily sends
+1. Create a new hospital via admin panel with email/password
+2. Login to hospital portal with the credentials
+3. Add blood units (various blood groups)
+4. Verify stock appears on /blood-stock page in real time
+5. Reserve, transfuse, and discard units
+6. Verify stock counts update on /blood-stock after each action
+7. Reset hospital password from admin panel
+8. Login with new password
+9. Delete hospital from admin panel
+10. Verify all related data is cleaned up
