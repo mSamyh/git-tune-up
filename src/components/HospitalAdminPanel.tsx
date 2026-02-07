@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -57,6 +58,21 @@ export const HospitalAdminPanel = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
+  
+  // Password reset dialog state
+  const [resetPasswordDialog, setResetPasswordDialog] = useState<{
+    open: boolean;
+    hospital: Hospital | null;
+    newPassword: string;
+    isSubmitting: boolean;
+  }>({ open: false, hospital: null, newPassword: "", isSubmitting: false });
+
+  // Delete confirmation dialog state
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    hospital: Hospital | null;
+    isDeleting: boolean;
+  }>({ open: false, hospital: null, isDeleting: false });
 
   useEffect(() => {
     fetchData();
@@ -94,13 +110,17 @@ export const HospitalAdminPanel = () => {
     setLoading(false);
   };
 
-  const generatePassword = () => {
+  const generatePassword = (forReset = false) => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
     let password = '';
     for (let i = 0; i < 12; i++) {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    setFormData({ ...formData, password });
+    if (forReset) {
+      setResetPasswordDialog(prev => ({ ...prev, newPassword: password }));
+    } else {
+      setFormData({ ...formData, password });
+    }
   };
 
   const handleSubmit = async () => {
@@ -198,20 +218,29 @@ export const HospitalAdminPanel = () => {
     setShowAddDialog(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this hospital? This will also delete all blood stock records and the login account.")) return;
+  const handleDelete = async (hospital: Hospital) => {
+    setDeleteDialog({ open: true, hospital, isDeleting: false });
+  };
+
+  const confirmDelete = async () => {
+    const hospital = deleteDialog.hospital;
+    if (!hospital) return;
+
+    setDeleteDialog(prev => ({ ...prev, isDeleting: true }));
 
     try {
       const { data, error } = await supabase.functions.invoke("delete-hospital", {
-        body: { hospital_id: id },
+        body: { hospital_id: hospital.id },
       });
 
       if (error) throw error;
 
       toast({ title: "Deleted", description: "Hospital deleted successfully" });
+      setDeleteDialog({ open: false, hospital: null, isDeleting: false });
       fetchData();
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message || "Failed to delete hospital" });
+      setDeleteDialog(prev => ({ ...prev, isDeleting: false }));
     }
   };
 
@@ -233,14 +262,20 @@ export const HospitalAdminPanel = () => {
     toast({ title: "Copied", description: "Credentials copied to clipboard" });
   };
 
-  const handleResetPassword = async (hospital: Hospital) => {
-    const newPassword = prompt("Enter new password (min 8 characters):");
-    if (!newPassword || newPassword.length < 8) {
-      if (newPassword) {
-        toast({ variant: "destructive", title: "Error", description: "Password must be at least 8 characters" });
-      }
+  const handleResetPassword = (hospital: Hospital) => {
+    setResetPasswordDialog({ open: true, hospital, newPassword: "", isSubmitting: false });
+  };
+
+  const confirmResetPassword = async () => {
+    const { hospital, newPassword } = resetPasswordDialog;
+    if (!hospital || !newPassword) return;
+
+    if (newPassword.length < 8) {
+      toast({ variant: "destructive", title: "Error", description: "Password must be at least 8 characters" });
       return;
     }
+
+    setResetPasswordDialog(prev => ({ ...prev, isSubmitting: true }));
 
     try {
       const { error } = await supabase.functions.invoke("create-hospital", {
@@ -257,8 +292,10 @@ export const HospitalAdminPanel = () => {
 
       toast({ title: "Success", description: "Password reset successfully" });
       setHospitalPasswords(prev => ({ ...prev, [hospital.id]: newPassword }));
+      setResetPasswordDialog({ open: false, hospital: null, newPassword: "", isSubmitting: false });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message || "Failed to reset password" });
+      setResetPasswordDialog(prev => ({ ...prev, isSubmitting: false }));
     }
   };
 
@@ -389,7 +426,7 @@ export const HospitalAdminPanel = () => {
                           placeholder={editingHospital ? "Leave empty to keep current" : "Min 8 characters"}
                           className="rounded-xl font-mono"
                         />
-                        <Button variant="outline" size="icon" onClick={generatePassword} className="rounded-xl shrink-0">
+                        <Button variant="outline" size="icon" onClick={() => generatePassword(false)} className="rounded-xl shrink-0">
                           <RefreshCw className="h-4 w-4" />
                         </Button>
                       </div>
@@ -486,7 +523,7 @@ export const HospitalAdminPanel = () => {
                       size="sm" 
                       variant="ghost" 
                       className="h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl" 
-                      onClick={() => handleDelete(hospital.id)}
+                      onClick={() => handleDelete(hospital)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -601,7 +638,7 @@ export const HospitalAdminPanel = () => {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(hospital.id)}
+                            onClick={() => handleDelete(hospital)}
                             title="Delete"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -616,6 +653,88 @@ export const HospitalAdminPanel = () => {
           </>
         )}
       </CardContent>
+
+      {/* Reset Password Dialog */}
+      <Dialog
+        open={resetPasswordDialog.open}
+        onOpenChange={(open) => {
+          if (!open) setResetPasswordDialog({ open: false, hospital: null, newPassword: "", isSubmitting: false });
+        }}
+      >
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              Reset Password
+            </DialogTitle>
+            <DialogDescription>
+              Set a new password for <span className="font-medium">{resetPasswordDialog.hospital?.name}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>New Password</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={resetPasswordDialog.newPassword}
+                  onChange={(e) => setResetPasswordDialog(prev => ({ ...prev, newPassword: e.target.value }))}
+                  placeholder="Min 8 characters"
+                  className="rounded-xl font-mono"
+                />
+                <Button variant="outline" size="icon" onClick={() => generatePassword(true)} className="rounded-xl shrink-0">
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => setResetPasswordDialog({ open: false, hospital: null, newPassword: "", isSubmitting: false })}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="rounded-xl"
+              onClick={confirmResetPassword}
+              disabled={resetPasswordDialog.isSubmitting || !resetPasswordDialog.newPassword || resetPasswordDialog.newPassword.length < 8}
+            >
+              {resetPasswordDialog.isSubmitting ? "Resetting..." : "Reset Password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => {
+          if (!open) setDeleteDialog({ open: false, hospital: null, isDeleting: false });
+        }}
+      >
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Hospital</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <span className="font-medium">{deleteDialog.hospital?.name}</span>? 
+              This will permanently remove all blood stock records, blood unit history, and the login account.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl" disabled={deleteDialog.isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-xl bg-destructive hover:bg-destructive/90"
+              onClick={confirmDelete}
+              disabled={deleteDialog.isDeleting}
+            >
+              {deleteDialog.isDeleting ? "Deleting..." : "Delete Hospital"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
