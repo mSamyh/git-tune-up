@@ -73,6 +73,27 @@ export const BloodUnitManager = ({ hospitalId }: BloodUnitManagerProps) => {
 
   useEffect(() => {
     fetchUnits();
+
+    // Subscribe to realtime changes for this hospital's blood units
+    const channel = supabase
+      .channel(`blood-units-${hospitalId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "blood_units",
+          filter: `hospital_id=eq.${hospitalId}`,
+        },
+        () => {
+          fetchUnits();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [hospitalId]);
 
   // Calculate stats

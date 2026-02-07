@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, addDays } from "date-fns";
 import { CalendarIcon, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -67,6 +67,22 @@ export const AddBloodUnitSheet = ({
   const [batchNumber, setBatchNumber] = useState(editingUnit?.batch_number || "");
   const [componentType, setComponentType] = useState(editingUnit?.component_type || "whole_blood");
   const [remarks, setRemarks] = useState(editingUnit?.remarks || "");
+
+  // Re-initialize form state when editingUnit changes
+  useEffect(() => {
+    if (editingUnit) {
+      setBloodGroup(editingUnit.blood_group);
+      setCollectionDate(new Date(editingUnit.collection_date));
+      setExpiryDate(new Date(editingUnit.expiry_date));
+      setDonorId(editingUnit.donor_id || "");
+      setDonorName(editingUnit.donor_name || "");
+      setBagNumber(editingUnit.bag_number || "");
+      setVolumeMl(editingUnit.volume_ml?.toString() || "450");
+      setBatchNumber(editingUnit.batch_number || "");
+      setComponentType(editingUnit.component_type || "whole_blood");
+      setRemarks(editingUnit.remarks || "");
+    }
+  }, [editingUnit]);
 
   const resetForm = () => {
     setBloodGroup("");

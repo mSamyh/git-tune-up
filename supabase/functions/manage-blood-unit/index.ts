@@ -53,7 +53,7 @@ async function logHistory(
   });
 }
 
-// Sync blood_stock table after unit changes
+// Sync blood_stock table after unit changes using upsert
 async function syncBloodStock(supabase: any, hospitalId: string, bloodGroup: string) {
   try {
     // Count available units for this hospital/blood group
@@ -66,37 +66,24 @@ async function syncBloodStock(supabase: any, hospitalId: string, bloodGroup: str
 
     const availableCount = count || 0;
 
-    // Check if blood_stock record exists
-    const { data: existing } = await supabase
+    // Use upsert with the unique constraint (hospital_id, blood_group)
+    const { error } = await supabase
       .from("blood_stock")
-      .select("id")
-      .eq("hospital_id", hospitalId)
-      .eq("blood_group", bloodGroup)
-      .single();
-
-    if (existing) {
-      // Update existing record
-      await supabase
-        .from("blood_stock")
-        .update({
-          units_available: availableCount,
-          last_updated: new Date().toISOString(),
-        })
-        .eq("hospital_id", hospitalId)
-        .eq("blood_group", bloodGroup);
-    } else {
-      // Insert new record
-      await supabase
-        .from("blood_stock")
-        .insert({
+      .upsert(
+        {
           hospital_id: hospitalId,
           blood_group: bloodGroup,
           units_available: availableCount,
-          status: availableCount === 0 ? "out_of_stock" : "available",
-        });
-    }
+          last_updated: new Date().toISOString(),
+        },
+        { onConflict: "hospital_id,blood_group" }
+      );
 
-    console.log(`Synced blood_stock: ${hospitalId}/${bloodGroup} = ${availableCount} units`);
+    if (error) {
+      console.error("Error syncing blood_stock:", error);
+    } else {
+      console.log(`Synced blood_stock: ${hospitalId}/${bloodGroup} = ${availableCount} units`);
+    }
   } catch (error) {
     console.error("Error syncing blood_stock:", error);
   }
