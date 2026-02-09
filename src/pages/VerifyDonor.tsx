@@ -55,7 +55,6 @@ const VerifyDonor = () => {
 
       setDonor(profileData);
 
-      // Fetch donation count
       const { data: countData } = await supabase.rpc("get_donation_count", {
         donor_uuid: donorId,
       });
@@ -102,13 +101,13 @@ const VerifyDonor = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md rounded-2xl border-border/50">
           <CardContent className="p-8 text-center">
             <div className="animate-pulse">
-              <div className="h-20 w-20 bg-gray-200 rounded-full mx-auto mb-4" />
-              <div className="h-6 bg-gray-200 rounded w-3/4 mx-auto mb-2" />
-              <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto" />
+              <div className="h-20 w-20 bg-muted rounded-full mx-auto mb-4" />
+              <div className="h-6 bg-muted rounded w-3/4 mx-auto mb-2" />
+              <div className="h-4 bg-muted rounded w-1/2 mx-auto" />
             </div>
             <p className="text-muted-foreground mt-4">Verifying donor...</p>
           </CardContent>
@@ -119,13 +118,13 @@ const VerifyDonor = () => {
 
   if (error || !donor) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md rounded-2xl border-border/50">
           <CardContent className="p-8 text-center">
             <XCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
             <h2 className="text-xl font-bold text-destructive mb-2">Verification Failed</h2>
             <p className="text-muted-foreground mb-6">{error || "Donor not found"}</p>
-            <Button onClick={() => navigate("/")} variant="outline">
+            <Button onClick={() => navigate("/")} variant="outline" className="rounded-xl h-11 btn-press">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Go Home
             </Button>
@@ -138,17 +137,17 @@ const VerifyDonor = () => {
   const eligibility = getEligibility();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       {/* Header */}
-      <div className="bg-gradient-to-r from-red-600 to-red-700 text-white py-6 px-4">
+      <div className="bg-primary text-primary-foreground py-6 px-4">
         <div className="container mx-auto max-w-md">
           <div className="flex items-center gap-3 mb-2">
-            <div className="bg-white/20 p-2 rounded-full">
-              <Droplet className="h-6 w-6 fill-white" />
+            <div className="bg-primary-foreground/20 p-2 rounded-full">
+              <Droplet className="h-6 w-6 fill-primary-foreground" />
             </div>
             <div>
               <h1 className="text-xl font-bold">LeyHadhiya</h1>
-              <p className="text-red-200 text-sm">Donor Verification</p>
+              <p className="text-primary-foreground/70 text-sm">Donor Verification</p>
             </div>
           </div>
         </div>
@@ -156,23 +155,23 @@ const VerifyDonor = () => {
 
       <main className="container mx-auto max-w-md px-4 py-6 -mt-4">
         {/* Verification Status Card */}
-        <Card className={`mb-4 border-2 ${
+        <Card className={`mb-4 rounded-2xl border-2 ${
           eligibility.eligible 
-            ? "border-green-200 bg-green-50/50" 
-            : "border-amber-200 bg-amber-50/50"
+            ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20" 
+            : "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20"
         }`}>
           <CardContent className="p-6 text-center">
             <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
-              eligibility.eligible ? "bg-green-100" : "bg-amber-100"
+              eligibility.eligible ? "bg-emerald-100 dark:bg-emerald-900/40" : "bg-amber-100 dark:bg-amber-900/40"
             }`}>
               {eligibility.eligible ? (
-                <CheckCircle className="h-8 w-8 text-green-600" />
+                <CheckCircle className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
               ) : (
-                <Clock className="h-8 w-8 text-amber-600" />
+                <Clock className="h-8 w-8 text-amber-600 dark:text-amber-400" />
               )}
             </div>
             <h2 className={`text-2xl font-bold mb-1 ${
-              eligibility.eligible ? "text-green-700" : "text-amber-700"
+              eligibility.eligible ? "text-emerald-700 dark:text-emerald-300" : "text-amber-700 dark:text-amber-300"
             }`}>
               {eligibility.text}
             </h2>
@@ -181,19 +180,22 @@ const VerifyDonor = () => {
         </Card>
 
         {/* Donor Info Card */}
-        <Card className="shadow-lg">
+        <Card className="shadow-lg rounded-2xl border-border/50">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20 border-4 border-red-100">
+              <Avatar className="h-20 w-20 border-4 border-primary/10">
                 <AvatarImage src={donor.avatar_url || undefined} />
-                <AvatarFallback className="bg-red-100 text-red-600 text-2xl font-bold">
+                <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
                   {donor.full_name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <CardTitle className="text-xl">{donor.full_name}</CardTitle>
                 {donor.title && (
-                  <Badge className={`mt-1 ${donor.title_color || "bg-secondary"}`}>
+                  <Badge 
+                    className="mt-1"
+                    style={donor.title_color ? { backgroundColor: donor.title_color, color: '#fff' } : undefined}
+                  >
                     {donor.title}
                   </Badge>
                 )}
@@ -205,12 +207,12 @@ const VerifyDonor = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Blood Group */}
-            <div className="flex items-center justify-between p-4 bg-red-50 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl">
               <div className="flex items-center gap-3">
-                <Droplet className="h-6 w-6 text-red-600 fill-red-600" />
+                <Droplet className="h-6 w-6 text-primary fill-primary" />
                 <span className="text-muted-foreground">Blood Type</span>
               </div>
-              <span className="text-3xl font-black text-red-600">{donor.blood_group}</span>
+              <span className="text-3xl font-black text-primary">{donor.blood_group}</span>
             </div>
 
             {/* Last Donation */}
@@ -265,16 +267,16 @@ const VerifyDonor = () => {
 
         {/* Verified Badge */}
         <div className="mt-6 text-center">
-          <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border">
-            <CheckCircle className="h-4 w-4 text-green-600" />
+          <div className="inline-flex items-center gap-2 bg-card px-4 py-2 rounded-full shadow-sm border border-border/50">
+            <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             <span className="text-sm text-muted-foreground">Verified by LeyHadhiya</span>
           </div>
         </div>
 
         {/* Footer */}
         <div className="mt-8 text-center pb-6">
-          <div className="flex items-center justify-center gap-2 text-red-600 mb-2">
-            <Droplet className="h-5 w-5 fill-red-600" />
+          <div className="flex items-center justify-center gap-2 text-primary mb-2">
+            <Droplet className="h-5 w-5 fill-primary" />
             <span className="font-bold">LeyHadhiya</span>
           </div>
           <p className="text-xs text-muted-foreground">

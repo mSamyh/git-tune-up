@@ -34,12 +34,10 @@ const ResetPassword = () => {
 
       try {
         const response = await fetch(
-          `https://jfiepcajyctszbfskgfu.supabase.co/functions/v1/reset-password?action=verify`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-password?action=verify`,
           {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token }),
           }
         );
@@ -122,10 +120,12 @@ const ResetPassword = () => {
   if (verifying) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md rounded-2xl border-border/50 shadow-xl">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Verifying reset link...</p>
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+            <p className="text-muted-foreground font-medium">Verifying reset link...</p>
           </CardContent>
         </Card>
       </div>
@@ -138,12 +138,18 @@ const ResetPassword = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      <Card className="w-full max-w-md">
+      {/* Background decoration */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-1/4 left-1/3 w-40 h-40 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/3 right-1/4 w-56 h-56 bg-primary/10 rounded-full blur-3xl" />
+      </div>
+
+      <Card className="w-full max-w-md rounded-2xl border-border/50 shadow-xl">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/30">
             <Droplet className="h-8 w-8 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">Reset Password</CardTitle>
+          <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
           <CardDescription>Enter your new password below</CardDescription>
         </CardHeader>
         <CardContent>
@@ -158,6 +164,7 @@ const ResetPassword = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                className="h-11 rounded-xl"
               />
             </div>
             <div className="space-y-2">
@@ -170,9 +177,10 @@ const ResetPassword = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
+                className="h-11 rounded-xl"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-12 rounded-xl font-semibold btn-press" disabled={loading}>
               {loading ? "Updating..." : "Update Password"}
             </Button>
           </form>

@@ -179,7 +179,7 @@ const Index = () => {
                 FAQ
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground/60 mt-5">© 2025 LeyHadhiya. All rights reserved.</p>
+            <p className="text-xs text-muted-foreground/60 mt-5">© {new Date().getFullYear()} LeyHadhiya. All rights reserved.</p>
           </footer>
         </main>
       </div>
@@ -389,7 +389,7 @@ const Index = () => {
               FAQ
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground/60 mt-4">© 2025 LeyHadhiya. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground/60 mt-4">© {new Date().getFullYear()} LeyHadhiya. All rights reserved.</p>
         </footer>
       </main>
 

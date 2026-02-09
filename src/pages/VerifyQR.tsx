@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { CheckCircle, XCircle, Clock, Percent, Store, User, Phone, Sparkles, AlertTriangle, ShieldCheck, Loader2 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 
 interface PreviewData {
   is_valid: boolean;
@@ -53,6 +53,7 @@ type Step = 'loading' | 'preview' | 'verifying' | 'verified' | 'error';
 
 export default function VerifyQR() {
   const { voucherCode } = useParams();
+  const { toast } = useToast();
   const [step, setStep] = useState<Step>('loading');
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
@@ -107,7 +108,7 @@ export default function VerifyQR() {
 
   const handlePinVerify = async () => {
     if (merchantPin.length !== 6) {
-      toast.error("Please enter a 6-digit PIN");
+      toast({ variant: "destructive", title: "Invalid PIN", description: "Please enter a 6-digit PIN" });
       return;
     }
 
@@ -124,7 +125,7 @@ export default function VerifyQR() {
         const errorMsg = pinError?.context?.body?.error || pinError.message || "Failed to verify PIN";
         setError(errorMsg);
         setStep('preview');
-        toast.error(errorMsg);
+        toast({ variant: "destructive", title: "Verification failed", description: errorMsg });
         setMerchantPin("");
         return;
       }
@@ -132,7 +133,7 @@ export default function VerifyQR() {
       if (!pinData.success) {
         setError(pinData.error || "Invalid PIN");
         setStep('preview');
-        toast.error(pinData.error || "Invalid PIN");
+        toast({ variant: "destructive", title: "Invalid PIN", description: pinData.error || "PIN not recognized" });
         setMerchantPin("");
         return;
       }
@@ -153,7 +154,7 @@ export default function VerifyQR() {
         const errorMsg = verifyError?.context?.body?.error || verifyError.message || "Failed to verify voucher";
         setError(errorMsg);
         setStep('preview');
-        toast.error(errorMsg);
+        toast({ variant: "destructive", title: "Verification failed", description: errorMsg });
         setMerchantPin("");
         return;
       }
@@ -161,7 +162,7 @@ export default function VerifyQR() {
       if (verifyData.error) {
         setError(verifyData.error);
         setStep('preview');
-        toast.error(verifyData.error);
+        toast({ variant: "destructive", title: "Verification failed", description: verifyData.error });
         setMerchantPin("");
         return;
       }
@@ -169,13 +170,13 @@ export default function VerifyQR() {
       // Success!
       setVerificationResult(verifyData);
       setStep('verified');
-      toast.success("Voucher verified successfully!");
+      toast({ title: "Voucher verified!", description: "Voucher verified successfully" });
 
     } catch (err: any) {
       console.error("Verification error:", err);
       setError(err.message || "Failed to verify voucher");
       setStep('preview');
-      toast.error("Verification failed. Please try again.");
+      toast({ variant: "destructive", title: "Verification failed", description: "Please try again." });
       setMerchantPin("");
     }
   };

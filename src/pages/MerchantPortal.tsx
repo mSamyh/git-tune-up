@@ -208,7 +208,7 @@ export default function MerchantPortal() {
               </div>
               
               <Button 
-                className="w-full rounded-xl h-12" 
+                className="w-full rounded-xl h-12 btn-press" 
                 onClick={verifyMerchantPin}
                 disabled={loading || merchantPin.length !== 6}
               >
@@ -228,6 +228,16 @@ export default function MerchantPortal() {
               <p className="text-xs text-center text-muted-foreground">
                 Contact admin if you don't have a merchant PIN
               </p>
+
+              <div className="text-center">
+                <Button 
+                  variant="link" 
+                  onClick={() => window.history.back()}
+                  className="text-muted-foreground hover:text-primary text-sm"
+                >
+                  ← Back to Home
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </main>
