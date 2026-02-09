@@ -29,6 +29,7 @@ import { RedemptionAuditPanel } from "@/components/RedemptionAuditPanel";
 import { Textarea } from "@/components/ui/textarea";
 import { AppHeader } from "@/components/AppHeader";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -78,6 +79,11 @@ const Admin = () => {
   const [selectedDonor, setSelectedDonor] = useState<DonorProfile | null>(null);
   const [selectedDonation, setSelectedDonation] = useState<any | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+
+  // AlertDialog states for deletions
+  const [deleteDonorDialog, setDeleteDonorDialog] = useState<{ open: boolean; donor: DonorProfile | null }>({ open: false, donor: null });
+  const [deleteDonationDialog, setDeleteDonationDialog] = useState<{ open: boolean; donationId: string; donorName: string }>({ open: false, donationId: "", donorName: "" });
+  const [deleteRequestDialog, setDeleteRequestDialog] = useState<{ open: boolean; request: any | null }>({ open: false, request: null });
   
   // Edit form states
   const [editForm, setEditForm] = useState({
@@ -293,8 +299,10 @@ const Admin = () => {
     }
   };
 
-  const handleDeleteDonor = async (donor: DonorProfile) => {
-    if (!confirm(`Delete ${donor.full_name}? This will also delete their donation history.`)) return;
+
+  const confirmDeleteDonor = async () => {
+    const donor = deleteDonorDialog.donor;
+    if (!donor) return;
 
     const { error } = await supabase.from("profiles").delete().eq("id", donor.id);
     
@@ -308,6 +316,11 @@ const Admin = () => {
       toast({ title: "Donor deleted successfully" });
       fetchData();
     }
+    setDeleteDonorDialog({ open: false, donor: null });
+  };
+
+  const handleDeleteDonor = (donor: DonorProfile) => {
+    setDeleteDonorDialog({ open: true, donor });
   };
 
   const openEditDonationDialog = (donation: any) => {
@@ -347,8 +360,19 @@ const Admin = () => {
     }
   };
 
-  const handleDeleteDonation = async (donationId: string, donorName: string) => {
-    if (!confirm(`Delete this donation record for ${donorName}?`)) return;
+
+  const confirmDeleteDonation = async () => {
+    const { donationId, donorName } = deleteDonationDialog;
+    if (!donationId) return;
+    setDeleteDonationDialog({ open: false, donationId: "", donorName: "" });
+    await executeDeleteDonation(donationId);
+  };
+
+  const handleDeleteDonation = (donationId: string, donorName: string) => {
+    setDeleteDonationDialog({ open: true, donationId, donorName });
+  };
+
+  const executeDeleteDonation = async (donationId: string) => {
 
     const { data: donation } = await supabase
       .from("donation_history")
@@ -493,12 +517,19 @@ const Admin = () => {
     }
   };
 
-  const handleDeleteRequest = async (request: any) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete the blood request for ${request.patient_name}?`
-    );
 
-    if (!confirmed) return;
+  const confirmDeleteRequest = async () => {
+    const request = deleteRequestDialog.request;
+    if (!request) return;
+    setDeleteRequestDialog({ open: false, request: null });
+    await executeDeleteRequest(request);
+  };
+
+  const handleDeleteRequest = (request: any) => {
+    setDeleteRequestDialog({ open: true, request });
+  };
+
+  const executeDeleteRequest = async (request: any) => {
 
     const { error } = await supabase
       .from("blood_requests")
@@ -743,7 +774,7 @@ const Admin = () => {
           {/* Desktop Tab List */}
           <div className="hidden sm:block sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 -mx-4 px-4">
             <ScrollArea className="w-full">
-              <TabsList className="w-full bg-muted/50 p-1.5 rounded-2xl h-auto grid grid-cols-8 gap-1">
+              <TabsList className="w-full bg-muted/50 p-1.5 rounded-2xl h-auto grid grid-cols-9 gap-1">
                 {navItems.map((item) => (
                   <TabsTrigger 
                     key={item.value}
@@ -1736,6 +1767,60 @@ const Admin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Donor AlertDialog */}
+      <AlertDialog open={deleteDonorDialog.open} onOpenChange={(open) => !open && setDeleteDonorDialog({ open: false, donor: null })}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Donor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteDonorDialog.donor?.full_name}</strong>? This will also delete their donation history. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDonor} className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Donation AlertDialog */}
+      <AlertDialog open={deleteDonationDialog.open} onOpenChange={(open) => !open && setDeleteDonationDialog({ open: false, donationId: "", donorName: "" })}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Donation Record</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this donation record for <strong>{deleteDonationDialog.donorName}</strong>? Points will be deducted. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDonation} className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Request AlertDialog */}
+      <AlertDialog open={deleteRequestDialog.open} onOpenChange={(open) => !open && setDeleteRequestDialog({ open: false, request: null })}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Blood Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the blood request for <strong>{deleteRequestDialog.request?.patient_name}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteRequest} className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import BloodUnitManager from "@/components/hospital/BloodUnitManager";
 
@@ -22,6 +22,7 @@ interface Hospital {
 
 const HospitalPortal = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -72,13 +73,13 @@ const HospitalPortal = () => {
       }
     } catch (error: any) {
       console.error("Error fetching hospital:", error);
-      toast.error("Failed to load hospital data");
+      toast({ variant: "destructive", title: "Error", description: "Failed to load hospital data" });
     }
   };
 
   const handleLogin = async () => {
     if (!email || !password) {
-      toast.error("Please enter email and password");
+      toast({ variant: "destructive", title: "Missing credentials", description: "Please enter email and password" });
       return;
     }
 
@@ -94,15 +95,15 @@ const HospitalPortal = () => {
       // Verify this is a hospital account
       if (!data.user?.user_metadata?.hospital_id) {
         await supabase.auth.signOut();
-        toast.error("This account is not authorized for hospital portal");
+        toast({ variant: "destructive", title: "Access denied", description: "This account is not authorized for hospital portal" });
         return;
       }
 
       await fetchHospitalData(data.user.user_metadata.hospital_id);
-      toast.success("Welcome!");
+      toast({ title: "Welcome!" });
     } catch (error: any) {
       console.error("Login error:", error);
-      toast.error(error.message || "Login failed");
+      toast({ variant: "destructive", title: "Login failed", description: error.message || "Login failed" });
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +114,7 @@ const HospitalPortal = () => {
     setHospital(null);
     setEmail("");
     setPassword("");
-    toast.info("Logged out successfully");
+    toast({ title: "Logged out successfully" });
   };
 
   // Loading state
