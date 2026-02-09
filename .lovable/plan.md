@@ -1,216 +1,187 @@
 
-# Hospital Portal: Full System Audit & Fix
+# Full System Audit & Enhancement Plan
 
-## Issues Discovered
+## Audit Summary
 
-### CRITICAL: Hospital Deletion Fails
-**Root Cause**: The `blood_unit_history` table has a foreign key to `hospitals(id)` **without** `ON DELETE CASCADE`. When the `delete-hospital` function tries to delete the hospital record, it fails with:
-```
-Key (id)=(b6f8ba7c-...) is still referenced from table "blood_unit_history"
-```
-
-The delete function cleans up `blood_units` and `blood_stock`, but misses `blood_unit_history`. Even if it did delete those records, the FK constraint without CASCADE would still block the hospital deletion.
-
-**Current FK cascade status**:
-| Table | FK to hospitals | ON DELETE |
-|-------|----------------|-----------|
-| blood_units | hospital_id | CASCADE |
-| blood_stock | hospital_id | CASCADE |
-| blood_stock_history | hospital_id | CASCADE |
-| blood_unit_history | hospital_id | **NONE (BUG)** |
-
-### CRITICAL: Blood Stock Not Showing After Adding Units
-**Root Cause**: The `syncBloodStock` function in `manage-blood-unit` works correctly in logic, but there are two problems:
-
-1. **`functions.invoke` error handling bug**: The Supabase JS client's `functions.invoke` does NOT throw on HTTP errors (4xx/5xx). Instead, it returns `{ data: null, error: FunctionsHttpError }`. The frontend code checks `if (error) throw error` which is correct, BUT the edge function returns errors in the response body with non-200 status codes. The client SDK treats 2xx as success and puts the parsed JSON in `data`, and treats non-2xx as error. So the error handling is actually fine. However, there is a more subtle issue...
-
-2. **The `syncBloodStock` function uses upsert-like logic but without proper conflict handling**: It does a `select().single()` first, then either updates or inserts. Between the select and the insert/update, there could be a race condition. More importantly, the insert doesn't set `last_updated`, and the existing `blood_stock_history` trigger fires on every insert/update, which could fail if the `blood_stock_id` reference is NULL for newly created records.
-
-3. **Test data is in broken state**: The test hospital has had its `blood_stock` and `blood_units` deleted (from previous deletion attempts) but `blood_unit_history` records remain, preventing the hospital from being deleted. Meanwhile no stock records exist, so nothing shows on the public page.
-
-### Password Update Issues
-- The `handleResetPassword` function uses `window.prompt()` which is poor UX and inconsistent with the rest of the admin panel
-- When the auth user doesn't exist (orphaned `auth_user_id`), the reset silently fails with a confusing error
-
-### Realtime Stock Visibility
-- The `blood_stock` table IS in the realtime publication (confirmed)
-- But `BloodUnitManager.tsx` (hospital portal) does NOT subscribe to realtime -- it only fetches once on mount
-- When a hospital adds a unit, other viewers of the stock page WILL see updates (realtime works on `blood_stock`) but the hospital's own view doesn't auto-refresh
-
-### Legacy Dead Code
-- `update-blood-stock` edge function still uses old PIN-based authentication (dead code)
-- `verify-hospital-pin` edge function is no longer used
-- `HospitalStockManager.tsx` and `StockUpdateSheet.tsx` still reference the old PIN system and are imported nowhere actively
-
-### AddBloodUnitSheet State Bug
-- When `editingUnit` changes, the component's state fields (bloodGroup, collectionDate, etc.) are initialized in `useState` with `editingUnit` values, but `useState` only runs on initial mount. So editing a unit shows stale/default values instead of the selected unit's data.
+After a thorough review of all 18 pages, 40+ components, 20 edge functions, 6 contexts/hooks, and the database schema, I identified functional gaps, visual inconsistencies, and enhancement opportunities across the system.
 
 ---
 
-## Fix Plan
+## Part 1: Functional Gaps Found
 
-### Part 1: Database Migration
+### 1.1 CRITICAL: NotFound Page Has No Design System Styling
+The `NotFound.tsx` page uses raw `bg-muted` and bare HTML -- no AppHeader, no BottomNav, no brand identity, no consistent design tokens. It looks broken compared to every other page.
 
-Fix the foreign key constraint and clean up orphaned data:
+### 1.2 CRITICAL: ResetPassword Page Missing Design Tokens
+`ResetPassword.tsx` uses `Card` without `rounded-2xl`, inputs without `rounded-xl h-11`, and buttons without `rounded-xl btn-press`. It looks like a different app compared to Auth.tsx.
 
-```sql
--- Fix: Add ON DELETE CASCADE to blood_unit_history -> hospitals FK
-ALTER TABLE blood_unit_history 
-  DROP CONSTRAINT blood_unit_history_hospital_id_fkey;
-ALTER TABLE blood_unit_history 
-  ADD CONSTRAINT blood_unit_history_hospital_id_fkey 
-  FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE CASCADE;
-```
+### 1.3 CRITICAL: VerifyDonor Page Uses Hardcoded Colors
+`VerifyDonor.tsx` uses hardcoded `bg-gradient-to-br from-red-50 to-red-100`, `from-red-600 to-red-700`, and raw Tailwind colors instead of the design system's CSS variables (`primary`, `muted`, etc.). It won't work in dark mode and looks disconnected from the app.
 
-### Part 2: Fix delete-hospital Edge Function
+### 1.4 Missing DonorProvider in App.tsx
+The `DonorProvider` is only in `main.tsx` wrapping `App`, but it's outside the `BrowserRouter`. This means `useDonor()` hook has no access to routing context, and the `AppHeader` (which uses `useDonor`) could have stale data on navigation.
 
-Update the function to:
-1. Delete `blood_unit_history` records BEFORE the hospital
-2. Delete `blood_stock_history` records (safety net)
-3. Handle "auth user not found" gracefully
-4. Add proper logging for each step
+### 1.5 Admin Delete Donor Uses confirm()
+`Admin.tsx` line 297 uses `confirm()` (native browser dialog) for donor deletion instead of the design-system's `AlertDialog`. Same issue on line 497 for blood request deletion with `window.confirm()`.
 
-```text
-Deletion order:
-1. Get hospital details (auth_user_id)
-2. Delete auth user (ignore "not found" errors)
-3. Delete blood_unit_history  <-- NEW
-4. Delete blood_units
-5. Delete blood_stock_history  <-- NEW
-6. Delete blood_stock
-7. Delete hospital record
-```
+### 1.6 Copyright Year is Hardcoded to 2025
+`Index.tsx` line 182 shows "2025 LeyHadhiya" -- should be dynamic or updated to 2026.
 
-### Part 3: Fix manage-blood-unit syncBloodStock
+### 1.7 Admin Tab Grid Only Shows 8 Columns
+The admin desktop tabs `grid-cols-8` doesn't account for the 9th tab ("Admins"), causing overflow. Should be `grid-cols-9`.
 
-Improve the sync function to use proper upsert:
-```typescript
-async function syncBloodStock(supabase, hospitalId, bloodGroup) {
-  const { count } = await supabase
-    .from("blood_units")
-    .select("*", { count: "exact", head: true })
-    .eq("hospital_id", hospitalId)
-    .eq("blood_group", bloodGroup)
-    .eq("status", "available");
+### 1.8 No Loading/Error States on Several Pages
+- `RequestBlood.tsx` has no auth check redirect on mount (only checked at submit time)
+- `BloodRequestsPage.tsx` fetches stats without a loading skeleton
 
-  const availableCount = count || 0;
+### 1.9 Inconsistent Toast Usage
+- `HospitalPortal.tsx` uses `toast` from `sonner` directly
+- `VerifyQR.tsx` uses `toast` from `sonner`  
+- All other pages use `useToast` from `@/hooks/use-toast`
+- This creates inconsistent toast styling (sonner toasts look different from shadcn toasts)
 
-  // Use upsert with the unique constraint
-  const { error } = await supabase
-    .from("blood_stock")
-    .upsert(
-      {
-        hospital_id: hospitalId,
-        blood_group: bloodGroup,
-        units_available: availableCount,
-        last_updated: new Date().toISOString(),
-      },
-      { onConflict: "hospital_id,blood_group" }
-    );
-    
-  if (error) console.error("Sync error:", error);
-  else console.log(`Synced: ${hospitalId}/${bloodGroup} = ${availableCount}`);
-}
-```
+### 1.10 MerchantPortal Has No Back Navigation
+Unlike HospitalPortal which has a back arrow, MerchantPortal has no way to navigate back. Uses `AppHeader` but no back button when not logged in.
 
-### Part 4: Fix AddBloodUnitSheet State Initialization
+---
 
-Add a `useEffect` to re-initialize form state when `editingUnit` changes:
+## Part 2: Visual Inconsistency Fixes
 
-```typescript
-useEffect(() => {
-  if (editingUnit) {
-    setBloodGroup(editingUnit.blood_group);
-    setCollectionDate(new Date(editingUnit.collection_date));
-    setExpiryDate(new Date(editingUnit.expiry_date));
-    setDonorId(editingUnit.donor_id || "");
-    setDonorName(editingUnit.donor_name || "");
-    setBagNumber(editingUnit.bag_number || "");
-    setVolumeMl(editingUnit.volume_ml?.toString() || "450");
-    setBatchNumber(editingUnit.batch_number || "");
-    setComponentType(editingUnit.component_type || "whole_blood");
-    setRemarks(editingUnit.remarks || "");
-  }
-}, [editingUnit]);
-```
+### 2.1 Button Height/Radius Inconsistencies
+**Standard**: `h-11 rounded-xl` (inputs), `h-12 rounded-xl` (primary CTAs)
 
-### Part 5: Fix Password Reset UX
+Files violating:
+- `ResetPassword.tsx`: Button uses default (no `rounded-xl`, no `h-11`)
+- `Auth.tsx`: Buttons use `h-11` (correct) but "Back to Login" uses raw `<button>` instead of `Button` component
+- `VerifyDonor.tsx`: "Go Home" button uses default styling
 
-Replace `window.prompt()` with a proper dialog component:
-- Add a `resetPasswordDialog` state with `{ open, hospital, newPassword }` fields
-- Create a dialog with password input, generate button, and confirm button
-- Show success feedback with option to copy credentials
+### 2.2 Card Radius Inconsistencies
+**Standard**: `rounded-2xl` for outer containers
 
-### Part 6: Add Realtime to BloodUnitManager
+Files violating:
+- `ResetPassword.tsx`: Loading card has no `rounded-2xl`
+- `NotFound.tsx`: No card at all
+- `VerifyDonor.tsx`: Uses `shadow-lg` without `rounded-2xl`
 
-Add a realtime subscription so the hospital portal auto-refreshes when units change:
+### 2.3 Page Background Inconsistencies
+**Standard**: `bg-background` (light) or `bg-gradient-to-br from-background via-background to-primary/5` (auth pages)
 
-```typescript
-useEffect(() => {
-  fetchUnits();
-  
-  const channel = supabase
-    .channel(`blood-units-${hospitalId}`)
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'blood_units',
-      filter: `hospital_id=eq.${hospitalId}`,
-    }, () => {
-      fetchUnits();
-    })
-    .subscribe();
+Files violating:
+- `VerifyDonor.tsx`: Uses `from-red-50 via-white to-red-50` (hardcoded, no dark mode)
+- `NotFound.tsx`: Uses `bg-muted` (wrong base)
+- `MerchantPortal.tsx`: Unverified state uses `bg-background`, verified uses same -- consistent but lacks gradient
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [hospitalId]);
-```
+### 2.4 Inconsistent Header Patterns
+- Pages with AppHeader + BottomNav: Index, Profile, History, Rewards, BloodRequests, About, FAQ, BloodStock
+- Pages with custom header: HospitalPortal (custom sticky header)
+- Pages with no navigation: Auth, Register, ResetPassword, NotFound, VerifyDonor
+- Pages missing BottomNav where expected: RequestBlood (has AppHeader but no BottomNav, though it's a form page so this is acceptable)
 
-### Part 7: Clean Up Legacy Code
+### 2.5 Admin Desktop Tab Grid Column Count
+The TabsList uses `grid-cols-8` but there are 9 tabs. The "Admins" tab wraps to a new line on desktop. Fix to `grid-cols-9`.
 
-Remove unused edge functions and components:
-- Delete `supabase/functions/update-blood-stock/` (PIN-based, replaced by manage-blood-unit)
-- Delete `supabase/functions/verify-hospital-pin/` (PIN auth is deprecated)
-- Remove their entries from `supabase/config.toml`
-- Note: Keep `HospitalStockManager.tsx`, `StockUpdateSheet.tsx`, `BloodStockCard.tsx`, `ExpiryAlerts.tsx` for now as they may still be imported elsewhere -- but they are effectively dead code
+---
+
+## Part 3: Enhancement Plan
+
+### 3.1 NotFound Page Redesign
+Replace the bare-bones 404 with a branded page using the design system:
+- AppHeader at top
+- Centered content with Droplet icon, "404" heading, and description
+- "Return Home" button with `rounded-xl btn-press`
+- Subtle background decoration matching the landing page
+- BottomNav at bottom (for logged-in context)
+
+### 3.2 ResetPassword Page Polish
+Apply design system tokens:
+- Cards get `rounded-2xl border-border/50 shadow-xl`
+- Inputs get `rounded-xl h-11`
+- Buttons get `rounded-xl h-11 btn-press`
+- Background gradient matching Auth page
+- Loading state with branded spinner
+
+### 3.3 VerifyDonor Page Modernization
+Replace hardcoded colors with design system variables:
+- Background: `bg-background` with decorative blurs
+- Header: Use `bg-primary` instead of `from-red-600 to-red-700`
+- Cards: `rounded-2xl border-border/50`
+- Status colors: Use `STATUS_COLORS` from `statusColors.ts`
+- Dark mode compatibility
+
+### 3.4 Unify Toast System
+Standardize on `useToast` from `@/hooks/use-toast` everywhere:
+- Update `HospitalPortal.tsx` to use `useToast` instead of `sonner`
+- Update `VerifyQR.tsx` to use `useToast` instead of `sonner`
+- This ensures consistent toast appearance system-wide
+
+### 3.5 Replace Native Dialogs with AlertDialog
+Replace all `confirm()` and `window.confirm()` calls in `Admin.tsx` with proper `AlertDialog` components for:
+- Donor deletion (line 297)
+- Blood request deletion (line 497)
+
+### 3.6 Fix Admin Desktop Tab Grid
+Change `grid-cols-8` to `grid-cols-9` on line 746 to accommodate all 9 tabs.
+
+### 3.7 Update Copyright Year
+Change hardcoded "2025" to dynamic year using `new Date().getFullYear()` on both footer instances in `Index.tsx`.
+
+### 3.8 Add Auth Guard to RequestBlood
+Add an `useEffect` that checks auth on mount and redirects to `/auth` if not logged in, instead of only checking at form submission time.
+
+### 3.9 MerchantPortal Back Navigation
+Add a back button/link on the merchant login screen to return to the home page.
 
 ---
 
 ## File Changes Summary
 
-### Database
-| Change | Purpose |
-|--------|---------|
-| Fix `blood_unit_history_hospital_id_fkey` to CASCADE | Allow hospital deletion |
-
-### Edge Functions
+### Modified Files
 | File | Changes |
 |------|---------|
-| `supabase/functions/delete-hospital/index.ts` | Add blood_unit_history & blood_stock_history cleanup, better error handling |
-| `supabase/functions/manage-blood-unit/index.ts` | Fix syncBloodStock to use upsert |
-| `supabase/functions/update-blood-stock/` | DELETE (legacy) |
-| `supabase/functions/verify-hospital-pin/` | DELETE (legacy) |
+| `src/pages/NotFound.tsx` | Full redesign with AppHeader, branded UI, proper navigation |
+| `src/pages/ResetPassword.tsx` | Apply rounded-2xl cards, h-11 inputs, rounded-xl buttons, gradient bg |
+| `src/pages/VerifyDonor.tsx` | Replace hardcoded colors with design tokens, dark mode support |
+| `src/pages/Admin.tsx` | Fix grid-cols-8 to 9; replace confirm() with AlertDialog for deletions |
+| `src/pages/HospitalPortal.tsx` | Switch from sonner toast to useToast hook |
+| `src/pages/VerifyQR.tsx` | Switch from sonner toast to useToast hook |
+| `src/pages/Index.tsx` | Dynamic copyright year |
+| `src/pages/RequestBlood.tsx` | Add auth guard on mount |
+| `src/pages/MerchantPortal.tsx` | Add back navigation button on login screen |
 
-### Frontend
-| File | Changes |
-|------|---------|
-| `src/components/hospital/AddBloodUnitSheet.tsx` | Fix state initialization with useEffect |
-| `src/components/hospital/BloodUnitManager.tsx` | Add realtime subscription |
-| `src/components/HospitalAdminPanel.tsx` | Replace prompt() with proper reset password dialog |
-| `supabase/config.toml` | Remove legacy function entries |
+### No New Files Required
+
+---
+
+## Design System Standards Applied
+
+All fixes will consistently use:
+
+```text
+Inputs:       h-11 rounded-xl border-input
+Buttons:      h-11 rounded-xl btn-press (standard)
+              h-12 rounded-xl btn-press (primary CTA)
+Cards:        rounded-2xl border-border/50 shadow-sm
+Dialogs:      rounded-2xl, max-h-[85vh], border-b headers
+Background:   bg-background (standard pages)
+              bg-gradient-to-br from-background to-primary/5 (auth pages)
+Colors:       CSS variables only (--primary, --muted, etc.)
+              No hardcoded red-50, red-600, etc.
+Toasts:       useToast from @/hooks/use-toast (unified)
+Confirms:     AlertDialog component (never native confirm())
+```
 
 ---
 
 ## Testing Checklist
 
-1. Create a new hospital via admin panel with email/password
-2. Login to hospital portal with the credentials
-3. Add blood units (various blood groups)
-4. Verify stock appears on /blood-stock page in real time
-5. Reserve, transfuse, and discard units
-6. Verify stock counts update on /blood-stock after each action
-7. Reset hospital password from admin panel
-8. Login with new password
-9. Delete hospital from admin panel
-10. Verify all related data is cleaned up
+1. Visit /not-found-page to verify branded 404 page
+2. Visit /reset-password with a token to verify styled form
+3. Visit /verify-donor/:id to verify design-system colors and dark mode
+4. Test donor deletion in admin panel for AlertDialog appearance
+5. Test blood request deletion in admin panel for AlertDialog
+6. Verify all 9 admin tabs render on desktop without wrapping
+7. Check toast appearance in Hospital Portal matches other pages
+8. Check toast appearance in VerifyQR page matches other pages
+9. Verify copyright shows 2026 on Index page footer
+10. Visit /request-blood while logged out to verify redirect
+11. Check /merchant portal has back navigation on login screen
