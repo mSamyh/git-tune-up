@@ -90,6 +90,8 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const today = new Date().toISOString().split("T")[0];
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -190,7 +192,7 @@ Deno.serve(async (req) => {
       // - last_wellness_check was > 30 days ago OR never sent
       const { data: needsWellnessCheck, error: wellnessError } = await supabase
         .from("profiles")
-        .select("id, full_name, phone, blood_group, availability_status, available_date, last_wellness_check, unavailable_until")
+        .select("id, full_name, phone, blood_group, availability_status, available_date, last_wellness_check, unavailable_until, updated_at")
         .eq("availability_status", "unavailable")
         .not("phone", "is", null);
 
@@ -200,7 +202,17 @@ Deno.serve(async (req) => {
         console.log(`[Wellness] Found ${needsWellnessCheck.length} unavailable donors to check`);
 
         for (const donor of needsWellnessCheck) {
-          // Skip if unavailable_until is set and in the future (temporary unavailability)
+          // SKIP donors in 90-day post-donation waiting period
+          if (donor.available_date) {
+            const availDate = new Date(donor.available_date);
+            if (availDate > new Date()) {
+              console.log(`[Wellness] Skipping ${donor.full_name} - in 90-day waiting period (available: ${donor.available_date})`);
+              results.wellnessCheck.skipped++;
+              continue;
+            }
+          }
+
+          // Skip if unavailable_until is set and in the future
           if (donor.unavailable_until) {
             const unavailableUntil = new Date(donor.unavailable_until);
             if (unavailableUntil > new Date()) {
@@ -210,8 +222,20 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Check if last wellness check was within 30 days
-          if (donor.last_wellness_check) {
+          const isFirstCheck = !donor.last_wellness_check;
+
+          if (isFirstCheck) {
+            // First check: wait 7 days after becoming unavailable (use updated_at)
+            if (donor.updated_at) {
+              const updatedDate = new Date(donor.updated_at);
+              if (updatedDate > sevenDaysAgo) {
+                console.log(`[Wellness] Skipping ${donor.full_name} - became unavailable recently (${donor.updated_at})`);
+                results.wellnessCheck.skipped++;
+                continue;
+              }
+            }
+          } else {
+            // Follow-up: wait 30 days since last check
             const lastCheck = new Date(donor.last_wellness_check);
             if (lastCheck > thirtyDaysAgo) {
               console.log(`[Wellness] Skipping ${donor.full_name} - checked on ${donor.last_wellness_check}`);
