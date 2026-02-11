@@ -1,187 +1,131 @@
 
-# Full System Audit & Enhancement Plan
 
-## Audit Summary
+# Fix: Donor Wellness Check SMS Logic
 
-After a thorough review of all 18 pages, 40+ components, 20 edge functions, 6 contexts/hooks, and the database schema, I identified functional gaps, visual inconsistencies, and enhancement opportunities across the system.
+## Problem
 
----
+Abdul Rasheed donated last night, making him "unavailable" due to the 90-day waiting period. The wellness check function treats ALL unavailable donors the same and sent him a "we noticed you've been unavailable for a while" SMS — which is wrong. He's unavailable because he just donated, not because something is wrong.
 
-## Part 1: Functional Gaps Found
+## Root Cause
 
-### 1.1 CRITICAL: NotFound Page Has No Design System Styling
-The `NotFound.tsx` page uses raw `bg-muted` and bare HTML -- no AppHeader, no BottomNav, no brand identity, no consistent design tokens. It looks broken compared to every other page.
-
-### 1.2 CRITICAL: ResetPassword Page Missing Design Tokens
-`ResetPassword.tsx` uses `Card` without `rounded-2xl`, inputs without `rounded-xl h-11`, and buttons without `rounded-xl btn-press`. It looks like a different app compared to Auth.tsx.
-
-### 1.3 CRITICAL: VerifyDonor Page Uses Hardcoded Colors
-`VerifyDonor.tsx` uses hardcoded `bg-gradient-to-br from-red-50 to-red-100`, `from-red-600 to-red-700`, and raw Tailwind colors instead of the design system's CSS variables (`primary`, `muted`, etc.). It won't work in dark mode and looks disconnected from the app.
-
-### 1.4 Missing DonorProvider in App.tsx
-The `DonorProvider` is only in `main.tsx` wrapping `App`, but it's outside the `BrowserRouter`. This means `useDonor()` hook has no access to routing context, and the `AppHeader` (which uses `useDonor`) could have stale data on navigation.
-
-### 1.5 Admin Delete Donor Uses confirm()
-`Admin.tsx` line 297 uses `confirm()` (native browser dialog) for donor deletion instead of the design-system's `AlertDialog`. Same issue on line 497 for blood request deletion with `window.confirm()`.
-
-### 1.6 Copyright Year is Hardcoded to 2025
-`Index.tsx` line 182 shows "2025 LeyHadhiya" -- should be dynamic or updated to 2026.
-
-### 1.7 Admin Tab Grid Only Shows 8 Columns
-The admin desktop tabs `grid-cols-8` doesn't account for the 9th tab ("Admins"), causing overflow. Should be `grid-cols-9`.
-
-### 1.8 No Loading/Error States on Several Pages
-- `RequestBlood.tsx` has no auth check redirect on mount (only checked at submit time)
-- `BloodRequestsPage.tsx` fetches stats without a loading skeleton
-
-### 1.9 Inconsistent Toast Usage
-- `HospitalPortal.tsx` uses `toast` from `sonner` directly
-- `VerifyQR.tsx` uses `toast` from `sonner`  
-- All other pages use `useToast` from `@/hooks/use-toast`
-- This creates inconsistent toast styling (sonner toasts look different from shadcn toasts)
-
-### 1.10 MerchantPortal Has No Back Navigation
-Unlike HospitalPortal which has a back arrow, MerchantPortal has no way to navigate back. Uses `AppHeader` but no back button when not logged in.
-
----
-
-## Part 2: Visual Inconsistency Fixes
-
-### 2.1 Button Height/Radius Inconsistencies
-**Standard**: `h-11 rounded-xl` (inputs), `h-12 rounded-xl` (primary CTAs)
-
-Files violating:
-- `ResetPassword.tsx`: Button uses default (no `rounded-xl`, no `h-11`)
-- `Auth.tsx`: Buttons use `h-11` (correct) but "Back to Login" uses raw `<button>` instead of `Button` component
-- `VerifyDonor.tsx`: "Go Home" button uses default styling
-
-### 2.2 Card Radius Inconsistencies
-**Standard**: `rounded-2xl` for outer containers
-
-Files violating:
-- `ResetPassword.tsx`: Loading card has no `rounded-2xl`
-- `NotFound.tsx`: No card at all
-- `VerifyDonor.tsx`: Uses `shadow-lg` without `rounded-2xl`
-
-### 2.3 Page Background Inconsistencies
-**Standard**: `bg-background` (light) or `bg-gradient-to-br from-background via-background to-primary/5` (auth pages)
-
-Files violating:
-- `VerifyDonor.tsx`: Uses `from-red-50 via-white to-red-50` (hardcoded, no dark mode)
-- `NotFound.tsx`: Uses `bg-muted` (wrong base)
-- `MerchantPortal.tsx`: Unverified state uses `bg-background`, verified uses same -- consistent but lacks gradient
-
-### 2.4 Inconsistent Header Patterns
-- Pages with AppHeader + BottomNav: Index, Profile, History, Rewards, BloodRequests, About, FAQ, BloodStock
-- Pages with custom header: HospitalPortal (custom sticky header)
-- Pages with no navigation: Auth, Register, ResetPassword, NotFound, VerifyDonor
-- Pages missing BottomNav where expected: RequestBlood (has AppHeader but no BottomNav, though it's a form page so this is acceptable)
-
-### 2.5 Admin Desktop Tab Grid Column Count
-The TabsList uses `grid-cols-8` but there are 9 tabs. The "Admins" tab wraps to a new line on desktop. Fix to `grid-cols-9`.
-
----
-
-## Part 3: Enhancement Plan
-
-### 3.1 NotFound Page Redesign
-Replace the bare-bones 404 with a branded page using the design system:
-- AppHeader at top
-- Centered content with Droplet icon, "404" heading, and description
-- "Return Home" button with `rounded-xl btn-press`
-- Subtle background decoration matching the landing page
-- BottomNav at bottom (for logged-in context)
-
-### 3.2 ResetPassword Page Polish
-Apply design system tokens:
-- Cards get `rounded-2xl border-border/50 shadow-xl`
-- Inputs get `rounded-xl h-11`
-- Buttons get `rounded-xl h-11 btn-press`
-- Background gradient matching Auth page
-- Loading state with branded spinner
-
-### 3.3 VerifyDonor Page Modernization
-Replace hardcoded colors with design system variables:
-- Background: `bg-background` with decorative blurs
-- Header: Use `bg-primary` instead of `from-red-600 to-red-700`
-- Cards: `rounded-2xl border-border/50`
-- Status colors: Use `STATUS_COLORS` from `statusColors.ts`
-- Dark mode compatibility
-
-### 3.4 Unify Toast System
-Standardize on `useToast` from `@/hooks/use-toast` everywhere:
-- Update `HospitalPortal.tsx` to use `useToast` instead of `sonner`
-- Update `VerifyQR.tsx` to use `useToast` instead of `sonner`
-- This ensures consistent toast appearance system-wide
-
-### 3.5 Replace Native Dialogs with AlertDialog
-Replace all `confirm()` and `window.confirm()` calls in `Admin.tsx` with proper `AlertDialog` components for:
-- Donor deletion (line 297)
-- Blood request deletion (line 497)
-
-### 3.6 Fix Admin Desktop Tab Grid
-Change `grid-cols-8` to `grid-cols-9` on line 746 to accommodate all 9 tabs.
-
-### 3.7 Update Copyright Year
-Change hardcoded "2025" to dynamic year using `new Date().getFullYear()` on both footer instances in `Index.tsx`.
-
-### 3.8 Add Auth Guard to RequestBlood
-Add an `useEffect` that checks auth on mount and redirects to `/auth` if not logged in, instead of only checking at form submission time.
-
-### 3.9 MerchantPortal Back Navigation
-Add a back button/link on the merchant login screen to return to the home page.
-
----
-
-## File Changes Summary
-
-### Modified Files
-| File | Changes |
-|------|---------|
-| `src/pages/NotFound.tsx` | Full redesign with AppHeader, branded UI, proper navigation |
-| `src/pages/ResetPassword.tsx` | Apply rounded-2xl cards, h-11 inputs, rounded-xl buttons, gradient bg |
-| `src/pages/VerifyDonor.tsx` | Replace hardcoded colors with design tokens, dark mode support |
-| `src/pages/Admin.tsx` | Fix grid-cols-8 to 9; replace confirm() with AlertDialog for deletions |
-| `src/pages/HospitalPortal.tsx` | Switch from sonner toast to useToast hook |
-| `src/pages/VerifyQR.tsx` | Switch from sonner toast to useToast hook |
-| `src/pages/Index.tsx` | Dynamic copyright year |
-| `src/pages/RequestBlood.tsx` | Add auth guard on mount |
-| `src/pages/MerchantPortal.tsx` | Add back navigation button on login screen |
-
-### No New Files Required
-
----
-
-## Design System Standards Applied
-
-All fixes will consistently use:
-
-```text
-Inputs:       h-11 rounded-xl border-input
-Buttons:      h-11 rounded-xl btn-press (standard)
-              h-12 rounded-xl btn-press (primary CTA)
-Cards:        rounded-2xl border-border/50 shadow-sm
-Dialogs:      rounded-2xl, max-h-[85vh], border-b headers
-Background:   bg-background (standard pages)
-              bg-gradient-to-br from-background to-primary/5 (auth pages)
-Colors:       CSS variables only (--primary, --muted, etc.)
-              No hardcoded red-50, red-600, etc.
-Toasts:       useToast from @/hooks/use-toast (unified)
-Confirms:     AlertDialog component (never native confirm())
+In `donor-wellness-check/index.ts`, Part 2 (line 191-195) queries:
+```typescript
+.eq("availability_status", "unavailable")
+.not("phone", "is", null)
 ```
 
----
+This grabs EVERY unavailable donor, including those in their 90-day post-donation cooldown. There's no filter to exclude donors with `available_date` in the future (meaning they're waiting out the 90-day period).
 
-## Testing Checklist
+## Fix
 
-1. Visit /not-found-page to verify branded 404 page
-2. Visit /reset-password with a token to verify styled form
-3. Visit /verify-donor/:id to verify design-system colors and dark mode
-4. Test donor deletion in admin panel for AlertDialog appearance
-5. Test blood request deletion in admin panel for AlertDialog
-6. Verify all 9 admin tabs render on desktop without wrapping
-7. Check toast appearance in Hospital Portal matches other pages
-8. Check toast appearance in VerifyQR page matches other pages
-9. Verify copyright shows 2026 on Index page footer
-10. Visit /request-blood while logged out to verify redirect
-11. Check /merchant portal has back navigation on login screen
+### 1. Exclude 90-day waiting period donors
+
+Add a filter to skip donors whose `available_date` is in the future. These donors are unavailable because they donated, not by choice — they already get an "availability_restored" SMS when their 90 days are up (Part 1 of the function).
+
+### 2. Change first wellness check timing from 30 days to 7 days
+
+The user wants the first wellness SMS sent after **1 week** of being manually unavailable, not 30 days. Follow-up checks can remain monthly (every 30 days after the first).
+
+### Changes to `supabase/functions/donor-wellness-check/index.ts`
+
+**Line 93-94** — Add a 7-day threshold:
+```typescript
+const today = new Date().toISOString().split("T")[0];
+const sevenDaysAgo = new Date();
+sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+const thirtyDaysAgo = new Date();
+thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+```
+
+**Lines 191-195** — Add filter to exclude 90-day donors:
+```typescript
+const { data: needsWellnessCheck, error: wellnessError } = await supabase
+  .from("profiles")
+  .select("id, full_name, phone, blood_group, availability_status, available_date, last_wellness_check, unavailable_until, last_donation_date")
+  .eq("availability_status", "unavailable")
+  .not("phone", "is", null);
+```
+
+**Lines 202-211** — Add 90-day exclusion check and adjust timing:
+```typescript
+for (const donor of needsWellnessCheck) {
+  // SKIP donors in 90-day waiting period (they donated recently)
+  // These donors have available_date set in the future
+  if (donor.available_date) {
+    const availDate = new Date(donor.available_date);
+    if (availDate > new Date()) {
+      console.log(`[Wellness] Skipping ${donor.full_name} - in 90-day waiting period (available: ${donor.available_date})`);
+      results.wellnessCheck.skipped++;
+      continue;
+    }
+  }
+
+  // Skip if unavailable_until is set and in the future (temporary unavailability with end date)
+  if (donor.unavailable_until) {
+    const unavailableUntil = new Date(donor.unavailable_until);
+    if (unavailableUntil > new Date()) {
+      console.log(`[Wellness] Skipping ${donor.full_name} - unavailable until ${donor.unavailable_until}`);
+      results.wellnessCheck.skipped++;
+      continue;
+    }
+  }
+
+  // Determine if this is the first check or a follow-up
+  const isFirstCheck = !donor.last_wellness_check;
+
+  // For FIRST check: wait 7 days of unavailability before sending
+  // For FOLLOW-UP: wait 30 days since last check
+  if (isFirstCheck) {
+    // Skip if no way to determine how long they've been unavailable
+    // We use last_wellness_check absence + updated_at would be ideal,
+    // but we don't have "unavailable_since". 
+    // Use the absence of last_wellness_check as the signal.
+    // The 7-day gate is already handled by the cron running daily —
+    // we just need to NOT send on day 1. We'll skip if they have
+    // a recent donation (already filtered above) or recent check.
+    // No additional filter needed for first check timing since
+    // 90-day donors are already excluded above.
+  } else {
+    // Follow-up: check if last wellness check was within 30 days
+    const lastCheck = new Date(donor.last_wellness_check);
+    if (lastCheck > thirtyDaysAgo) {
+      console.log(`[Wellness] Skipping ${donor.full_name} - checked on ${donor.last_wellness_check}`);
+      results.wellnessCheck.skipped++;
+      continue;
+    }
+  }
+
+  // ... rest of send logic stays the same
+}
+```
+
+Wait — the 7-day timing needs a way to know WHEN the donor became unavailable. Currently there's no `unavailable_since` column. Let me reconsider.
+
+**Better approach**: We track when they became unavailable using the `updated_at` column on profiles. When someone sets themselves to "unavailable", `updated_at` gets set. For the first wellness check, we check if `updated_at` was more than 7 days ago AND `last_wellness_check` is null.
+
+## Revised Logic
+
+```text
+For each unavailable donor:
+  1. SKIP if available_date > today (90-day waiting period)
+  2. SKIP if unavailable_until > today (has a set end date)
+  3. If never had a wellness check (first time):
+     - SKIP if updated_at < 7 days ago (became unavailable recently)
+     - Send "wellness_check_first" SMS
+  4. If had a previous check:
+     - SKIP if last_wellness_check < 30 days ago
+     - Send "wellness_check_followup" SMS
+```
+
+## File Changes
+
+| File | Change |
+|------|--------|
+| `supabase/functions/donor-wellness-check/index.ts` | Add 90-day exclusion filter, add 7-day first-check delay, fetch `updated_at` and `last_donation_date` |
+
+## Summary
+
+- Donors in their 90-day post-donation cooldown will NO longer receive wellness check SMS
+- First wellness SMS is sent after **7 days** of being manually unavailable (not 30)
+- Follow-up wellness SMS continues monthly (every 30 days)
+- The "availability_restored" notification (Part 1) is unaffected — it correctly fires when available_date = today
