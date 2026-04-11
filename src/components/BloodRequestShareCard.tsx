@@ -86,7 +86,6 @@ export const BloodRequestShareCard = ({ request, open, onOpenChange }: BloodRequ
   const downloadCard = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -95,164 +94,190 @@ export const BloodRequestShareCard = ({ request, open, onOpenChange }: BloodRequ
     canvas.width = W;
     canvas.height = H;
 
-    // Background gradient
+    // === BACKGROUND ===
     const bgGrad = ctx.createLinearGradient(0, 0, W, H);
     bgGrad.addColorStop(0, "#ef4444");
-    bgGrad.addColorStop(0.4, "#dc2626");
-    bgGrad.addColorStop(1, "#7f1d1d");
+    bgGrad.addColorStop(0.5, "#dc2626");
+    bgGrad.addColorStop(1, "#991b1b");
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, W, H);
 
-    // Decorative circles
-    ctx.globalAlpha = 0.08;
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath(); ctx.arc(900, 100, 200, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(100, 1200, 180, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(540, 700, 400, 0, Math.PI * 2); ctx.fill();
+    // Subtle decorative circles
+    ctx.globalAlpha = 0.06;
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(920, 80, 220, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(160, 1280, 200, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1;
 
-    // Main white card
-    const cardX = 60, cardY = 80, cardW = W - 120, cardH = H - 220;
+    // === MAIN CARD ===
+    const cardX = 56, cardY = 56, cardW = W - 112, cardH = H - 180;
     ctx.fillStyle = "#ffffff";
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
-    ctx.shadowBlur = 40;
-    ctx.shadowOffsetY = 12;
+    ctx.shadowColor = "rgba(0,0,0,0.18)";
+    ctx.shadowBlur = 48;
+    ctx.shadowOffsetY = 8;
     ctx.beginPath();
-    ctx.roundRect(cardX, cardY, cardW, cardH, 32);
+    ctx.roundRect(cardX, cardY, cardW, cardH, 36);
     ctx.fill();
-    ctx.shadowColor = 'transparent';
+    ctx.shadowColor = "transparent";
 
-    // Urgency banner at top of card
-    const bannerColor = request.urgency === 'critical' ? '#dc2626' : request.urgency === 'urgent' ? '#f97316' : '#dc2626';
+    // === URGENCY BANNER ===
+    const bannerH = 72;
+    const bannerColor = request.urgency === "critical" ? "#dc2626" : request.urgency === "urgent" ? "#ea580c" : "#dc2626";
     ctx.fillStyle = bannerColor;
     ctx.beginPath();
-    ctx.roundRect(cardX, cardY, cardW, 80, [32, 32, 0, 0]);
+    ctx.roundRect(cardX, cardY, cardW, bannerH, [36, 36, 0, 0]);
     ctx.fill();
 
-    // Urgency label
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 28px Arial, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(`🩸 ${urgencyConfig.label} BLOOD NEEDED`, W / 2, cardY + 52);
+    // Urgency text - left aligned
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 26px 'Arial', sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(`🩸  ${urgencyConfig.label} BLOOD NEEDED`, cardX + 36, cardY + 46);
 
-    // Countdown on banner right
+    // Countdown - right aligned
     if (request.needed_before) {
       const countdown = formatCountdown(request.needed_before);
-      ctx.font = "bold 22px Arial, sans-serif";
       ctx.textAlign = "right";
-      ctx.fillText(`⏰ ${countdown.text}`, cardX + cardW - 30, cardY + 52);
-      ctx.textAlign = "center";
-      ctx.fillText(`🩸 ${urgencyConfig.label}`, cardX + cardW / 2 - 80, cardY + 52);
+      ctx.font = "bold 24px 'Arial', sans-serif";
+      ctx.fillText(`⏱ ${countdown.text}`, cardX + cardW - 36, cardY + 46);
     }
 
-    // Blood group - hero
-    const heroY = cardY + 160;
-    ctx.fillStyle = "#dc2626";
-    ctx.font = "bold 140px Arial, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(request.blood_group, W / 2, heroY + 110);
-
-    // Units badge below blood group
-    const unitsY = heroY + 140;
-    const unitsText = `${request.units_needed} UNIT${request.units_needed > 1 ? 'S' : ''} REQUIRED`;
-    ctx.fillStyle = "#fef2f2";
-    const unitsW = ctx.measureText(unitsText).width + 60;
+    // === BLOOD GROUP HERO ===
+    const heroY = cardY + bannerH + 40;
+    // Blood group ring
+    const ringCX = W / 2, ringCY = heroY + 100, ringR = 90;
+    ctx.strokeStyle = "#dc2626";
+    ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.roundRect((W - unitsW) / 2, unitsY, unitsW, 48, 24);
+    ctx.arc(ringCX, ringCY, ringR, 0, Math.PI * 2);
+    ctx.stroke();
+    // Blood group text
+    ctx.fillStyle = "#dc2626";
+    ctx.font = "bold 88px 'Arial', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(request.blood_group, ringCX, ringCY + 2);
+    ctx.textBaseline = "alphabetic";
+
+    // === UNITS BADGE ===
+    const unitsY = heroY + 210;
+    const unitsText = `${request.units_needed} UNIT${request.units_needed > 1 ? "S" : ""} REQUIRED`;
+    ctx.font = "bold 20px 'Arial', sans-serif";
+    const unitsW = ctx.measureText(unitsText).width + 56;
+    ctx.fillStyle = "#fef2f2";
+    ctx.beginPath();
+    ctx.roundRect((W - unitsW) / 2, unitsY, unitsW, 44, 22);
     ctx.fill();
     ctx.fillStyle = "#dc2626";
-    ctx.font = "bold 22px Arial, sans-serif";
-    ctx.fillText(unitsText, W / 2, unitsY + 32);
+    ctx.textAlign = "center";
+    ctx.fillText(unitsText, W / 2, unitsY + 29);
 
-    // Divider line
-    const divY = unitsY + 80;
-    ctx.strokeStyle = "#e5e7eb";
+    // === DIVIDER ===
+    const divY = unitsY + 72;
+    const grad = ctx.createLinearGradient(cardX + 60, divY, cardX + cardW - 60, divY);
+    grad.addColorStop(0, "transparent");
+    grad.addColorStop(0.2, "#e5e7eb");
+    grad.addColorStop(0.8, "#e5e7eb");
+    grad.addColorStop(1, "transparent");
+    ctx.strokeStyle = grad;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(cardX + 60, divY);
     ctx.lineTo(cardX + cardW - 60, divY);
     ctx.stroke();
 
-    // Info section
-    const infoY = divY + 40;
-    ctx.textAlign = "left";
+    // === INFO SECTION ===
     const infoX = cardX + 80;
+    const infoRight = cardX + cardW - 80;
+    let infoY = divY + 48;
 
-    // Patient name
-    ctx.fillStyle = "#6b7280";
-    ctx.font = "18px Arial, sans-serif";
-    ctx.fillText("PATIENT", infoX, infoY);
-    ctx.fillStyle = "#111827";
-    ctx.font = "bold 26px Arial, sans-serif";
-    ctx.fillText(request.patient_name, infoX, infoY + 35);
+    const drawInfoRow = (emoji: string, label: string, value: string, subValue?: string, subColor?: string) => {
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = "600 16px 'Arial', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(`${emoji}  ${label}`, infoX, infoY);
+      infoY += 32;
+      ctx.fillStyle = "#111827";
+      ctx.font = "bold 28px 'Arial', sans-serif";
+      // Truncate long text
+      let displayVal = value;
+      while (ctx.measureText(displayVal).width > infoRight - infoX && displayVal.length > 3) {
+        displayVal = displayVal.slice(0, -1);
+      }
+      if (displayVal !== value) displayVal += "…";
+      ctx.fillText(displayVal, infoX, infoY);
+      infoY += 10;
+      if (subValue) {
+        infoY += 28;
+        ctx.fillStyle = subColor || "#111827";
+        ctx.font = "bold 28px 'Arial', sans-serif";
+        ctx.fillText(subValue, infoX, infoY);
+        infoY += 10;
+      }
+      infoY += 32;
+    };
 
-    // Hospital
-    const hospY = infoY + 80;
-    ctx.fillStyle = "#6b7280";
-    ctx.font = "18px Arial, sans-serif";
-    ctx.fillText("📍 HOSPITAL", infoX, hospY);
-    ctx.fillStyle = "#111827";
-    ctx.font = "bold 26px Arial, sans-serif";
-    ctx.fillText(request.hospital_name, infoX, hospY + 35);
+    drawInfoRow("👤", "PATIENT", request.patient_name);
+    drawInfoRow("📍", "HOSPITAL", request.hospital_name);
+    drawInfoRow("📞", "CONTACT", request.contact_name, request.contact_phone, "#dc2626");
 
-    // Contact section
-    const contactY = hospY + 80;
-    ctx.fillStyle = "#6b7280";
-    ctx.font = "18px Arial, sans-serif";
-    ctx.fillText("📞 CONTACT", infoX, contactY);
-    ctx.fillStyle = "#111827";
-    ctx.font = "bold 26px Arial, sans-serif";
-    ctx.fillText(request.contact_name, infoX, contactY + 35);
-    ctx.fillStyle = "#dc2626";
-    ctx.font = "bold 28px Arial, sans-serif";
-    ctx.fillText(request.contact_phone, infoX, contactY + 72);
-
-    // QR Code section
+    // === QR CODE ===
     if (qrDataUrl) {
       const qrImage = new Image();
       qrImage.onload = () => {
-        // QR container
-        const qrBoxSize = 180;
-        const qrBoxX = (W - qrBoxSize) / 2;
-        const qrBoxY = contactY + 110;
+        const qrSize = 160;
+        const qrContW = qrSize + 48;
+        const qrContH = qrSize + 64;
+        const qrContX = (W - qrContW) / 2;
+        const qrContY = infoY + 8;
 
+        // QR container bg
         ctx.fillStyle = "#f9fafb";
         ctx.beginPath();
-        ctx.roundRect(qrBoxX - 20, qrBoxY, qrBoxSize + 40, qrBoxSize + 60, 16);
+        ctx.roundRect(qrContX, qrContY, qrContW, qrContH, 20);
         ctx.fill();
         ctx.strokeStyle = "#e5e7eb";
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.roundRect(qrBoxX - 20, qrBoxY, qrBoxSize + 40, qrBoxSize + 60, 16);
+        ctx.roundRect(qrContX, qrContY, qrContW, qrContH, 20);
         ctx.stroke();
 
-        ctx.drawImage(qrImage, qrBoxX, qrBoxY + 10, qrBoxSize, qrBoxSize);
+        // QR image
+        ctx.drawImage(qrImage, qrContX + 24, qrContY + 16, qrSize, qrSize);
+
+        // Scan label
         ctx.fillStyle = "#6b7280";
-        ctx.font = "16px Arial, sans-serif";
+        ctx.font = "500 15px 'Arial', sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("Scan to respond", W / 2, qrBoxY + qrBoxSize + 40);
+        ctx.fillText("Scan to respond", W / 2, qrContY + qrSize + 44);
 
-        // Footer inside card
-        const footerY = cardY + cardH - 50;
+        // === CARD FOOTER ===
         ctx.fillStyle = "#9ca3af";
-        ctx.font = "18px Arial, sans-serif";
+        ctx.font = "16px 'Arial', sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("❤️ LeyHadhiya Blood Donor Platform", W / 2, footerY);
+        ctx.fillText("❤️  LeyHadhiya Blood Donor Platform", W / 2, cardY + cardH - 32);
 
-        // Bottom CTA outside card
+        // === BOTTOM URL BAR ===
         ctx.fillStyle = "rgba(255,255,255,0.15)";
         ctx.beginPath();
-        ctx.roundRect(140, H - 110, W - 280, 60, 30);
+        ctx.roundRect(180, H - 100, W - 360, 56, 28);
         ctx.fill();
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 22px Arial, sans-serif";
-        ctx.fillText("leyhadhiya.lovable.app", W / 2, H - 72);
+        ctx.font = "bold 22px 'Arial', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("leyhadhiya.lovable.app", W / 2, H - 64);
 
-        const link = document.createElement("a");
-        link.download = `blood-request-${request.blood_group}-${request.id.slice(0, 8)}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-        toast({ title: "Downloaded!", description: "Instagram-ready card saved (4:5 ratio)" });
+        // Download as image
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.download = `blood-request-${request.blood_group}-${request.id.slice(0, 8)}.png`;
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+          toast({ title: "Image saved!", description: "Instagram-ready card downloaded (4:5 ratio)" });
+        }, "image/png");
       };
       qrImage.src = qrDataUrl;
     }
