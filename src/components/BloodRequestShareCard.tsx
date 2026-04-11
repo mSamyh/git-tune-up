@@ -82,7 +82,7 @@ export const BloodRequestShareCard = ({ request, open, onOpenChange }: BloodRequ
 
   const urgencyConfig = getUrgencyConfig();
 
-  // Instagram-optimized canvas (1080x1350 = 4:5 ratio)
+  // Instagram-optimized canvas (1080x1080 = 1:1 square)
   const downloadCard = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -90,184 +90,224 @@ export const BloodRequestShareCard = ({ request, open, onOpenChange }: BloodRequ
     if (!ctx) return;
 
     const W = 1080;
-    const H = 1350;
+    const H = 1080;
     canvas.width = W;
     canvas.height = H;
 
-    // === BACKGROUND ===
+    // === BACKGROUND: Deep red gradient ===
     const bgGrad = ctx.createLinearGradient(0, 0, W, H);
-    bgGrad.addColorStop(0, "#ef4444");
-    bgGrad.addColorStop(0.5, "#dc2626");
-    bgGrad.addColorStop(1, "#991b1b");
+    bgGrad.addColorStop(0, "#C1121F");
+    bgGrad.addColorStop(0.4, "#a01018");
+    bgGrad.addColorStop(1, "#6b0f15");
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, W, H);
 
-    // Subtle decorative circles
+    // Subtle heartbeat line pattern
     ctx.globalAlpha = 0.06;
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 3;
+    for (let row = 0; row < 5; row++) {
+      const baseY = 120 + row * 220;
+      ctx.beginPath();
+      for (let x = 0; x < W; x += 4) {
+        const phase = (x + row * 80) % 200;
+        let y = baseY;
+        if (phase > 70 && phase < 80) y = baseY - 30;
+        else if (phase > 80 && phase < 90) y = baseY + 40;
+        else if (phase > 90 && phase < 100) y = baseY - 20;
+        else if (phase > 100 && phase < 110) y = baseY;
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // Subtle decorative blood drop shapes
+    ctx.globalAlpha = 0.04;
     ctx.fillStyle = "#fff";
-    ctx.beginPath(); ctx.arc(920, 80, 220, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(160, 1280, 200, 0, Math.PI * 2); ctx.fill();
+    const drawDrop = (cx: number, cy: number, size: number) => {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - size);
+      ctx.bezierCurveTo(cx + size * 0.6, cy - size * 0.3, cx + size * 0.7, cy + size * 0.4, cx, cy + size * 0.7);
+      ctx.bezierCurveTo(cx - size * 0.7, cy + size * 0.4, cx - size * 0.6, cy - size * 0.3, cx, cy - size);
+      ctx.fill();
+    };
+    drawDrop(920, 90, 60);
+    drawDrop(130, 960, 50);
+    drawDrop(980, 700, 40);
+    drawDrop(60, 400, 35);
     ctx.globalAlpha = 1;
 
-    // === MAIN CARD ===
-    const cardX = 56, cardY = 56, cardW = W - 112, cardH = H - 180;
-    ctx.fillStyle = "#ffffff";
-    ctx.shadowColor = "rgba(0,0,0,0.18)";
-    ctx.shadowBlur = 48;
-    ctx.shadowOffsetY = 8;
+    // === TOP URGENCY BADGE ===
+    const badgeW = 560;
+    const badgeH = 56;
+    const badgeX = (W - badgeW) / 2;
+    const badgeY = 48;
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
     ctx.beginPath();
-    ctx.roundRect(cardX, cardY, cardW, cardH, 36);
+    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 28);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 24px 'Arial', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const badgeLabel = request.urgency === "critical" ? "🚨 CRITICAL — BLOOD NEEDED" : "🚨 URGENT BLOOD NEEDED";
+    ctx.fillText(badgeLabel, W / 2, badgeY + badgeH / 2);
+    ctx.textBaseline = "alphabetic";
+
+    // === COUNTDOWN (if available) ===
+    if (request.needed_before) {
+      const countdown = formatCountdown(request.needed_before);
+      ctx.fillStyle = "rgba(255,255,255,0.15)";
+      const cdW = 180;
+      ctx.beginPath();
+      ctx.roundRect((W - cdW) / 2, badgeY + badgeH + 12, cdW, 34, 17);
+      ctx.fill();
+      ctx.fillStyle = "#fecaca";
+      ctx.font = "bold 16px 'Arial', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`⏱ ${countdown.text} remaining`, W / 2, badgeY + badgeH + 34);
+    }
+
+    // === CENTER WHITE CARD ===
+    const cardW = W - 100;
+    const cardH = 700;
+    const cardX = 50;
+    const cardY = 150;
+    ctx.shadowColor = "rgba(0,0,0,0.25)";
+    ctx.shadowBlur = 60;
+    ctx.shadowOffsetY = 12;
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.roundRect(cardX, cardY, cardW, cardH, 32);
     ctx.fill();
     ctx.shadowColor = "transparent";
 
-    // === URGENCY BANNER ===
-    const bannerH = 72;
-    const bannerColor = request.urgency === "critical" ? "#dc2626" : request.urgency === "urgent" ? "#ea580c" : "#dc2626";
-    ctx.fillStyle = bannerColor;
+    // === BLOOD GROUP CIRCLE (hero) ===
+    const circCX = W / 2;
+    const circCY = cardY + 110;
+    const circR = 72;
+    // Red fill circle
+    const circGrad = ctx.createRadialGradient(circCX, circCY, 0, circCX, circCY, circR);
+    circGrad.addColorStop(0, "#ef4444");
+    circGrad.addColorStop(1, "#C1121F");
+    ctx.fillStyle = circGrad;
     ctx.beginPath();
-    ctx.roundRect(cardX, cardY, cardW, bannerH, [36, 36, 0, 0]);
+    ctx.arc(circCX, circCY, circR, 0, Math.PI * 2);
     ctx.fill();
-
-    // Urgency text - left aligned
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 26px 'Arial', sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText(`🩸  ${urgencyConfig.label} BLOOD NEEDED`, cardX + 36, cardY + 46);
-
-    // Countdown - right aligned
-    if (request.needed_before) {
-      const countdown = formatCountdown(request.needed_before);
-      ctx.textAlign = "right";
-      ctx.font = "bold 24px 'Arial', sans-serif";
-      ctx.fillText(`⏱ ${countdown.text}`, cardX + cardW - 36, cardY + 46);
-    }
-
-    // === BLOOD GROUP HERO ===
-    const heroY = cardY + bannerH + 40;
-    // Blood group ring
-    const ringCX = W / 2, ringCY = heroY + 100, ringR = 90;
-    ctx.strokeStyle = "#dc2626";
-    ctx.lineWidth = 6;
+    // Outer ring
+    ctx.strokeStyle = "#fecaca";
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(ringCX, ringCY, ringR, 0, Math.PI * 2);
+    ctx.arc(circCX, circCY, circR + 8, 0, Math.PI * 2);
     ctx.stroke();
     // Blood group text
-    ctx.fillStyle = "#dc2626";
-    ctx.font = "bold 88px 'Arial', sans-serif";
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 64px 'Arial', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(request.blood_group, ringCX, ringCY + 2);
+    ctx.fillText(request.blood_group, circCX, circCY + 2);
     ctx.textBaseline = "alphabetic";
 
-    // === UNITS BADGE ===
-    const unitsY = heroY + 210;
+    // === UNITS REQUIRED BADGE ===
     const unitsText = `${request.units_needed} UNIT${request.units_needed > 1 ? "S" : ""} REQUIRED`;
     ctx.font = "bold 20px 'Arial', sans-serif";
-    const unitsW = ctx.measureText(unitsText).width + 56;
+    const unitsMetric = ctx.measureText(unitsText).width + 48;
+    const unitsY = circCY + circR + 32;
     ctx.fillStyle = "#fef2f2";
     ctx.beginPath();
-    ctx.roundRect((W - unitsW) / 2, unitsY, unitsW, 44, 22);
+    ctx.roundRect((W - unitsMetric) / 2, unitsY, unitsMetric, 40, 20);
     ctx.fill();
-    ctx.fillStyle = "#dc2626";
+    ctx.fillStyle = "#C1121F";
     ctx.textAlign = "center";
-    ctx.fillText(unitsText, W / 2, unitsY + 29);
+    ctx.fillText(unitsText, W / 2, unitsY + 27);
 
     // === DIVIDER ===
-    const divY = unitsY + 72;
-    const grad = ctx.createLinearGradient(cardX + 60, divY, cardX + cardW - 60, divY);
-    grad.addColorStop(0, "transparent");
-    grad.addColorStop(0.2, "#e5e7eb");
-    grad.addColorStop(0.8, "#e5e7eb");
-    grad.addColorStop(1, "transparent");
-    ctx.strokeStyle = grad;
-    ctx.lineWidth = 1.5;
+    const divY = unitsY + 60;
+    ctx.strokeStyle = "#f3f4f6";
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(cardX + 60, divY);
     ctx.lineTo(cardX + cardW - 60, divY);
     ctx.stroke();
 
-    // === INFO SECTION ===
-    const infoX = cardX + 80;
-    const infoRight = cardX + cardW - 80;
-    let infoY = divY + 48;
+    // === INFO ROWS ===
+    const infoStartY = divY + 36;
+    const infoLeftX = cardX + 72;
+    const rowH = 72;
 
-    const drawInfoRow = (emoji: string, label: string, value: string, subValue?: string, subColor?: string) => {
+    const drawRow = (icon: string, label: string, value: string, y: number, valueColor?: string) => {
+      // Icon circle
+      ctx.fillStyle = "#fef2f2";
+      ctx.beginPath();
+      ctx.arc(infoLeftX + 2, y + 2, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#111";
+      ctx.font = "20px 'Arial', sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(icon, infoLeftX + 2, y + 3);
+      ctx.textBaseline = "alphabetic";
+
+      // Label
       ctx.fillStyle = "#9ca3af";
-      ctx.font = "600 16px 'Arial', sans-serif";
+      ctx.font = "600 15px 'Arial', sans-serif";
       ctx.textAlign = "left";
-      ctx.fillText(`${emoji}  ${label}`, infoX, infoY);
-      infoY += 32;
-      ctx.fillStyle = "#111827";
-      ctx.font = "bold 28px 'Arial', sans-serif";
-      // Truncate long text
-      let displayVal = value;
-      while (ctx.measureText(displayVal).width > infoRight - infoX && displayVal.length > 3) {
-        displayVal = displayVal.slice(0, -1);
+      ctx.fillText(label, infoLeftX + 38, y - 6);
+
+      // Value (truncate if needed)
+      ctx.fillStyle = valueColor || "#111827";
+      ctx.font = "bold 22px 'Arial', sans-serif";
+      const maxW = cardW - 200;
+      let display = value;
+      while (ctx.measureText(display).width > maxW && display.length > 3) {
+        display = display.slice(0, -1);
       }
-      if (displayVal !== value) displayVal += "…";
-      ctx.fillText(displayVal, infoX, infoY);
-      infoY += 10;
-      if (subValue) {
-        infoY += 28;
-        ctx.fillStyle = subColor || "#111827";
-        ctx.font = "bold 28px 'Arial', sans-serif";
-        ctx.fillText(subValue, infoX, infoY);
-        infoY += 10;
-      }
-      infoY += 32;
+      if (display !== value) display += "…";
+      ctx.fillText(display, infoLeftX + 38, y + 20);
     };
 
-    drawInfoRow("👤", "PATIENT", request.patient_name);
-    drawInfoRow("📍", "HOSPITAL", request.hospital_name);
-    drawInfoRow("📞", "CONTACT", request.contact_name, request.contact_phone, "#dc2626");
+    drawRow("👤", "PATIENT", request.patient_name, infoStartY);
+    drawRow("🏥", "HOSPITAL", request.hospital_name, infoStartY + rowH);
+    drawRow("📞", "CONTACT", `${request.contact_name}  —  ${request.contact_phone}`, infoStartY + rowH * 2, "#C1121F");
 
-    // === QR CODE ===
+    // === QR CODE SECTION ===
     if (qrDataUrl) {
       const qrImage = new Image();
       qrImage.onload = () => {
-        const qrSize = 160;
-        const qrContW = qrSize + 48;
-        const qrContH = qrSize + 64;
-        const qrContX = (W - qrContW) / 2;
-        const qrContY = infoY + 8;
+        const qrSectionY = infoStartY + rowH * 3 + 10;
+        const qrSize = 120;
 
-        // QR container bg
+        // QR container
         ctx.fillStyle = "#f9fafb";
         ctx.beginPath();
-        ctx.roundRect(qrContX, qrContY, qrContW, qrContH, 20);
+        ctx.roundRect((W - qrSize - 40) / 2, qrSectionY, qrSize + 40, qrSize + 52, 16);
         ctx.fill();
         ctx.strokeStyle = "#e5e7eb";
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.roundRect(qrContX, qrContY, qrContW, qrContH, 20);
+        ctx.roundRect((W - qrSize - 40) / 2, qrSectionY, qrSize + 40, qrSize + 52, 16);
         ctx.stroke();
 
         // QR image
-        ctx.drawImage(qrImage, qrContX + 24, qrContY + 16, qrSize, qrSize);
+        ctx.drawImage(qrImage, (W - qrSize) / 2, qrSectionY + 12, qrSize, qrSize);
 
         // Scan label
         ctx.fillStyle = "#6b7280";
-        ctx.font = "500 15px 'Arial', sans-serif";
+        ctx.font = "500 13px 'Arial', sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("Scan to respond", W / 2, qrContY + qrSize + 44);
+        ctx.fillText("Scan to Respond", W / 2, qrSectionY + qrSize + 38);
 
-        // === CARD FOOTER ===
-        ctx.fillStyle = "#9ca3af";
-        ctx.font = "16px 'Arial', sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("❤️  LeyHadhiya Blood Donor Platform", W / 2, cardY + cardH - 32);
-
-        // === BOTTOM URL BAR ===
-        ctx.fillStyle = "rgba(255,255,255,0.15)";
+        // === FOOTER ===
+        ctx.fillStyle = "rgba(255,255,255,0.12)";
         ctx.beginPath();
-        ctx.roundRect(180, H - 100, W - 360, 56, 28);
+        ctx.roundRect(200, H - 72, W - 400, 44, 22);
         ctx.fill();
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 22px 'Arial', sans-serif";
+        ctx.font = "bold 18px 'Arial', sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("leyhadhiya.lovable.app", W / 2, H - 64);
+        ctx.fillText("❤️  LeyHadhiya Blood Donor Platform", W / 2, H - 44);
 
-        // Download as image
+        // Download
         canvas.toBlob((blob) => {
           if (!blob) return;
           const url = URL.createObjectURL(blob);
@@ -276,7 +316,7 @@ export const BloodRequestShareCard = ({ request, open, onOpenChange }: BloodRequ
           link.href = url;
           link.click();
           URL.revokeObjectURL(url);
-          toast({ title: "Image saved!", description: "Instagram-ready card downloaded (4:5 ratio)" });
+          toast({ title: "Image saved!", description: "Instagram-ready card downloaded (1:1 square)" });
         }, "image/png");
       };
       qrImage.src = qrDataUrl;
