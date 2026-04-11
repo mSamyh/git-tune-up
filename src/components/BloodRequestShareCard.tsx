@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Share2, Download, Clock, MapPin, Droplet, Heart, AlertTriangle, Copy, Check, Sparkles } from "lucide-react";
+import { Share2, Download, Clock, MapPin, Droplet, Heart, Phone, User, Copy, Check, Sparkles } from "lucide-react";
 import QRCode from "qrcode";
 import { toast } from "@/hooks/use-toast";
 
@@ -14,6 +14,8 @@ interface BloodRequestShareCardProps {
     hospital_name: string;
     urgency: string;
     needed_before?: string | null;
+    contact_name: string;
+    contact_phone: string;
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -39,7 +41,7 @@ export const BloodRequestShareCard = ({ request, open, onOpenChange }: BloodRequ
   const generateQR = async () => {
     try {
       const url = await QRCode.toDataURL(platformUrl, {
-        width: 120,
+        width: 200,
         margin: 1,
         color: { dark: "#dc2626", light: "#ffffff" },
         errorCorrectionLevel: 'M'
@@ -70,16 +72,17 @@ export const BloodRequestShareCard = ({ request, open, onOpenChange }: BloodRequ
   const getUrgencyConfig = () => {
     switch (request.urgency) {
       case 'critical':
-        return { label: 'CRITICAL', bgClass: 'bg-red-600', pulseClass: 'animate-pulse' };
+        return { label: 'CRITICAL', bgClass: 'bg-red-600', pulseClass: 'animate-pulse', color: '#dc2626' };
       case 'urgent':
-        return { label: 'URGENT', bgClass: 'bg-orange-500', pulseClass: '' };
+        return { label: 'URGENT', bgClass: 'bg-orange-500', pulseClass: '', color: '#f97316' };
       default:
-        return { label: 'NEEDED', bgClass: 'bg-primary', pulseClass: '' };
+        return { label: 'NEEDED', bgClass: 'bg-primary', pulseClass: '', color: '#dc2626' };
     }
   };
 
   const urgencyConfig = getUrgencyConfig();
 
+  // Instagram-optimized canvas (1080x1350 = 4:5 ratio)
   const downloadCard = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -87,109 +90,169 @@ export const BloodRequestShareCard = ({ request, open, onOpenChange }: BloodRequ
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    canvas.width = 600;
-    canvas.height = 400;
+    const W = 1080;
+    const H = 1350;
+    canvas.width = W;
+    canvas.height = H;
 
-    // Modern gradient background
-    const gradient = ctx.createLinearGradient(0, 0, 600, 400);
-    gradient.addColorStop(0, "#ef4444");
-    gradient.addColorStop(0.5, "#dc2626");
-    gradient.addColorStop(1, "#991b1b");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 600, 400);
+    // Background gradient
+    const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+    bgGrad.addColorStop(0, "#ef4444");
+    bgGrad.addColorStop(0.4, "#dc2626");
+    bgGrad.addColorStop(1, "#7f1d1d");
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
 
     // Decorative circles
-    ctx.globalAlpha = 0.1;
+    ctx.globalAlpha = 0.08;
     ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.arc(500, 50, 100, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(50, 350, 80, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(900, 100, 200, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(100, 1200, 180, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(540, 700, 400, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1;
 
-    // White card
+    // Main white card
+    const cardX = 60, cardY = 80, cardW = W - 120, cardH = H - 220;
     ctx.fillStyle = "#ffffff";
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetY = 8;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 12;
     ctx.beginPath();
-    ctx.roundRect(30, 30, 540, 340, 20);
+    ctx.roundRect(cardX, cardY, cardW, cardH, 32);
     ctx.fill();
     ctx.shadowColor = 'transparent';
 
-    // Urgency badge
-    ctx.fillStyle = request.urgency === 'critical' ? "#dc2626" : "#f97316";
+    // Urgency banner at top of card
+    const bannerColor = request.urgency === 'critical' ? '#dc2626' : request.urgency === 'urgent' ? '#f97316' : '#dc2626';
+    ctx.fillStyle = bannerColor;
     ctx.beginPath();
-    ctx.roundRect(40, 40, 140, 32, 16);
+    ctx.roundRect(cardX, cardY, cardW, 80, [32, 32, 0, 0]);
     ctx.fill();
+
+    // Urgency label
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 13px Arial";
+    ctx.font = "bold 28px Arial, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(`🩸 ${urgencyConfig.label}`, 110, 62);
+    ctx.fillText(`🩸 ${urgencyConfig.label} BLOOD NEEDED`, W / 2, cardY + 52);
 
-    // Blood group - hero element
-    ctx.fillStyle = "#dc2626";
-    ctx.font = "bold 80px Arial";
-    ctx.textAlign = "left";
-    ctx.fillText(request.blood_group, 50, 150);
-
-    // Units badge
-    ctx.fillStyle = "#fef2f2";
-    ctx.beginPath();
-    ctx.roundRect(50, 165, 100, 28, 14);
-    ctx.fill();
-    ctx.fillStyle = "#dc2626";
-    ctx.font = "bold 14px Arial";
-    ctx.fillText(`${request.units_needed} UNITS`, 100, 185);
-
-    // Hospital info
-    ctx.fillStyle = "#6b7280";
-    ctx.font = "16px Arial";
-    ctx.textAlign = "left";
-    ctx.fillText(`📍 ${request.hospital_name}`, 50, 230);
-
-    // Countdown
+    // Countdown on banner right
     if (request.needed_before) {
       const countdown = formatCountdown(request.needed_before);
-      ctx.fillStyle = countdown.isUrgent ? "#dc2626" : "#f97316";
-      ctx.font = "bold 18px Arial";
-      ctx.fillText(`⏰ ${countdown.text}`, 50, 265);
+      ctx.font = "bold 22px Arial, sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText(`⏰ ${countdown.text}`, cardX + cardW - 30, cardY + 52);
+      ctx.textAlign = "center";
+      ctx.fillText(`🩸 ${urgencyConfig.label}`, cardX + cardW / 2 - 80, cardY + 52);
     }
 
-    // QR Code
+    // Blood group - hero
+    const heroY = cardY + 160;
+    ctx.fillStyle = "#dc2626";
+    ctx.font = "bold 140px Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(request.blood_group, W / 2, heroY + 110);
+
+    // Units badge below blood group
+    const unitsY = heroY + 140;
+    const unitsText = `${request.units_needed} UNIT${request.units_needed > 1 ? 'S' : ''} REQUIRED`;
+    ctx.fillStyle = "#fef2f2";
+    const unitsW = ctx.measureText(unitsText).width + 60;
+    ctx.beginPath();
+    ctx.roundRect((W - unitsW) / 2, unitsY, unitsW, 48, 24);
+    ctx.fill();
+    ctx.fillStyle = "#dc2626";
+    ctx.font = "bold 22px Arial, sans-serif";
+    ctx.fillText(unitsText, W / 2, unitsY + 32);
+
+    // Divider line
+    const divY = unitsY + 80;
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cardX + 60, divY);
+    ctx.lineTo(cardX + cardW - 60, divY);
+    ctx.stroke();
+
+    // Info section
+    const infoY = divY + 40;
+    ctx.textAlign = "left";
+    const infoX = cardX + 80;
+
+    // Patient name
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "18px Arial, sans-serif";
+    ctx.fillText("PATIENT", infoX, infoY);
+    ctx.fillStyle = "#111827";
+    ctx.font = "bold 26px Arial, sans-serif";
+    ctx.fillText(request.patient_name, infoX, infoY + 35);
+
+    // Hospital
+    const hospY = infoY + 80;
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "18px Arial, sans-serif";
+    ctx.fillText("📍 HOSPITAL", infoX, hospY);
+    ctx.fillStyle = "#111827";
+    ctx.font = "bold 26px Arial, sans-serif";
+    ctx.fillText(request.hospital_name, infoX, hospY + 35);
+
+    // Contact section
+    const contactY = hospY + 80;
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "18px Arial, sans-serif";
+    ctx.fillText("📞 CONTACT", infoX, contactY);
+    ctx.fillStyle = "#111827";
+    ctx.font = "bold 26px Arial, sans-serif";
+    ctx.fillText(request.contact_name, infoX, contactY + 35);
+    ctx.fillStyle = "#dc2626";
+    ctx.font = "bold 28px Arial, sans-serif";
+    ctx.fillText(request.contact_phone, infoX, contactY + 72);
+
+    // QR Code section
     if (qrDataUrl) {
       const qrImage = new Image();
       qrImage.onload = () => {
-        // QR container with shadow
+        // QR container
+        const qrBoxSize = 180;
+        const qrBoxX = (W - qrBoxSize) / 2;
+        const qrBoxY = contactY + 110;
+
         ctx.fillStyle = "#f9fafb";
         ctx.beginPath();
-        ctx.roundRect(430, 100, 130, 150, 12);
+        ctx.roundRect(qrBoxX - 20, qrBoxY, qrBoxSize + 40, qrBoxSize + 60, 16);
         ctx.fill();
-        
-        ctx.drawImage(qrImage, 445, 115, 100, 100);
-        ctx.fillStyle = "#6b7280";
-        ctx.font = "11px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("Scan to donate", 495, 235);
+        ctx.strokeStyle = "#e5e7eb";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(qrBoxX - 20, qrBoxY, qrBoxSize + 40, qrBoxSize + 60, 16);
+        ctx.stroke();
 
-        // Footer
-        ctx.fillStyle = "#9ca3af";
-        ctx.font = "12px Arial";
+        ctx.drawImage(qrImage, qrBoxX, qrBoxY + 10, qrBoxSize, qrBoxSize);
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "16px Arial, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("LeyHadhiya Blood Donor Platform", 300, 355);
-        
-        // Heart icon simulation
-        ctx.fillStyle = "#dc2626";
-        ctx.font = "12px Arial";
-        ctx.fillText("❤️", 185, 355);
+        ctx.fillText("Scan to respond", W / 2, qrBoxY + qrBoxSize + 40);
+
+        // Footer inside card
+        const footerY = cardY + cardH - 50;
+        ctx.fillStyle = "#9ca3af";
+        ctx.font = "18px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("❤️ LeyHadhiya Blood Donor Platform", W / 2, footerY);
+
+        // Bottom CTA outside card
+        ctx.fillStyle = "rgba(255,255,255,0.15)";
+        ctx.beginPath();
+        ctx.roundRect(140, H - 110, W - 280, 60, 30);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 22px Arial, sans-serif";
+        ctx.fillText("leyhadhiya.lovable.app", W / 2, H - 72);
 
         const link = document.createElement("a");
         link.download = `blood-request-${request.blood_group}-${request.id.slice(0, 8)}.png`;
         link.href = canvas.toDataURL("image/png");
         link.click();
-        toast({ title: "Downloaded!", description: "Share card saved to your device" });
+        toast({ title: "Downloaded!", description: "Instagram-ready card saved (4:5 ratio)" });
       };
       qrImage.src = qrDataUrl;
     }
@@ -197,7 +260,7 @@ export const BloodRequestShareCard = ({ request, open, onOpenChange }: BloodRequ
 
   const shareCard = async () => {
     const countdown = request.needed_before ? formatCountdown(request.needed_before) : null;
-    const text = `🩸 ${urgencyConfig.label}: ${request.blood_group} Blood Needed!\n\n📍 ${request.hospital_name}\n💉 ${request.units_needed} Units Required${countdown ? `\n⏰ Needed: ${countdown.text}` : ''}\n\n🔗 ${platformUrl}\n\n#BloodDonation #SaveLives #LeyHadhiya`;
+    const text = `🩸 ${urgencyConfig.label}: ${request.blood_group} Blood Needed!\n\n📍 ${request.hospital_name}\n💉 ${request.units_needed} Units Required\n👤 Patient: ${request.patient_name}${countdown ? `\n⏰ Needed: ${countdown.text}` : ''}\n\n📞 Contact: ${request.contact_name}\n📱 ${request.contact_phone}\n\n🔗 ${platformUrl}\n\n#BloodDonation #SaveLives #LeyHadhiya`;
 
     if (navigator.share) {
       try {
@@ -228,10 +291,8 @@ export const BloodRequestShareCard = ({ request, open, onOpenChange }: BloodRequ
       <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden border-0 shadow-2xl">
         {/* Header */}
         <div className="bg-gradient-to-br from-primary via-primary to-destructive/90 p-5 text-white relative overflow-hidden">
-          {/* Background decoration */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
           <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-10 -translate-x-10" />
-          
           <DialogHeader className="relative z-10">
             <DialogTitle className="text-white flex items-center gap-2 text-lg font-semibold">
               <Share2 className="h-5 w-5" />
@@ -241,7 +302,7 @@ export const BloodRequestShareCard = ({ request, open, onOpenChange }: BloodRequ
         </div>
 
         <div className="p-5 space-y-4">
-          {/* Preview Card - Dynamic & Modern */}
+          {/* Preview Card */}
           <div 
             className={`bg-gradient-to-br from-card via-card to-muted/50 rounded-2xl border border-border/50 overflow-hidden shadow-lg transition-all duration-500 ${isAnimating ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}
           >
@@ -262,7 +323,6 @@ export const BloodRequestShareCard = ({ request, open, onOpenChange }: BloodRequ
             {/* Card Body */}
             <div className="p-4">
               <div className="flex items-start justify-between gap-4">
-                {/* Blood Info */}
                 <div className="flex-1 space-y-3">
                   {/* Blood Group Hero */}
                   <div className="flex items-baseline gap-2">
@@ -289,6 +349,17 @@ export const BloodRequestShareCard = ({ request, open, onOpenChange }: BloodRequ
                       <Heart className="h-3 w-3 text-primary" />
                     </div>
                     <span className="text-sm">For: {request.patient_name}</span>
+                  </div>
+
+                  {/* Contact */}
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Phone className="h-3 w-3 text-primary" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-foreground">{request.contact_name}</span>
+                      <a href={`tel:${request.contact_phone}`} className="text-xs text-primary font-semibold">{request.contact_phone}</a>
+                    </div>
                   </div>
                 </div>
 
