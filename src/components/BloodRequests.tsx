@@ -405,6 +405,34 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
     setActionLoading(null);
   };
 
+  // Admin: change status to any value
+  const changeRequestStatus = async (requestId: string, newStatus: string) => {
+    if (actionLoading) return;
+    setActionLoading(requestId);
+    
+    const { data, error } = await supabase
+      .from("blood_requests")
+      .update({ status: newStatus })
+      .eq("id", requestId)
+      .select();
+
+    if (error || !data?.length) {
+      toast({
+        variant: "destructive",
+        title: "Failed to update status",
+        description: error?.message || "You may not have permission.",
+      });
+    } else {
+      const labels: Record<string, string> = { active: "Active", fulfilled: "Fulfilled", expired: "Expired" };
+      toast({
+        title: `Request moved to ${labels[newStatus] || newStatus}`,
+      });
+      await fetchRequests();
+      onStatusChange?.(newStatus);
+    }
+    setActionLoading(null);
+  };
+
   const isRequestor = (request: BloodRequest) => {
     return request.requested_by === currentUser;
   };
