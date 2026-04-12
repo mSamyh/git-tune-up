@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Droplet, MapPin, Phone, User, MessageSquare, Edit, Trash, CheckCircle, Share2, XCircle } from "lucide-react";
+import { Clock, Droplet, MapPin, Phone, User, MessageSquare, Edit, Trash, CheckCircle, Share2, XCircle, RotateCcw, ArrowRightLeft } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
