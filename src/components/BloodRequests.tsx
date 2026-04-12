@@ -454,29 +454,28 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
   const renderRequestCard = (request: BloodRequest) => {
     const isHighlighted = highlightId === request.id;
     const canManage = isRequestor(request) || isAdmin;
-    const isUrgent = request.urgency === 'urgent';
+    const isUrgent = request.urgency === 'urgent' || request.urgency === 'Emergency';
     
-    // Get status border class based on urgency and status
     const getCardStyles = () => {
       if (isHighlighted) {
-        return 'border-primary bg-primary/10 ring-2 ring-primary/50';
+        return 'border-primary/40 bg-primary/5 ring-2 ring-primary/30';
       }
-      if (isUrgent) {
-        return 'border-l-4 border-l-destructive border-destructive/30 bg-destructive/5';
+      if (isUrgent && status === 'active') {
+        return 'border-l-4 border-l-destructive bg-destructive/[0.03]';
       }
-      return 'border-l-4 border-l-primary/30 border-border bg-muted/30';
+      return 'border-border/40 bg-card/50';
     };
     
     return (
     <div 
       key={request.id}
       ref={isHighlighted ? highlightRef : null}
-      className={`p-4 rounded-xl transition-all hover:shadow-md ${getCardStyles()} ${isUrgent && status === 'active' ? 'urgency-pulse' : ''}`}
+      className={`p-4 rounded-xl transition-all ${getCardStyles()} ${isUrgent && status === 'active' ? 'urgency-pulse' : ''}`}
     >
+      {/* Top row: patient + blood group */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-sm truncate">{request.patient_name}</h3>
-          {/* Countdown Timer */}
           {request.needed_before && status === "active" && (
             <CountdownTimer neededBefore={request.needed_before} compact className="mt-1" />
           )}
@@ -492,6 +491,7 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
         </div>
       </div>
 
+      {/* Info rows */}
       <div className="space-y-1.5 text-xs">
         <button 
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full text-left"
@@ -527,9 +527,10 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
         )}
       </div>
 
+      {/* Actions */}
       <div className="mt-3 flex items-center justify-between flex-wrap gap-2">
-        <div className="flex gap-2 flex-wrap">
-          {/* Share button - available to all */}
+        <div className="flex gap-1.5 flex-wrap">
+          {/* Share - available to all */}
           <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => setShareRequest(request)}>
             <Share2 className="h-3 w-3 mr-1" />
             Share
@@ -543,52 +544,142 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
                   Responses
                 </Button>
               )}
-                  {status === "active" && (
-                    <>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="h-7 text-xs rounded-lg text-green-600 border-green-600/30 hover:bg-green-50" 
-                        onClick={() => markAsFulfilled(request.id)}
-                        disabled={actionLoading === request.id}
-                      >
-                        {actionLoading === request.id ? (
-                          <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                        )}
-                        Done
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="h-7 text-xs rounded-lg text-orange-600 border-orange-600/30 hover:bg-orange-50" 
-                        onClick={() => markAsExpired(request.id)}
-                        disabled={actionLoading === request.id}
-                      >
-                        {actionLoading === request.id ? (
-                          <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <XCircle className="h-3 w-3 mr-1" />
-                        )}
-                        Expire
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive" 
-                        className="h-7 text-xs rounded-lg" 
-                        onClick={() => deleteRequest(request.id)}
-                        disabled={actionLoading === request.id}
-                      >
-                        {actionLoading === request.id ? (
-                          <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <Trash className="h-3 w-3 mr-1" />
-                        )}
-                        Delete
-                      </Button>
-                    </>
-                  )}
+
+              {/* Active tab actions */}
+              {status === "active" && (
+                <>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-7 text-xs rounded-lg text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-500/10" 
+                    onClick={() => markAsFulfilled(request.id)}
+                    disabled={actionLoading === request.id}
+                  >
+                    {actionLoading === request.id ? (
+                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                    )}
+                    Done
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-7 text-xs rounded-lg text-amber-600 border-amber-500/30 hover:bg-amber-50 dark:hover:bg-amber-500/10" 
+                    onClick={() => markAsExpired(request.id)}
+                    disabled={actionLoading === request.id}
+                  >
+                    {actionLoading === request.id ? (
+                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <XCircle className="h-3 w-3 mr-1" />
+                    )}
+                    Expire
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="destructive" 
+                    className="h-7 text-xs rounded-lg" 
+                    onClick={() => deleteRequest(request.id)}
+                    disabled={actionLoading === request.id}
+                  >
+                    {actionLoading === request.id ? (
+                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Trash className="h-3 w-3 mr-1" />
+                    )}
+                    Delete
+                  </Button>
+                </>
+              )}
+
+              {/* Fulfilled tab: admin can reactivate or expire */}
+              {status === "fulfilled" && isAdmin && (
+                <>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-7 text-xs rounded-lg text-blue-600 border-blue-500/30 hover:bg-blue-50 dark:hover:bg-blue-500/10" 
+                    onClick={() => changeRequestStatus(request.id, "active")}
+                    disabled={actionLoading === request.id}
+                  >
+                    {actionLoading === request.id ? (
+                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                    )}
+                    Reactivate
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-7 text-xs rounded-lg text-amber-600 border-amber-500/30 hover:bg-amber-50 dark:hover:bg-amber-500/10" 
+                    onClick={() => changeRequestStatus(request.id, "expired")}
+                    disabled={actionLoading === request.id}
+                  >
+                    {actionLoading === request.id ? (
+                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <XCircle className="h-3 w-3 mr-1" />
+                    )}
+                    Expire
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="destructive" 
+                    className="h-7 text-xs rounded-lg" 
+                    onClick={() => deleteRequest(request.id)}
+                    disabled={actionLoading === request.id}
+                  >
+                    <Trash className="h-3 w-3 mr-1" />
+                    Delete
+                  </Button>
+                </>
+              )}
+
+              {/* Expired tab: admin can reactivate or fulfill */}
+              {status === "expired" && isAdmin && (
+                <>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-7 text-xs rounded-lg text-blue-600 border-blue-500/30 hover:bg-blue-50 dark:hover:bg-blue-500/10" 
+                    onClick={() => changeRequestStatus(request.id, "active")}
+                    disabled={actionLoading === request.id}
+                  >
+                    {actionLoading === request.id ? (
+                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                    )}
+                    Reactivate
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-7 text-xs rounded-lg text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-500/10" 
+                    onClick={() => changeRequestStatus(request.id, "fulfilled")}
+                    disabled={actionLoading === request.id}
+                  >
+                    {actionLoading === request.id ? (
+                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                    )}
+                    Fulfill
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="destructive" 
+                    className="h-7 text-xs rounded-lg" 
+                    onClick={() => deleteRequest(request.id)}
+                    disabled={actionLoading === request.id}
+                  >
+                    <Trash className="h-3 w-3 mr-1" />
+                    Delete
+                  </Button>
+                </>
+              )}
             </>
           ) : status === "active" && (
             <Button size="sm" className="h-7 text-xs rounded-lg" onClick={() => handleRespond(request)}>
@@ -598,7 +689,7 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
           )}
         </div>
         
-        {/* Posted by and timestamp - bottom right */}
+        {/* Posted by and timestamp */}
         <div className="text-[10px] text-muted-foreground text-right ml-auto">
           <div className="flex items-center gap-1 justify-end">
             <span>by {request.poster_name || 'Anonymous'}</span>
