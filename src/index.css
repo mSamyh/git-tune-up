@@ -5,8 +5,8 @@
 @tailwind utilities;
 
 /* 
- * LeyHadhiya Design System
- * Minimal & Clean aesthetic with refined blood-red accents
+ * LeyHadhiya Design System — Premium Minimal
+ * Layered surfaces, refined depth, brand-tinted accents
  * All colors in HSL format
  */
 
@@ -16,7 +16,12 @@
     --background: 30 20% 98%;
     --foreground: 0 0% 12%;
 
-    /* Card surfaces - Pure white for contrast */
+    /* Tiered surfaces for layered depth */
+    --surface-1: 0 0% 100%;
+    --surface-2: 30 15% 97%;
+    --surface-3: 30 12% 94%;
+
+    /* Card surfaces */
     --card: 0 0% 100%;
     --card-foreground: 0 0% 12%;
 
@@ -26,32 +31,53 @@
     /* Primary - Refined blood red */
     --primary: 0 72% 50%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 0 80% 60%;
+    --primary-deep: 354 78% 38%;
 
-    /* Secondary - Subtle warm gray */
+    /* Secondary */
     --secondary: 30 10% 95%;
     --secondary-foreground: 0 0% 20%;
 
-    /* Muted - Soft backgrounds */
+    /* Muted */
     --muted: 30 10% 94%;
     --muted-foreground: 0 0% 45%;
 
-    /* Accent - Same as primary for consistency */
+    /* Accent */
     --accent: 0 65% 95%;
     --accent-foreground: 0 72% 45%;
 
-    /* Destructive - Deeper red for warnings */
+    /* Status colors (semantic) */
+    --success: 152 62% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 210 90% 50%;
+    --info-foreground: 0 0% 100%;
+
+    /* Destructive */
     --destructive: 0 84% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders - Very subtle */
+    /* Borders */
     --border: 30 10% 90%;
     --input: 30 10% 92%;
     --ring: 0 72% 50%;
 
-    /* Radius - Refined rounded corners */
+    /* Radius */
     --radius: 0.875rem;
 
-    /* Sidebar theme */
+    /* Brand gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(0 72% 50%) 0%, hsl(354 78% 42%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(30 20% 99%) 0%, hsl(0 0% 100%) 100%);
+    --gradient-mesh: radial-gradient(at 20% 0%, hsl(0 72% 50% / 0.08) 0px, transparent 50%),
+                     radial-gradient(at 80% 100%, hsl(354 78% 42% / 0.06) 0px, transparent 50%);
+    --gradient-shine: linear-gradient(120deg, transparent 30%, hsl(0 0% 100% / 0.4) 50%, transparent 70%);
+
+    /* Brand-tinted shadows */
+    --shadow-glow-primary: 0 8px 24px -8px hsl(0 72% 50% / 0.35), 0 2px 6px -2px hsl(0 72% 50% / 0.2);
+    --shadow-glow-success: 0 8px 24px -8px hsl(152 62% 40% / 0.3);
+
+    /* Sidebar */
     --sidebar-background: 30 20% 98%;
     --sidebar-foreground: 0 0% 25%;
     --sidebar-primary: 0 0% 12%;
@@ -67,30 +93,50 @@
     --background: 0 0% 7%;
     --foreground: 0 0% 94%;
 
+    --surface-1: 0 0% 11%;
+    --surface-2: 0 0% 13%;
+    --surface-3: 0 0% 16%;
+
     --card: 0 0% 10%;
     --card-foreground: 0 0% 94%;
 
-    --popover: 0 0% 10%;
+    --popover: 0 0% 11%;
     --popover-foreground: 0 0% 94%;
 
     --primary: 0 70% 55%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 0 80% 65%;
+    --primary-deep: 354 75% 45%;
 
     --secondary: 0 0% 14%;
     --secondary-foreground: 0 0% 90%;
 
     --muted: 0 0% 14%;
-    --muted-foreground: 0 0% 55%;
+    --muted-foreground: 0 0% 60%;
 
     --accent: 0 50% 15%;
-    --accent-foreground: 0 70% 70%;
+    --accent-foreground: 0 70% 75%;
+
+    --success: 152 55% 48%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 88% 55%;
+    --warning-foreground: 0 0% 100%;
+    --info: 210 85% 58%;
+    --info-foreground: 0 0% 100%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 16%;
+    --border: 0 0% 18%;
     --input: 0 0% 16%;
     --ring: 0 70% 55%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(0 70% 55%) 0%, hsl(354 75% 42%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(0 0% 9%) 0%, hsl(0 0% 11%) 100%);
+    --gradient-mesh: radial-gradient(at 20% 0%, hsl(0 70% 55% / 0.12) 0px, transparent 50%),
+                     radial-gradient(at 80% 100%, hsl(354 75% 45% / 0.08) 0px, transparent 50%);
+
+    --shadow-glow-primary: 0 8px 28px -8px hsl(0 70% 55% / 0.5), 0 2px 6px -2px hsl(0 70% 55% / 0.3);
 
     --sidebar-background: 0 0% 8%;
     --sidebar-foreground: 0 0% 85%;
@@ -98,7 +144,7 @@
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 14%;
     --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 0 0% 16%;
+    --sidebar-border: 0 0% 18%;
     --sidebar-ring: 0 70% 55%;
   }
 }
@@ -111,6 +157,8 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -120,32 +168,54 @@
 }
 
 @layer utilities {
-  /* Hide scrollbar */
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-  
+  /* Scrollbar */
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
 
   /* Page transition */
-  .page-transition {
-    @apply animate-fade-in;
-  }
+  .page-transition { @apply animate-fade-in; }
+  .page-enter { @apply animate-fade-up; }
 
-  /* Glass morphism - More subtle */
+  /* Glass surfaces */
   .glass {
     @apply bg-card/90 backdrop-blur-xl border border-border/40;
   }
+  .glass-strong {
+    background: hsl(var(--background) / 0.75);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    @apply border border-border/40;
+  }
 
-  /* Clean hover lift */
+  /* Surface utilities */
+  .surface-1 { background: hsl(var(--surface-1)); }
+  .surface-2 { background: hsl(var(--surface-2)); }
+  .surface-3 { background: hsl(var(--surface-3)); }
+  .surface-card {
+    @apply rounded-2xl border border-border/50 bg-card transition-all duration-300;
+    box-shadow: 0 1px 3px 0 hsl(var(--foreground) / 0.04), 0 4px 12px -4px hsl(var(--foreground) / 0.05);
+  }
+  .surface-card:hover {
+    @apply border-primary/20;
+    box-shadow: 0 4px 12px -2px hsl(var(--foreground) / 0.08), 0 8px 24px -8px hsl(var(--primary) / 0.12);
+  }
+
+  /* Text */
+  .text-display {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    @apply font-bold tracking-tight;
+    letter-spacing: -0.02em;
+  }
+
+  /* Hover lift */
   .hover-lift {
     @apply transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-md;
   }
 
-  /* Card hover - Subtle border highlight */
+  /* Card hover */
   .card-hover {
     @apply transition-all duration-200 ease-out hover:border-primary/20 hover:shadow-sm;
   }
@@ -157,97 +227,117 @@
 
   /* Gradient text */
   .gradient-text {
-    @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
-  /* Story ring - Refined gradient */
+  /* Story ring */
   .story-ring {
     @apply ring-2 ring-offset-2 ring-offset-background ring-primary/80;
   }
 
-  /* Modern card shadow - Lighter */
+  /* Shadows */
   .card-shadow {
     box-shadow: 
       0 1px 3px 0 hsl(var(--foreground) / 0.04),
       0 4px 12px -2px hsl(var(--foreground) / 0.06);
   }
-
-  /* FAB shadow - Refined */
   .fab-shadow {
-    box-shadow: 
-      0 4px 14px 0 hsl(var(--primary) / 0.25),
-      0 2px 6px -1px hsl(var(--primary) / 0.15);
+    box-shadow: var(--shadow-glow-primary);
+  }
+  .shadow-glow {
+    box-shadow: var(--shadow-glow-primary);
   }
 
-  /* Minimal divider */
+  /* Divider */
   .divider {
     @apply h-px bg-gradient-to-r from-transparent via-border to-transparent;
   }
 
-  /* Subtle highlight */
+  /* Highlight */
   .highlight-soft {
     @apply bg-primary/5 border border-primary/10;
   }
 
-  /* Focus ring - Minimal */
+  /* Focus */
   .focus-minimal {
     @apply focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:ring-offset-1;
   }
 
-  /* Status border utilities */
-  .status-border-available {
-    @apply border-l-4 border-l-emerald-500;
-  }
-  
-  .status-border-unavailable {
-    @apply border-l-4 border-l-red-500;
-  }
-  
-  .status-border-reserved {
-    @apply border-l-4 border-l-blue-500;
-  }
-  
-  .status-border-soon {
-    @apply border-l-4 border-l-amber-500;
+  /* Tap target */
+  .tap-target {
+    @apply min-h-[44px] min-w-[44px];
   }
 
-  /* Urgency backgrounds */
+  /* Status borders */
+  .status-border-available { @apply border-l-4 border-l-emerald-500; }
+  .status-border-unavailable { @apply border-l-4 border-l-red-500; }
+  .status-border-reserved { @apply border-l-4 border-l-blue-500; }
+  .status-border-soon { @apply border-l-4 border-l-amber-500; }
+
+  /* Urgency */
   .urgency-critical {
     @apply bg-destructive/5 border-destructive/30;
   }
-  
   .urgency-normal {
     @apply bg-muted/30 border-border;
   }
-
-  /* Pulsing urgency indicator */
   .urgency-pulse {
     animation: urgency-pulse 2s ease-in-out infinite;
   }
 
-  /* Form field consistent styling */
+  /* Form */
   .form-input {
     @apply h-11 rounded-xl border-input bg-background transition-all duration-200;
     @apply focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/50;
   }
 
-  /* Dialog section grouping */
+  /* Dialog section */
   .dialog-section {
     @apply bg-muted/30 rounded-xl p-4 space-y-3;
   }
 
-  /* Card with status indicator */
+  /* Card status */
   .card-status {
     @apply relative overflow-hidden;
   }
-  
   .card-status::before {
     content: '';
     @apply absolute left-0 top-0 bottom-0 w-1;
   }
+
+  /* Skeleton shimmer */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted) / 0.6) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-slow 1.6s ease-in-out infinite;
+  }
+
+  /* Mesh background */
+  .bg-mesh {
+    background-image: var(--gradient-mesh);
+  }
+
+  /* Section accent bar */
+  .accent-bar::before {
+    content: '';
+    @apply absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-full;
+  }
+
+  /* Notification dot pulse */
+  .pulse-dot {
+    animation: pulse-dot 1.6s ease-in-out infinite;
+  }
 }
 
-/* Custom keyframes */
+/* Keyframes */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -268,9 +358,19 @@
   to { transform: translateY(0); }
 }
 
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
+}
+
+@keyframes shimmer-slow {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 @keyframes urgency-pulse {
@@ -278,11 +378,21 @@
   50% { opacity: 0.7; }
 }
 
-/* Safe area for mobile */
-.safe-area-pb {
-  padding-bottom: env(safe-area-inset-bottom, 0);
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
 }
 
-.safe-area-pt {
-  padding-top: env(safe-area-inset-top, 0);
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
 }
+
+@keyframes shine {
+  0% { transform: translateX(-120%) skewX(-20deg); }
+  100% { transform: translateX(220%) skewX(-20deg); }
+}
+
+/* Safe area */
+.safe-area-pb { padding-bottom: env(safe-area-inset-bottom, 0); }
+.safe-area-pt { padding-top: env(safe-area-inset-top, 0); }
