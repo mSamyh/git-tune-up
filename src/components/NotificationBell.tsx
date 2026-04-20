@@ -212,14 +212,17 @@ export const NotificationBell = () => {
     <>
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-primary/5">
+            <Bell className={cn("h-5 w-5", unreadCount > 0 && "animate-bounce-subtle")} />
             {unreadCount > 0 && (
-              <Badge 
-                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground"
-              >
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </Badge>
+              <>
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive pulse-dot" />
+                <Badge 
+                  className="absolute -top-0.5 -right-0.5 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] bg-destructive text-destructive-foreground border-2 border-background"
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Badge>
+              </>
             )}
           </Button>
         </DropdownMenuTrigger>

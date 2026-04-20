@@ -11,19 +11,19 @@ export const AppHeader = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+    <header className="sticky top-0 z-50 glass-strong border-b border-border/50">
       <div className="container mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo */}
         <button
           onClick={() => navigate("/")}
           className="flex items-center gap-2.5 group"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary transition-transform group-hover:scale-105">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary shadow-glow-primary transition-transform group-hover:scale-105 group-active:scale-95">
             <Droplet className="h-5 w-5 text-primary-foreground" />
           </div>
           <div className="flex flex-col items-start">
-            <span className="text-lg font-display font-bold tracking-tight">LeyHadhiya</span>
-            <span className="text-[10px] text-muted-foreground -mt-0.5 tracking-wide">Blood donors network</span>
+            <span className="text-lg font-display font-bold tracking-tight leading-none">LeyHadhiya</span>
+            <span className="text-[10px] text-muted-foreground mt-0.5 tracking-wide">Blood donors network</span>
           </div>
         </button>
 
