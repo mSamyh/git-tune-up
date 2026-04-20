@@ -1,131 +1,135 @@
 
 
-# Fix: Donor Wellness Check SMS Logic
+# System-Wide Visual Modernization
 
-## Problem
+A focused polish pass that elevates the entire app to a modern, premium aesthetic — without breaking existing flows. Surgical edits to the design tokens cascade improvements everywhere, then per-page refinements address the highest-traffic surfaces.
 
-Abdul Rasheed donated last night, making him "unavailable" due to the 90-day waiting period. The wellness check function treats ALL unavailable donors the same and sent him a "we noticed you've been unavailable for a while" SMS — which is wrong. He's unavailable because he just donated, not because something is wrong.
+---
 
-## Root Cause
+## Goal
 
-In `donor-wellness-check/index.ts`, Part 2 (line 191-195) queries:
-```typescript
-.eq("availability_status", "unavailable")
-.not("phone", "is", null)
-```
+Move from "clean & minimal" to **"premium minimal"** — softer surfaces, richer depth, clearer hierarchy, and confident micro-interactions. Consistent across mobile and desktop, light and dark mode.
 
-This grabs EVERY unavailable donor, including those in their 90-day post-donation cooldown. There's no filter to exclude donors with `available_date` in the future (meaning they're waiting out the 90-day period).
+---
 
-## Fix
+## Part 1: Design System Upgrade (Foundation — affects every page)
 
-### 1. Exclude 90-day waiting period donors
+### 1.1 `src/index.css` — Token & utility refinements
+- **Color tokens**: introduce `--surface-1`, `--surface-2`, `--surface-3` tiered surfaces for layered depth (cards on cards now read clearly).
+- **Brand gradient tokens**: `--gradient-primary` (red→deep red), `--gradient-surface` (off-white→white), `--gradient-mesh` (subtle hero backdrop).
+- **Refined dark mode**: bump card lift, soften red so it's not aggressive at night.
+- **Shadow scale**: `shadow-xs → shadow-2xl` consistent, with a brand-tinted `shadow-glow` for primary CTAs.
+- **New utilities**:
+  - `.surface-card` — rounded-2xl, subtle border, layered shadow
+  - `.glass-strong` — improved blur for sticky headers / dialogs
+  - `.text-display` — tightened tracking for hero headings
+  - `.skeleton-shimmer` — modern shimmer loading
+  - `.tap-target` — 44px min for accessibility
+- **Animations**: add `slide-down`, `bounce-subtle`, `shimmer-slow` to keyframes.
 
-Add a filter to skip donors whose `available_date` is in the future. These donors are unavailable because they donated, not by choice — they already get an "availability_restored" SMS when their 90 days are up (Part 1 of the function).
+### 1.2 `tailwind.config.ts`
+- Add `animation` entries for new keyframes.
+- Add `backgroundImage`: `gradient-primary`, `gradient-mesh`, `gradient-shine`.
+- Add `boxShadow`: `glow-primary`, `glow-success`, `inner-soft`.
 
-### 2. Change first wellness check timing from 30 days to 7 days
+### 1.3 Core UI primitives polish
+- **`button.tsx`** — add `success` and `gradient` variants; existing variants get refined shadow on hover.
+- **`card.tsx`** — softer default border, subtle hover lift opt-in via `data-interactive`.
+- **`input.tsx`** — slightly taller default (h-11), softer focus ring.
+- **`badge.tsx`** — add `success`, `warning`, `info` variants matching status palette.
+- **`skeleton.tsx`** — switch to shimmer-based loading.
 
-The user wants the first wellness SMS sent after **1 week** of being manually unavailable, not 30 days. Follow-up checks can remain monthly (every 30 days after the first).
+---
 
-### Changes to `supabase/functions/donor-wellness-check/index.ts`
+## Part 2: Page-Level Visual Refinements
 
-**Line 93-94** — Add a 7-day threshold:
-```typescript
-const today = new Date().toISOString().split("T")[0];
-const sevenDaysAgo = new Date();
-sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-const thirtyDaysAgo = new Date();
-thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-```
+### 2.1 `Index.tsx` (Home / Directory)
+- **Hero (logged-out)**: add mesh-gradient backdrop, animated droplet glow, refined feature cards with brand-tinted icon chips.
+- **Authenticated dashboard**: tab pills get a subtle indicator underline, sticky search bar uses `glass-strong`, active filter chips animate in.
+- Stat micro-cards above the directory: live counts (Available now / Total / Critical needs).
 
-**Lines 191-195** — Add filter to exclude 90-day donors:
-```typescript
-const { data: needsWellnessCheck, error: wellnessError } = await supabase
-  .from("profiles")
-  .select("id, full_name, phone, blood_group, availability_status, available_date, last_wellness_check, unavailable_until, last_donation_date")
-  .eq("availability_status", "unavailable")
-  .not("phone", "is", null);
-```
+### 2.2 `Profile.tsx`
+- **Hero header**: gradient backdrop band behind avatar, story-ring upgrade with shine animation, tighter stat row with divider rules.
+- **Action row**: pill buttons with icon-first layout, consistent shadows.
+- **Tabs (Posts / Health / About)**: underline indicator instead of pill, smoother transitions.
 
-**Lines 202-211** — Add 90-day exclusion check and adjust timing:
-```typescript
-for (const donor of needsWellnessCheck) {
-  // SKIP donors in 90-day waiting period (they donated recently)
-  // These donors have available_date set in the future
-  if (donor.available_date) {
-    const availDate = new Date(donor.available_date);
-    if (availDate > new Date()) {
-      console.log(`[Wellness] Skipping ${donor.full_name} - in 90-day waiting period (available: ${donor.available_date})`);
-      results.wellnessCheck.skipped++;
-      continue;
-    }
-  }
+### 2.3 `BloodRequests` cards & `BloodRequestsPage`
+- Tighter card header (urgency banner left, countdown right — already done, refine spacing).
+- Status icon chip with colored aura matching urgency (critical = pulsing).
+- Consistent action buttons with new variants.
 
-  // Skip if unavailable_until is set and in the future (temporary unavailability with end date)
-  if (donor.unavailable_until) {
-    const unavailableUntil = new Date(donor.unavailable_until);
-    if (unavailableUntil > new Date()) {
-      console.log(`[Wellness] Skipping ${donor.full_name} - unavailable until ${donor.unavailable_until}`);
-      results.wellnessCheck.skipped++;
-      continue;
-    }
-  }
+### 2.4 `DonorTable` rows / `DonorProfileDialog`
+- Cleaner row dividers, larger blood-group chip, hover state with brand-tint border.
+- Status indicator becomes a small left-edge bar (uses existing `.status-border-*`).
+- Avatar with subtle ring colored by availability.
 
-  // Determine if this is the first check or a follow-up
-  const isFirstCheck = !donor.last_wellness_check;
+### 2.5 `BottomNav`
+- Active indicator becomes a small pill background + tiny dot above icon.
+- Smoother scale animation on tap; safe-area aware (already is).
 
-  // For FIRST check: wait 7 days of unavailability before sending
-  // For FOLLOW-UP: wait 30 days since last check
-  if (isFirstCheck) {
-    // Skip if no way to determine how long they've been unavailable
-    // We use last_wellness_check absence + updated_at would be ideal,
-    // but we don't have "unavailable_since". 
-    // Use the absence of last_wellness_check as the signal.
-    // The 7-day gate is already handled by the cron running daily —
-    // we just need to NOT send on day 1. We'll skip if they have
-    // a recent donation (already filtered above) or recent check.
-    // No additional filter needed for first check timing since
-    // 90-day donors are already excluded above.
-  } else {
-    // Follow-up: check if last wellness check was within 30 days
-    const lastCheck = new Date(donor.last_wellness_check);
-    if (lastCheck > thirtyDaysAgo) {
-      console.log(`[Wellness] Skipping ${donor.full_name} - checked on ${donor.last_wellness_check}`);
-      results.wellnessCheck.skipped++;
-      continue;
-    }
-  }
+### 2.6 `AppHeader`
+- Glass-strong backdrop, refined logo lockup spacing, notification bell gets a subtle dot animation when unread.
 
-  // ... rest of send logic stays the same
-}
-```
+### 2.7 Auxiliary pages
+- **Auth / Register / ResetPassword**: consistent split-hero layout, gradient panel + form panel on desktop, single column with brand strip on mobile.
+- **About / FAQ**: section headers get a small accent bar, cards modernized.
+- **Rewards**: voucher cards with shine effect on hover, redemption CTA elevated.
+- **HospitalPortal / MerchantPortal**: dashboard tile grid with consistent stat cards using new `surface-card` utility.
+- **Admin**: tab grid already 9-col; refine indicator and ensure horizontal swipe feedback uses new shadow tokens.
+- **NotFound**: already branded, light polish for consistency.
 
-Wait — the 7-day timing needs a way to know WHEN the donor became unavailable. Currently there's no `unavailable_since` column. Let me reconsider.
+### 2.8 Empty states & loading
+- Apply `EmptyState` component everywhere skeletons currently sit alone.
+- Replace plain `Skeleton` blocks with shimmer variant.
 
-**Better approach**: We track when they became unavailable using the `updated_at` column on profiles. When someone sets themselves to "unavailable", `updated_at` gets set. For the first wellness check, we check if `updated_at` was more than 7 days ago AND `last_wellness_check` is null.
+---
 
-## Revised Logic
+## Part 3: Micro-interactions & Motion
 
-```text
-For each unavailable donor:
-  1. SKIP if available_date > today (90-day waiting period)
-  2. SKIP if unavailable_until > today (has a set end date)
-  3. If never had a wellness check (first time):
-     - SKIP if updated_at < 7 days ago (became unavailable recently)
-     - Send "wellness_check_first" SMS
-  4. If had a previous check:
-     - SKIP if last_wellness_check < 30 days ago
-     - Send "wellness_check_followup" SMS
-```
+- All clickable cards get `hover-lift` consistently.
+- Page transitions: `animate-fade-up` on main content area of every route.
+- Toast (sonner) styled to match — rounded-xl, subtle backdrop blur, brand-tinted success.
+- Status changes (availability, request status) get a brief `scale-in` flash to confirm.
 
-## File Changes
+---
 
-| File | Change |
-|------|--------|
-| `supabase/functions/donor-wellness-check/index.ts` | Add 90-day exclusion filter, add 7-day first-check delay, fetch `updated_at` and `last_donation_date` |
+## Part 4: Dark Mode Consistency Sweep
 
-## Summary
+- Audit every page in dark mode — replace any hard-coded `text-gray-*` / `bg-white` / `bg-red-*` with semantic tokens.
+- Status colors (`statusColors.ts`) already centralized — extend with dark variants where missing.
 
-- Donors in their 90-day post-donation cooldown will NO longer receive wellness check SMS
-- First wellness SMS is sent after **7 days** of being manually unavailable (not 30)
-- Follow-up wellness SMS continues monthly (every 30 days)
-- The "availability_restored" notification (Part 1) is unaffected — it correctly fires when available_date = today
+---
+
+## Files Touched (Summary)
+
+| Area | Files |
+|------|-------|
+| Tokens & utilities | `src/index.css`, `tailwind.config.ts` |
+| UI primitives | `src/components/ui/{button,card,input,badge,skeleton}.tsx` |
+| Navigation | `src/components/{AppHeader,BottomNav}.tsx` |
+| Home | `src/pages/Index.tsx` |
+| Profile | `src/pages/Profile.tsx`, `src/components/AchievementsPreview.tsx` |
+| Donor list | `src/components/DonorTable.tsx`, `src/components/DonorProfileDialog.tsx` |
+| Requests | `src/components/BloodRequests.tsx`, `src/pages/BloodRequestsPage.tsx` |
+| Aux pages | `src/pages/{Auth,Register,ResetPassword,About,FAQ,Rewards,HospitalPortal,MerchantPortal,Admin,BloodStock,History}.tsx` |
+| Empty/loading | replace plain skeletons in list components |
+
+---
+
+## Out of Scope (kept stable)
+
+- No changes to data models, routes, edge functions, RLS, or business logic.
+- No library swaps.
+- The blood-red brand stays — only refined, not redesigned.
+
+---
+
+## Acceptance
+
+1. Light + dark mode look polished across all 18 pages.
+2. No hard-coded colors remain in page components — all via tokens.
+3. Loading shimmers feel smooth (no layout jump).
+4. Mobile (375px) and desktop (1280px) both render cleanly.
+5. Hover/active feedback present on every interactive element.
+6. All existing flows still function identically.
+
