@@ -1107,7 +1107,7 @@ const Admin = () => {
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Droplet className="h-5 w-5 text-green-600" />
+                  <Droplet className="h-5 w-5 text-success" />
                   Donation History
                 </CardTitle>
                 <CardDescription>View all completed donations grouped by donor</CardDescription>
@@ -1126,7 +1126,7 @@ const Admin = () => {
                           <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 transition-colors">
                             <div className="flex items-center gap-3">
                               <span className="font-medium">{data.donor?.full_name || 'Unknown Donor'}</span>
-                              <Badge className="bg-green-500/10 text-green-600 border-0">
+                              <Badge className="bg-success/10 text-success border-0">
                                 {data.donations.length} donations
                               </Badge>
                             </div>
