@@ -402,7 +402,7 @@ const Profile = () => {
               )}
               <a 
                 href={`tel:${profile.phone}`}
-                className="flex items-center gap-1 text-muted-foreground hover:text-emerald-600 transition-colors"
+                className="flex items-center gap-1 text-muted-foreground hover:text-success transition-colors"
               >
                 <Phone className="h-3 w-3" />
                 {profile.phone}
@@ -518,7 +518,7 @@ const Profile = () => {
                     onClick={() => setShowRewardsDialog(true)}
                   >
                     <div className="flex items-center gap-3">
-                      <Gift className="h-5 w-5 text-amber-500" />
+                      <Gift className="h-5 w-5 text-warning" />
                       <span className="text-sm font-medium">Rewards & Benefits</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
