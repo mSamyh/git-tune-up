@@ -122,16 +122,16 @@ const BloodRequestsPage = () => {
                 </button>
                 <button 
                   className={`py-4 text-center border-x border-border/50 transition-all relative ${
-                    filter === 'fulfilled' ? 'bg-green-500/5' : 'hover:bg-secondary/50'
+                    filter === 'fulfilled' ? 'bg-success/5' : 'hover:bg-secondary/50'
                   }`}
                   onClick={() => setFilter('fulfilled')}
                 >
                   {filter === 'fulfilled' && (
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-10 bg-green-500 rounded-full" />
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-10 bg-success rounded-full" />
                   )}
                   <div className="flex items-center justify-center gap-1.5 mb-0.5">
-                    <CheckCircle className={`h-4 w-4 ${filter === 'fulfilled' ? 'text-green-500' : 'text-muted-foreground'}`} />
-                    <span className={`text-lg font-semibold ${filter === 'fulfilled' ? 'text-green-600' : ''}`}>
+                    <CheckCircle className={`h-4 w-4 ${filter === 'fulfilled' ? 'text-success' : 'text-muted-foreground'}`} />
+                    <span className={`text-lg font-semibold ${filter === 'fulfilled' ? 'text-success' : ''}`}>
                       {stats.fulfilled}
                     </span>
                   </div>

@@ -43,13 +43,11 @@ interface Atoll {
   name: string;
 }
 
-const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
-
 const getUnitColor = (units: number, status: string) => {
   if (units === 0) return "text-muted-foreground";
-  if (status === "critical") return "text-red-600 font-semibold";
-  if (status === "low") return "text-amber-600 font-medium";
-  return "text-emerald-600";
+  if (status === "critical") return "text-destructive font-semibold";
+  if (status === "low") return "text-warning font-medium";
+  return "text-success";
 };
 
 const BloodStock = () => {

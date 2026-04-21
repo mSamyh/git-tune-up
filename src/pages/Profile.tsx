@@ -335,13 +335,13 @@ const Profile = () => {
                 </div>
               </div>
               {/* Status indicator */}
-              <div className={`absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-background flex items-center justify-center ${
-                availabilityStatus === 'available' ? 'bg-green-500' : 
-                availabilityStatus === 'reserved' ? 'bg-amber-500' : 'bg-red-500'
+              <div className={`absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-background flex items-center justify-center shadow-sm ${
+                availabilityStatus === 'available' ? 'bg-success' : 
+                availabilityStatus === 'reserved' ? 'bg-warning' : 'bg-destructive'
               }`}>
-                {availabilityStatus === 'available' && <Check className="h-3 w-3 text-white" />}
-                {availabilityStatus === 'reserved' && <Clock className="h-3 w-3 text-white" />}
-                {availabilityStatus === 'unavailable' && <X className="h-3 w-3 text-white" />}
+                {availabilityStatus === 'available' && <Check className="h-3 w-3 text-success-foreground" />}
+                {availabilityStatus === 'reserved' && <Clock className="h-3 w-3 text-warning-foreground" />}
+                {availabilityStatus === 'unavailable' && <X className="h-3 w-3 text-destructive-foreground" />}
               </div>
             </div>
 
