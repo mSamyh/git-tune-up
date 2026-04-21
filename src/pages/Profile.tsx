@@ -335,13 +335,13 @@ const Profile = () => {
                 </div>
               </div>
               {/* Status indicator */}
-              <div className={`absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-background flex items-center justify-center ${
-                availabilityStatus === 'available' ? 'bg-green-500' : 
-                availabilityStatus === 'reserved' ? 'bg-amber-500' : 'bg-red-500'
+              <div className={`absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-background flex items-center justify-center shadow-sm ${
+                availabilityStatus === 'available' ? 'bg-success' : 
+                availabilityStatus === 'reserved' ? 'bg-warning' : 'bg-destructive'
               }`}>
-                {availabilityStatus === 'available' && <Check className="h-3 w-3 text-white" />}
-                {availabilityStatus === 'reserved' && <Clock className="h-3 w-3 text-white" />}
-                {availabilityStatus === 'unavailable' && <X className="h-3 w-3 text-white" />}
+                {availabilityStatus === 'available' && <Check className="h-3 w-3 text-success-foreground" />}
+                {availabilityStatus === 'reserved' && <Clock className="h-3 w-3 text-warning-foreground" />}
+                {availabilityStatus === 'unavailable' && <X className="h-3 w-3 text-destructive-foreground" />}
               </div>
             </div>
 
@@ -402,7 +402,7 @@ const Profile = () => {
               )}
               <a 
                 href={`tel:${profile.phone}`}
-                className="flex items-center gap-1 text-muted-foreground hover:text-emerald-600 transition-colors"
+                className="flex items-center gap-1 text-muted-foreground hover:text-success transition-colors"
               >
                 <Phone className="h-3 w-3" />
                 {profile.phone}
@@ -518,7 +518,7 @@ const Profile = () => {
                     onClick={() => setShowRewardsDialog(true)}
                   >
                     <div className="flex items-center gap-3">
-                      <Gift className="h-5 w-5 text-amber-500" />
+                      <Gift className="h-5 w-5 text-warning" />
                       <span className="text-sm font-medium">Rewards & Benefits</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -532,7 +532,7 @@ const Profile = () => {
                 onClick={() => setShowQRCard(true)}
               >
                 <div className="flex items-center gap-3">
-                  <QrCode className="h-5 w-5 text-blue-500" />
+                  <QrCode className="h-5 w-5 text-info" />
                   <span className="text-sm font-medium">Donor ID Card</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -587,7 +587,7 @@ const Profile = () => {
             <Card className="rounded-xl border-border/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <User className="h-5 w-5 text-purple-500" />
+                  <User className="h-5 w-5 text-info" />
                   <div>
                     <p className="font-medium text-sm">Profile Type</p>
                     <p className="text-xs text-muted-foreground">Choose your role</p>
@@ -610,7 +610,7 @@ const Profile = () => {
             <Card className="rounded-xl border-border/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <MapPin className="h-5 w-5 text-emerald-500" />
+                  <MapPin className="h-5 w-5 text-success" />
                   <div>
                     <p className="font-medium text-sm">Location</p>
                     <p className="text-xs text-muted-foreground">Update your location</p>
@@ -727,7 +727,7 @@ const CheckAdminButton = () => {
             className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <Shield className="h-5 w-5 text-blue-500" />
+              <Shield className="h-5 w-5 text-info" />
               <span className="text-sm font-medium">Admin Panel</span>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />

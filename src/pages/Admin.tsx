@@ -698,16 +698,16 @@ const Admin = () => {
       label: "Total Donations", 
       value: donations.length, 
       icon: Droplet, 
-      color: "text-green-600",
-      bgColor: "bg-green-500/10",
+      color: "text-success",
+      bgColor: "bg-success/10",
       trend: "All time"
     },
     { 
       label: "Fulfilled", 
       value: requests.filter((r) => r.status === "fulfilled").length, 
       icon: CheckCircle2, 
-      color: "text-amber-600",
-      bgColor: "bg-amber-500/10",
+      color: "text-warning",
+      bgColor: "bg-warning/10",
       trend: `${Math.round((requests.filter((r) => r.status === "fulfilled").length / (requests.length || 1)) * 100)}% rate`
     },
   ];
@@ -916,9 +916,9 @@ const Admin = () => {
                                           {donor.user_type === 'both' ? 'Both' : donor.user_type === 'receiver' ? 'Receiver' : 'Donor'}
                                         </Badge>
                                         <div className={`h-3 w-3 rounded-full ${
-                                          donor.availability_status === 'available' ? 'bg-emerald-500' :
-                                          donor.availability_status === 'reserved' ? 'bg-blue-500' :
-                                          donor.availability_status === 'available_soon' ? 'bg-amber-500' : 'bg-red-500'
+                                          donor.availability_status === 'available' ? 'bg-success' :
+                                          donor.availability_status === 'reserved' ? 'bg-info' :
+                                          donor.availability_status === 'available_soon' ? 'bg-warning' : 'bg-destructive'
                                         }`} />
                                       </div>
                                     </div>
@@ -926,7 +926,7 @@ const Admin = () => {
                                       <Button size="sm" variant="outline" className="flex-1 h-9 rounded-xl" onClick={() => openEditDialog(donor)}>
                                         <Edit className="h-4 w-4 mr-1.5" /> Edit
                                       </Button>
-                                      <Button size="sm" variant="outline" className="flex-1 h-9 rounded-xl text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={() => openHistoryDialog(donor)}>
+                                      <Button size="sm" variant="outline" className="flex-1 h-9 rounded-xl text-success border-success/20 hover:bg-success/10" onClick={() => openHistoryDialog(donor)}>
                                         <Plus className="h-4 w-4 mr-1.5" /> Donation
                                       </Button>
                                       <Button size="sm" variant="ghost" className="h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl" onClick={() => handleDeleteDonor(donor)}>
@@ -964,8 +964,8 @@ const Admin = () => {
                                         <TableCell>
                                           <div className="flex items-center gap-2">
                                             <div className={`h-2.5 w-2.5 rounded-full ${
-                                              donor.availability_status === 'available' ? 'bg-green-500' :
-                                              donor.availability_status === 'reserved' ? 'bg-orange-500' : 'bg-red-500'
+                                              donor.availability_status === 'available' ? 'bg-success' :
+                                              donor.availability_status === 'reserved' ? 'bg-warning' : 'bg-destructive'
                                             }`} />
                                             <span className="text-sm capitalize">{donor.availability_status}</span>
                                           </div>
@@ -1027,14 +1027,14 @@ const Admin = () => {
                             request.status === "active" ? "default" :
                             request.status === "fulfilled" ? "secondary" : "outline"
                           } className={
-                            request.status === "active" ? "bg-green-500 text-white" :
-                            request.status === "fulfilled" ? "bg-blue-500 text-white" : ""
+                            request.status === "active" ? "bg-success text-success-foreground" :
+                            request.status === "fulfilled" ? "bg-info text-info-foreground" : ""
                           }>
                             {request.status}
                           </Badge>
                           <Badge variant="outline" className={
-                            request.urgency === "critical" ? "border-red-500 text-red-500" :
-                            request.urgency === "urgent" ? "border-orange-500 text-orange-500" : ""
+                            request.urgency === "critical" ? "border-destructive text-destructive" :
+                            request.urgency === "urgent" ? "border-warning text-warning" : ""
                           }>
                             {request.urgency}
                           </Badge>
@@ -1077,9 +1077,9 @@ const Admin = () => {
                             <TableCell className="hidden lg:table-cell text-muted-foreground">{request.requester_name}</TableCell>
                             <TableCell>
                               <Badge className={
-                                request.status === "active" ? "bg-green-500/10 text-green-600 border-0" :
-                                request.status === "fulfilled" ? "bg-blue-500/10 text-blue-600 border-0" :
-                                "bg-red-500/10 text-red-600 border-0"
+                                request.status === "active" ? "bg-success/10 text-success border-0" :
+                                request.status === "fulfilled" ? "bg-info/10 text-info border-0" :
+                                "bg-destructive/10 text-destructive border-0"
                               }>{request.status}</Badge>
                             </TableCell>
                             <TableCell>
@@ -1107,7 +1107,7 @@ const Admin = () => {
             <Card className="rounded-2xl border-0 shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Droplet className="h-5 w-5 text-green-600" />
+                  <Droplet className="h-5 w-5 text-success" />
                   Donation History
                 </CardTitle>
                 <CardDescription>View all completed donations grouped by donor</CardDescription>
@@ -1126,7 +1126,7 @@ const Admin = () => {
                           <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 transition-colors">
                             <div className="flex items-center gap-3">
                               <span className="font-medium">{data.donor?.full_name || 'Unknown Donor'}</span>
-                              <Badge className="bg-green-500/10 text-green-600 border-0">
+                              <Badge className="bg-success/10 text-success border-0">
                                 {data.donations.length} donations
                               </Badge>
                             </div>
@@ -1510,7 +1510,7 @@ const Admin = () => {
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader className="pb-4 border-b">
             <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-emerald-500" />
+              <Plus className="h-5 w-5 text-success" />
               Add Donation History
             </DialogTitle>
             <DialogDescription>
@@ -1573,7 +1573,7 @@ const Admin = () => {
           </div>
           <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t">
             <Button variant="outline" onClick={() => setHistoryDialogOpen(false)} className="rounded-xl">Cancel</Button>
-            <Button onClick={handleHistoryAdd} className="rounded-xl bg-emerald-600 hover:bg-emerald-700">Add Donation</Button>
+            <Button onClick={handleHistoryAdd} variant="success" className="rounded-xl">Add Donation</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -318,7 +318,7 @@ const Rewards = () => {
 
   const getStatusBadge = (status: string, expiresAt: string) => {
     if (status === "verified") {
-      return <Badge className="bg-green-500 text-white text-[10px]"><CheckCircle className="h-2.5 w-2.5 mr-0.5" />Used</Badge>;
+      return <Badge className="bg-success text-success-foreground text-[10px]"><CheckCircle className="h-2.5 w-2.5 mr-0.5" />Used</Badge>;
     }
     if (new Date(expiresAt) < new Date() || status === "expired") {
       return <Badge variant="destructive" className="text-[10px]">Expired</Badge>;
@@ -531,7 +531,7 @@ const Rewards = () => {
                               </Button>
                             </div>
                             {userTier && userTier.discount > 0 && (
-                              <p className="text-[10px] text-green-600 mt-1.5 flex items-center gap-1">
+                              <p className="text-[10px] text-success mt-1.5 flex items-center gap-1">
                                 <Gift className="h-3 w-3" />
                                 {userTier.discount}% {userTier.name} discount applies
                               </p>
@@ -648,7 +648,7 @@ const Rewards = () => {
           {selectedRedemption && (
             <div className="space-y-4">
               <div className="flex justify-center">
-                <div className="p-4 bg-white rounded-xl">
+                <div className="p-4 bg-card rounded-xl border border-border">
                   <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48" />
                 </div>
               </div>
@@ -662,8 +662,8 @@ const Rewards = () => {
               </div>
               
               {userTier && userTier.discount > 0 && (
-                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl text-center">
-                  <p className="text-sm text-green-700 dark:text-green-400 font-medium">
+                <div className="p-3 bg-success/10 rounded-xl text-center">
+                  <p className="text-sm text-success font-medium">
                     🎁 {userTier.name} Member: {userTier.discount}% discount
                   </p>
                 </div>

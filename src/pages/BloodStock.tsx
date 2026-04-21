@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { BottomNav } from "@/components/BottomNav";
+import { useReferenceData, FALLBACK_BLOOD_GROUPS } from "@/contexts/ReferenceDataContext";
 
 interface Hospital {
   id: string;
@@ -43,17 +44,17 @@ interface Atoll {
   name: string;
 }
 
-const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
-
 const getUnitColor = (units: number, status: string) => {
   if (units === 0) return "text-muted-foreground";
-  if (status === "critical") return "text-red-600 font-semibold";
-  if (status === "low") return "text-amber-600 font-medium";
-  return "text-emerald-600";
+  if (status === "critical") return "text-destructive font-semibold";
+  if (status === "low") return "text-warning font-medium";
+  return "text-success";
 };
 
 const BloodStock = () => {
   const navigate = useNavigate();
+  const { bloodGroupCodes } = useReferenceData();
+  const BLOOD_GROUPS = bloodGroupCodes.length > 0 ? bloodGroupCodes : FALLBACK_BLOOD_GROUPS;
   const [hospitals, setHospitals] = useState<HospitalWithStock[]>([]);
   const [atolls, setAtolls] = useState<Atoll[]>([]);
   const [isLoading, setIsLoading] = useState(true);

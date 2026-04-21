@@ -405,7 +405,7 @@ const Register = () => {
                   />
                 </div>
                 {formData.phone && (
-                  <p className={`text-xs ${/^[79]\d{6}$/.test(formData.phone) ? 'text-green-600' : 'text-muted-foreground'}`}>
+                  <p className={`text-xs ${/^[79]\d{6}$/.test(formData.phone) ? 'text-success' : 'text-muted-foreground'}`}>
                     {/^[79]\d{6}$/.test(formData.phone) 
                       ? '✓ Valid phone number' 
                       : formData.phone.length > 0 && !/^[79]/.test(formData.phone)
@@ -492,8 +492,8 @@ const Register = () => {
 
             {/* Attempts remaining warning */}
             {lockoutTimer === 0 && remainingAttempts < 3 && remainingAttempts > 0 && (
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
-                <p className="text-sm text-amber-600 dark:text-amber-400">
+              <div className="bg-warning/10 border border-warning/20 rounded-xl p-3 text-center">
+                <p className="text-sm text-warning">
                   ⚠️ {remainingAttempts} attempt{remainingAttempts > 1 ? 's' : ''} remaining
                 </p>
               </div>
@@ -554,8 +554,8 @@ const Register = () => {
         {otpVerified && (
           <div className="bg-card rounded-2xl border p-6 space-y-6">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6 text-green-500" />
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                <CheckCircle2 className="h-6 w-6 text-success" />
               </div>
               <div>
                 <h2 className="font-semibold">Phone Verified!</h2>

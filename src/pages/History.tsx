@@ -305,12 +305,12 @@ const History = () => {
                 <div className={cn(
                   "w-10 h-10 rounded-xl flex items-center justify-center",
                   isEligible 
-                    ? "bg-green-500/10" 
-                    : "bg-amber-500/10"
+                    ? "bg-success/10" 
+                    : "bg-warning/10"
                 )}>
                   <Timer className={cn(
                     "h-5 w-5",
-                    isEligible ? "text-green-600" : "text-amber-600"
+                    isEligible ? "text-success" : "text-warning"
                   )} />
                 </div>
                 <div className="flex-1">
@@ -329,7 +329,7 @@ const History = () => {
                 value={eligibilityProgress} 
                 className={cn(
                   "h-2",
-                  isEligible && "[&>div]:bg-green-500"
+                  isEligible && "[&>div]:bg-success"
                 )}
               />
               <div className="flex justify-between mt-1.5">
