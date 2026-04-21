@@ -405,7 +405,7 @@ const Register = () => {
                   />
                 </div>
                 {formData.phone && (
-                  <p className={`text-xs ${/^[79]\d{6}$/.test(formData.phone) ? 'text-green-600' : 'text-muted-foreground'}`}>
+                  <p className={`text-xs ${/^[79]\d{6}$/.test(formData.phone) ? 'text-success' : 'text-muted-foreground'}`}>
                     {/^[79]\d{6}$/.test(formData.phone) 
                       ? '✓ Valid phone number' 
                       : formData.phone.length > 0 && !/^[79]/.test(formData.phone)
@@ -554,8 +554,8 @@ const Register = () => {
         {otpVerified && (
           <div className="bg-card rounded-2xl border p-6 space-y-6">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6 text-green-500" />
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                <CheckCircle2 className="h-6 w-6 text-success" />
               </div>
               <div>
                 <h2 className="font-semibold">Phone Verified!</h2>
