@@ -492,8 +492,8 @@ const Register = () => {
 
             {/* Attempts remaining warning */}
             {lockoutTimer === 0 && remainingAttempts < 3 && remainingAttempts > 0 && (
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
-                <p className="text-sm text-amber-600 dark:text-amber-400">
+              <div className="bg-warning/10 border border-warning/20 rounded-xl p-3 text-center">
+                <p className="text-sm text-warning">
                   ⚠️ {remainingAttempts} attempt{remainingAttempts > 1 ? 's' : ''} remaining
                 </p>
               </div>
