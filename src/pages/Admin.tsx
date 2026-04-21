@@ -1510,7 +1510,7 @@ const Admin = () => {
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader className="pb-4 border-b">
             <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-emerald-500" />
+              <Plus className="h-5 w-5 text-success" />
               Add Donation History
             </DialogTitle>
             <DialogDescription>
@@ -1573,7 +1573,7 @@ const Admin = () => {
           </div>
           <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t">
             <Button variant="outline" onClick={() => setHistoryDialogOpen(false)} className="rounded-xl">Cancel</Button>
-            <Button onClick={handleHistoryAdd} className="rounded-xl bg-emerald-600 hover:bg-emerald-700">Add Donation</Button>
+            <Button onClick={handleHistoryAdd} variant="success" className="rounded-xl">Add Donation</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
