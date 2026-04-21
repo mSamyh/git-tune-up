@@ -308,13 +308,13 @@ export default function MerchantPortal() {
           <>
             {/* Status Card */}
             <Card className={`rounded-2xl shadow-lg border-0 overflow-hidden mb-4 ${
-              result.success ? "ring-2 ring-green-500/20" : "ring-2 ring-destructive/20"
+              result.success ? "ring-2 ring-success/20" : "ring-2 ring-destructive/20"
             }`}>
-              <div className={`h-2 w-full ${result.success ? "bg-green-500" : "bg-destructive"}`} />
+              <div className={`h-2 w-full ${result.success ? "bg-success" : "bg-destructive"}`} />
               <CardContent className="pt-6 pb-4 text-center">
                 {result.success ? (
-                  <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-3 animate-scale-in">
-                    <CheckCircle className="h-10 w-10 text-green-500" />
+                  <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3 animate-scale-in">
+                    <CheckCircle className="h-10 w-10 text-success" />
                   </div>
                 ) : (
                   <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-3">
@@ -328,7 +328,7 @@ export default function MerchantPortal() {
                   {result.error || "Successfully verified and marked as redeemed"}
                 </p>
                 {result.warning && (
-                  <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl text-sm text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+                  <div className="mt-3 p-3 bg-warning/10 border border-warning/30 rounded-xl text-sm text-warning flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 flex-shrink-0" />
                     {result.warning}
                   </div>
@@ -394,9 +394,9 @@ export default function MerchantPortal() {
                     <p className="text-sm text-muted-foreground">{result.redemption?.reward_catalog?.partner_name}</p>
                   </div>
                   
-                  <div className="p-3 bg-green-500/10 rounded-xl text-center">
+                  <div className="p-3 bg-success/10 rounded-xl text-center">
                     <p className="text-xs text-muted-foreground">Verified at</p>
-                    <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                    <p className="text-sm font-medium text-success">
                       {new Date().toLocaleString()}
                     </p>
                   </div>
@@ -421,12 +421,12 @@ export default function MerchantPortal() {
                   <p className="text-2xl font-bold text-primary">{dashboardStats.todayCount}</p>
                   <p className="text-xs text-muted-foreground">Today</p>
                 </div>
-                <div className="p-3 bg-green-500/10 rounded-xl text-center">
-                  <p className="text-2xl font-bold text-green-600">{dashboardStats.weekCount}</p>
+                <div className="p-3 bg-success/10 rounded-xl text-center">
+                  <p className="text-2xl font-bold text-success">{dashboardStats.weekCount}</p>
                   <p className="text-xs text-muted-foreground">This Week</p>
                 </div>
-                <div className="p-3 bg-orange-500/10 rounded-xl text-center">
-                  <p className="text-2xl font-bold text-orange-600">{dashboardStats.totalPoints}</p>
+                <div className="p-3 bg-warning/10 rounded-xl text-center">
+                  <p className="text-2xl font-bold text-warning">{dashboardStats.totalPoints}</p>
                   <p className="text-xs text-muted-foreground">Points</p>
                 </div>
               </div>
