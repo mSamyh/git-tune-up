@@ -587,7 +587,7 @@ const Profile = () => {
             <Card className="rounded-xl border-border/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <User className="h-5 w-5 text-purple-500" />
+                  <User className="h-5 w-5 text-info" />
                   <div>
                     <p className="font-medium text-sm">Profile Type</p>
                     <p className="text-xs text-muted-foreground">Choose your role</p>
@@ -610,7 +610,7 @@ const Profile = () => {
             <Card className="rounded-xl border-border/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <MapPin className="h-5 w-5 text-emerald-500" />
+                  <MapPin className="h-5 w-5 text-success" />
                   <div>
                     <p className="font-medium text-sm">Location</p>
                     <p className="text-xs text-muted-foreground">Update your location</p>
