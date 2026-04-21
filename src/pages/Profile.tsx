@@ -532,7 +532,7 @@ const Profile = () => {
                 onClick={() => setShowQRCard(true)}
               >
                 <div className="flex items-center gap-3">
-                  <QrCode className="h-5 w-5 text-blue-500" />
+                  <QrCode className="h-5 w-5 text-info" />
                   <span className="text-sm font-medium">Donor ID Card</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -727,7 +727,7 @@ const CheckAdminButton = () => {
             className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <Shield className="h-5 w-5 text-blue-500" />
+              <Shield className="h-5 w-5 text-info" />
               <span className="text-sm font-medium">Admin Panel</span>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
