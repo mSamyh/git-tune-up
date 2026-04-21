@@ -307,12 +307,12 @@ export default function VerifyQR() {
         <AppHeader />
         <main className="container mx-auto px-4 py-6 max-w-md">
           {/* Success Card */}
-          <Card className="rounded-2xl shadow-lg border-0 overflow-hidden ring-2 ring-green-500/20 mb-4">
-            <div className="h-2 w-full bg-green-500" />
+          <Card className="rounded-2xl shadow-lg border-0 overflow-hidden ring-2 ring-success/20 mb-4">
+            <div className="h-2 w-full bg-success" />
             <CardHeader className="text-center pb-2">
               <div className="flex justify-center mb-4">
-                <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center animate-scale-in">
-                  <CheckCircle className="h-12 w-12 text-green-500" />
+                <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center animate-scale-in">
+                  <CheckCircle className="h-12 w-12 text-success" />
                 </div>
               </div>
               <CardTitle className="text-2xl">Voucher Verified!</CardTitle>
@@ -320,7 +320,7 @@ export default function VerifyQR() {
                 Successfully verified by {verificationResult.verified_by_merchant || merchantName}
               </CardDescription>
               {verificationResult.warning && (
-                <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl text-sm text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+                <div className="mt-3 p-3 bg-warning/10 border border-warning/30 rounded-xl text-sm text-warning flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 flex-shrink-0" />
                   {verificationResult.warning}
                 </div>
@@ -396,9 +396,9 @@ export default function VerifyQR() {
               </div>
 
               {/* Verification Time */}
-              <div className="p-3 bg-green-500/10 rounded-xl text-center">
+              <div className="p-3 bg-success/10 rounded-xl text-center">
                 <p className="text-xs text-muted-foreground">Verified at</p>
-                <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                <p className="text-sm font-medium text-success">
                   {new Date(result.verified_at).toLocaleString()}
                 </p>
               </div>
@@ -516,8 +516,8 @@ export default function VerifyQR() {
         <Card className="rounded-2xl shadow-lg border-0 overflow-hidden">
           <CardHeader className="text-center pb-2">
             <div className="flex justify-center mb-2">
-              <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                <ShieldCheck className="h-6 w-6 text-green-600" />
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                <ShieldCheck className="h-6 w-6 text-success" />
               </div>
             </div>
             <CardTitle className="text-lg">Merchant Verification</CardTitle>
