@@ -468,40 +468,50 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
           {/* Info Cards */}
           {!isEditing && (
             <div className="space-y-2">
-              <Card className="rounded-xl border-border/50 overflow-hidden">
-                <button className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
+              <Card className="rounded-2xl border-border/50 overflow-hidden surface-card">
+                <a
+                  href={`tel:${donor.phone}`}
+                  className="w-full flex items-center justify-between p-3.5 hover:bg-muted/40 transition-colors"
+                >
                   <div className="flex items-center gap-3">
-                    <Phone className="h-5 w-5 text-primary" />
+                    <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Phone className="h-4.5 w-4.5 text-primary" />
+                    </div>
                     <div className="text-left">
-                      <p className="text-xs text-muted-foreground">Phone</p>
-                      <p className="text-sm font-medium">{donor.phone}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Phone</p>
+                      <p className="text-sm font-semibold tabular-nums">{donor.phone}</p>
                     </div>
                   </div>
-                </button>
-                
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </a>
+
                 {donor.district && (
                   <>
-                    <div className="border-t border-border/50" />
-                    <div className="flex items-center gap-3 p-3">
-                      <MapPin className="h-5 w-5 text-emerald-500" />
+                    <div className="border-t border-border/40" />
+                    <div className="flex items-center gap-3 p-3.5">
+                      <div className="h-9 w-9 rounded-xl bg-success/10 flex items-center justify-center">
+                        <MapPin className="h-4.5 w-4.5 text-success" />
+                      </div>
                       <div className="text-left">
-                        <p className="text-xs text-muted-foreground">Location</p>
-                        <p className="text-sm font-medium">{donor.district}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Location</p>
+                        <p className="text-sm font-semibold">{donor.district}</p>
                       </div>
                     </div>
                   </>
                 )}
-                
+
                 {donor.last_donation_date && (
                   <>
-                    <div className="border-t border-border/50" />
-                    <div className="flex items-center gap-3 p-3">
-                      <Calendar className="h-5 w-5 text-blue-500" />
+                    <div className="border-t border-border/40" />
+                    <div className="flex items-center gap-3 p-3.5">
+                      <div className="h-9 w-9 rounded-xl bg-info/10 flex items-center justify-center">
+                        <Calendar className="h-4.5 w-4.5 text-info" />
+                      </div>
                       <div className="text-left">
-                        <p className="text-xs text-muted-foreground">Last Donation</p>
-                        <p className="text-sm font-medium">
-                          {new Date(donor.last_donation_date).toLocaleDateString('en-US', { 
-                            year: 'numeric', month: 'short', day: 'numeric' 
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Last Donation</p>
+                        <p className="text-sm font-semibold">
+                          {new Date(donor.last_donation_date).toLocaleDateString('en-US', {
+                            year: 'numeric', month: 'short', day: 'numeric'
                           })}
                         </p>
                       </div>
