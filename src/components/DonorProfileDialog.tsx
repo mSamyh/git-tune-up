@@ -233,24 +233,36 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-background border-border p-0 gap-0 rounded-xl">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-background border-border/50 p-0 gap-0 rounded-2xl shadow-2xl">
         <DialogTitle className="sr-only">Donor Profile</DialogTitle>
-        
-        {/* Instagram-style Header */}
-        <div className="sticky top-0 z-10 bg-background border-b border-border px-4 py-3 flex items-center justify-between">
-          <button onClick={onClose} className="p-1">
-            <X className="h-6 w-6" />
+
+        {/* Sticky Header with glass effect */}
+        <div className="sticky top-0 z-10 glass-strong border-b border-border/50 px-4 py-3 flex items-center justify-between">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full hover:bg-muted/60 transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
           </button>
-          <span className="font-semibold">Profile</span>
-          <div className="w-6" /> {/* Spacer */}
+          <span className="font-semibold text-sm tracking-wide">Profile</span>
+          <div className="w-7" />
         </div>
 
-        <div className="p-4">
-          {/* Profile Header - Instagram style */}
+        {/* Gradient hero band */}
+        <div className="relative h-20 -mb-12 overflow-hidden">
+          <div
+            className={`absolute inset-0 bg-gradient-to-br ${getStatusColor()} opacity-20`}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background" />
+        </div>
+
+        <div className="p-4 pt-0 relative">
+          {/* Profile Header */}
           <div className="flex items-center gap-4 mb-4">
-            {/* Avatar with gradient ring */}
+            {/* Avatar with story-ring */}
             <div className="relative flex-shrink-0">
-              <div className={`p-[3px] rounded-full bg-gradient-to-tr ${getStatusColor()}`}>
+              <div className={`p-[3px] rounded-full bg-gradient-to-tr ${getStatusColor()} shadow-lg`}>
                 <div className="p-[2px] rounded-full bg-background">
                   <Avatar className="h-20 w-20">
                     <AvatarImage src={donor.avatar_url || undefined} />
@@ -261,11 +273,11 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
                 </div>
               </div>
               {/* Status indicator */}
-              <div className={`absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-background flex items-center justify-center ${getStatusDotColor()}`}>
-                {donor.availability_status === 'available' && <Check className="h-3 w-3 text-white" />}
-                {donor.availability_status === 'reserved' && <Clock className="h-3 w-3 text-white" />}
-                {donor.availability_status === 'available_soon' && <Clock className="h-3 w-3 text-white" />}
-                {donor.availability_status === 'unavailable' && <X className="h-3 w-3 text-white" />}
+              <div className={`absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-background flex items-center justify-center shadow-md ${getStatusDotColor()}`}>
+                {donor.availability_status === 'available' && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+                {donor.availability_status === 'reserved' && <Clock className="h-3 w-3 text-white" strokeWidth={3} />}
+                {donor.availability_status === 'available_soon' && <Clock className="h-3 w-3 text-white" strokeWidth={3} />}
+                {donor.availability_status === 'unavailable' && <X className="h-3 w-3 text-white" strokeWidth={3} />}
               </div>
               {(() => {
                 const rank = getTopDonorRank(donor.id, topDonors);
@@ -274,18 +286,18 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
             </div>
 
             {/* Stats */}
-            <div className="flex-1 flex justify-around">
-              <div className="text-center">
-                <p className="text-xl font-bold">{donor.donation_count || 0}</p>
-                <p className="text-xs text-muted-foreground">Donations</p>
+            <div className="flex-1 grid grid-cols-3 divide-x divide-border/50">
+              <div className="text-center px-1">
+                <p className="text-xl font-bold tabular-nums">{donor.donation_count || 0}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Donations</p>
               </div>
-              <div className="text-center">
+              <div className="text-center px-1">
                 <p className="text-xl font-bold text-primary">{donor.blood_group}</p>
-                <p className="text-xs text-muted-foreground">Blood</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Blood</p>
               </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-emerald-500">{donor.donation_count || 0}</p>
-                <p className="text-xs text-muted-foreground">Lives</p>
+              <div className="text-center px-1">
+                <p className="text-xl font-bold text-success tabular-nums">{(donor.donation_count || 0) * 3}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Lives</p>
               </div>
             </div>
           </div>
