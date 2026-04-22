@@ -358,29 +358,30 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
             )}
           </div>
 
-          {/* Action Buttons - Instagram style */}
+          {/* Action Buttons */}
           {!isEditing ? (
             <div className="flex gap-2 mb-4">
-              <Button 
-                className="flex-1 rounded-lg h-9 text-sm font-semibold"
+              <Button
+                variant="gradient"
+                className="flex-1 rounded-xl h-10 text-sm font-semibold"
                 onClick={handleCall}
               >
-                <Phone className="h-4 w-4 mr-1" />
+                <Phone className="h-4 w-4 mr-1.5" />
                 Call
               </Button>
-              <Button 
-                variant="secondary" 
-                className="flex-1 rounded-lg h-9 text-sm font-semibold"
+              <Button
+                variant="secondary"
+                className="flex-1 rounded-xl h-10 text-sm font-semibold"
                 onClick={handleSMS}
               >
-                <MessageCircle className="h-4 w-4 mr-1" />
+                <MessageCircle className="h-4 w-4 mr-1.5" />
                 Message
               </Button>
               {isAdmin && donor.source === 'profile' && (
-                <Button 
+                <Button
                   variant="outline"
                   size="icon"
-                  className="rounded-lg h-9 w-9"
+                  className="rounded-xl h-10 w-10"
                   onClick={() => setIsEditing(true)}
                 >
                   <Edit className="h-4 w-4" />
