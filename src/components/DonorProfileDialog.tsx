@@ -336,7 +336,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
             {/* Badges */}
             <div className="flex flex-wrap gap-1 mt-2">
               {donor.source === 'directory' && (
-                <Badge variant="outline" className="text-xs rounded-full px-2 border-amber-500 text-amber-600">
+                <Badge variant="warning" className="text-xs rounded-full px-2">
                   Not Registered
                 </Badge>
               )}
