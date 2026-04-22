@@ -115,20 +115,20 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
   const getStatusColor = () => {
     const status = donor.availability_status || 'available';
     switch (status) {
-      case 'available': return 'from-green-400 to-emerald-500';
-      case 'reserved': return 'from-amber-400 to-orange-500';
-      case 'available_soon': return 'from-amber-400 to-orange-500';
-      default: return 'from-red-400 to-rose-500';
+      case 'available': return 'from-success via-success to-emerald-400';
+      case 'reserved': return 'from-warning via-warning to-amber-400';
+      case 'available_soon': return 'from-warning via-warning to-amber-400';
+      default: return 'from-destructive via-destructive to-rose-400';
     }
   };
 
   const getStatusDotColor = () => {
     const status = donor.availability_status || 'available';
     switch (status) {
-      case 'available': return 'bg-green-500';
-      case 'reserved': return 'bg-amber-500';
-      case 'available_soon': return 'bg-amber-500';
-      default: return 'bg-red-500';
+      case 'available': return 'bg-success';
+      case 'reserved': return 'bg-warning';
+      case 'available_soon': return 'bg-warning';
+      default: return 'bg-destructive';
     }
   };
 
