@@ -115,20 +115,20 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
   const getStatusColor = () => {
     const status = donor.availability_status || 'available';
     switch (status) {
-      case 'available': return 'from-green-400 to-emerald-500';
-      case 'reserved': return 'from-amber-400 to-orange-500';
-      case 'available_soon': return 'from-amber-400 to-orange-500';
-      default: return 'from-red-400 to-rose-500';
+      case 'available': return 'from-success via-success to-emerald-400';
+      case 'reserved': return 'from-warning via-warning to-amber-400';
+      case 'available_soon': return 'from-warning via-warning to-amber-400';
+      default: return 'from-destructive via-destructive to-rose-400';
     }
   };
 
   const getStatusDotColor = () => {
     const status = donor.availability_status || 'available';
     switch (status) {
-      case 'available': return 'bg-green-500';
-      case 'reserved': return 'bg-amber-500';
-      case 'available_soon': return 'bg-amber-500';
-      default: return 'bg-red-500';
+      case 'available': return 'bg-success';
+      case 'reserved': return 'bg-warning';
+      case 'available_soon': return 'bg-warning';
+      default: return 'bg-destructive';
     }
   };
 
@@ -233,24 +233,36 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-background border-border p-0 gap-0 rounded-xl">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-background border-border/50 p-0 gap-0 rounded-2xl shadow-2xl">
         <DialogTitle className="sr-only">Donor Profile</DialogTitle>
-        
-        {/* Instagram-style Header */}
-        <div className="sticky top-0 z-10 bg-background border-b border-border px-4 py-3 flex items-center justify-between">
-          <button onClick={onClose} className="p-1">
-            <X className="h-6 w-6" />
+
+        {/* Sticky Header with glass effect */}
+        <div className="sticky top-0 z-10 glass-strong border-b border-border/50 px-4 py-3 flex items-center justify-between">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full hover:bg-muted/60 transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
           </button>
-          <span className="font-semibold">Profile</span>
-          <div className="w-6" /> {/* Spacer */}
+          <span className="font-semibold text-sm tracking-wide">Profile</span>
+          <div className="w-7" />
         </div>
 
-        <div className="p-4">
-          {/* Profile Header - Instagram style */}
+        {/* Gradient hero band */}
+        <div className="relative h-20 -mb-12 overflow-hidden">
+          <div
+            className={`absolute inset-0 bg-gradient-to-br ${getStatusColor()} opacity-20`}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background" />
+        </div>
+
+        <div className="p-4 pt-0 relative">
+          {/* Profile Header */}
           <div className="flex items-center gap-4 mb-4">
-            {/* Avatar with gradient ring */}
+            {/* Avatar with story-ring */}
             <div className="relative flex-shrink-0">
-              <div className={`p-[3px] rounded-full bg-gradient-to-tr ${getStatusColor()}`}>
+              <div className={`p-[3px] rounded-full bg-gradient-to-tr ${getStatusColor()} shadow-lg`}>
                 <div className="p-[2px] rounded-full bg-background">
                   <Avatar className="h-20 w-20">
                     <AvatarImage src={donor.avatar_url || undefined} />
@@ -261,11 +273,11 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
                 </div>
               </div>
               {/* Status indicator */}
-              <div className={`absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-background flex items-center justify-center ${getStatusDotColor()}`}>
-                {donor.availability_status === 'available' && <Check className="h-3 w-3 text-white" />}
-                {donor.availability_status === 'reserved' && <Clock className="h-3 w-3 text-white" />}
-                {donor.availability_status === 'available_soon' && <Clock className="h-3 w-3 text-white" />}
-                {donor.availability_status === 'unavailable' && <X className="h-3 w-3 text-white" />}
+              <div className={`absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-background flex items-center justify-center shadow-md ${getStatusDotColor()}`}>
+                {donor.availability_status === 'available' && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+                {donor.availability_status === 'reserved' && <Clock className="h-3 w-3 text-white" strokeWidth={3} />}
+                {donor.availability_status === 'available_soon' && <Clock className="h-3 w-3 text-white" strokeWidth={3} />}
+                {donor.availability_status === 'unavailable' && <X className="h-3 w-3 text-white" strokeWidth={3} />}
               </div>
               {(() => {
                 const rank = getTopDonorRank(donor.id, topDonors);
@@ -274,18 +286,18 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
             </div>
 
             {/* Stats */}
-            <div className="flex-1 flex justify-around">
-              <div className="text-center">
-                <p className="text-xl font-bold">{donor.donation_count || 0}</p>
-                <p className="text-xs text-muted-foreground">Donations</p>
+            <div className="flex-1 grid grid-cols-3 divide-x divide-border/50">
+              <div className="text-center px-1">
+                <p className="text-xl font-bold tabular-nums">{donor.donation_count || 0}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Donations</p>
               </div>
-              <div className="text-center">
+              <div className="text-center px-1">
                 <p className="text-xl font-bold text-primary">{donor.blood_group}</p>
-                <p className="text-xs text-muted-foreground">Blood</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Blood</p>
               </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-emerald-500">{donor.donation_count || 0}</p>
-                <p className="text-xs text-muted-foreground">Lives</p>
+              <div className="text-center px-1">
+                <p className="text-xl font-bold text-success tabular-nums">{(donor.donation_count || 0) * 3}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Lives</p>
               </div>
             </div>
           </div>
@@ -324,7 +336,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
             {/* Badges */}
             <div className="flex flex-wrap gap-1 mt-2">
               {donor.source === 'directory' && (
-                <Badge variant="outline" className="text-xs rounded-full px-2 border-amber-500 text-amber-600">
+                <Badge variant="warning" className="text-xs rounded-full px-2">
                   Not Registered
                 </Badge>
               )}
@@ -346,29 +358,30 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
             )}
           </div>
 
-          {/* Action Buttons - Instagram style */}
+          {/* Action Buttons */}
           {!isEditing ? (
             <div className="flex gap-2 mb-4">
-              <Button 
-                className="flex-1 rounded-lg h-9 text-sm font-semibold"
+              <Button
+                variant="gradient"
+                className="flex-1 rounded-xl h-10 text-sm font-semibold"
                 onClick={handleCall}
               >
-                <Phone className="h-4 w-4 mr-1" />
+                <Phone className="h-4 w-4 mr-1.5" />
                 Call
               </Button>
-              <Button 
-                variant="secondary" 
-                className="flex-1 rounded-lg h-9 text-sm font-semibold"
+              <Button
+                variant="secondary"
+                className="flex-1 rounded-xl h-10 text-sm font-semibold"
                 onClick={handleSMS}
               >
-                <MessageCircle className="h-4 w-4 mr-1" />
+                <MessageCircle className="h-4 w-4 mr-1.5" />
                 Message
               </Button>
               {isAdmin && donor.source === 'profile' && (
-                <Button 
+                <Button
                   variant="outline"
                   size="icon"
-                  className="rounded-lg h-9 w-9"
+                  className="rounded-xl h-10 w-10"
                   onClick={() => setIsEditing(true)}
                 >
                   <Edit className="h-4 w-4" />
@@ -456,40 +469,50 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
           {/* Info Cards */}
           {!isEditing && (
             <div className="space-y-2">
-              <Card className="rounded-xl border-border/50 overflow-hidden">
-                <button className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
+              <Card className="rounded-2xl border-border/50 overflow-hidden surface-card">
+                <a
+                  href={`tel:${donor.phone}`}
+                  className="w-full flex items-center justify-between p-3.5 hover:bg-muted/40 transition-colors"
+                >
                   <div className="flex items-center gap-3">
-                    <Phone className="h-5 w-5 text-primary" />
+                    <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Phone className="h-4.5 w-4.5 text-primary" />
+                    </div>
                     <div className="text-left">
-                      <p className="text-xs text-muted-foreground">Phone</p>
-                      <p className="text-sm font-medium">{donor.phone}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Phone</p>
+                      <p className="text-sm font-semibold tabular-nums">{donor.phone}</p>
                     </div>
                   </div>
-                </button>
-                
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </a>
+
                 {donor.district && (
                   <>
-                    <div className="border-t border-border/50" />
-                    <div className="flex items-center gap-3 p-3">
-                      <MapPin className="h-5 w-5 text-emerald-500" />
+                    <div className="border-t border-border/40" />
+                    <div className="flex items-center gap-3 p-3.5">
+                      <div className="h-9 w-9 rounded-xl bg-success/10 flex items-center justify-center">
+                        <MapPin className="h-4.5 w-4.5 text-success" />
+                      </div>
                       <div className="text-left">
-                        <p className="text-xs text-muted-foreground">Location</p>
-                        <p className="text-sm font-medium">{donor.district}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Location</p>
+                        <p className="text-sm font-semibold">{donor.district}</p>
                       </div>
                     </div>
                   </>
                 )}
-                
+
                 {donor.last_donation_date && (
                   <>
-                    <div className="border-t border-border/50" />
-                    <div className="flex items-center gap-3 p-3">
-                      <Calendar className="h-5 w-5 text-blue-500" />
+                    <div className="border-t border-border/40" />
+                    <div className="flex items-center gap-3 p-3.5">
+                      <div className="h-9 w-9 rounded-xl bg-info/10 flex items-center justify-center">
+                        <Calendar className="h-4.5 w-4.5 text-info" />
+                      </div>
                       <div className="text-left">
-                        <p className="text-xs text-muted-foreground">Last Donation</p>
-                        <p className="text-sm font-medium">
-                          {new Date(donor.last_donation_date).toLocaleDateString('en-US', { 
-                            year: 'numeric', month: 'short', day: 'numeric' 
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Last Donation</p>
+                        <p className="text-sm font-semibold">
+                          {new Date(donor.last_donation_date).toLocaleDateString('en-US', {
+                            year: 'numeric', month: 'short', day: 'numeric'
                           })}
                         </p>
                       </div>
