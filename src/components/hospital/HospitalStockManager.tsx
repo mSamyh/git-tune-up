@@ -27,7 +27,7 @@ interface HospitalStockManagerProps {
   onStockUpdate: (stock: BloodStock[]) => void;
 }
 
-const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
+
 
 const HospitalStockManager = ({
   hospitalId,
@@ -35,6 +35,9 @@ const HospitalStockManager = ({
   bloodStock,
   onStockUpdate,
 }: HospitalStockManagerProps) => {
+  const { bloodGroupCodes } = useReferenceData();
+  const BLOOD_GROUPS = bloodGroupCodes.length > 0 ? bloodGroupCodes : FALLBACK_BLOOD_GROUPS;
+
   const [selectedBloodGroup, setSelectedBloodGroup] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 

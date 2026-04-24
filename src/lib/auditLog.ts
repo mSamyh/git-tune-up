@@ -48,16 +48,16 @@ export const auditLog = async ({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase.from("admin_audit_log").insert({
+    await supabase.from("admin_audit_log").insert([{
       actor_user_id: user.id,
       actor_email: user.email,
       action,
       entity_type: entityType,
       entity_id: entityId ?? null,
-      before_data: before ?? null,
-      after_data: after ?? null,
-      metadata: metadata ?? null,
-    });
+      before_data: (before ?? null) as never,
+      after_data: (after ?? null) as never,
+      metadata: (metadata ?? null) as never,
+    }]);
   } catch (err) {
     logger.error("[audit] failed to write audit log", err);
   }
