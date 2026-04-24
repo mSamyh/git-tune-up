@@ -13,6 +13,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { BloodRequestShareCard } from "@/components/BloodRequestShareCard";
 import { useReferenceData, FALLBACK_BLOOD_GROUPS } from "@/contexts/ReferenceDataContext";
+import { MatchStats } from "@/components/MatchStats";
+import { auditLog } from "@/lib/auditLog";
 
 interface BloodRequest {
   id: string;
@@ -30,6 +32,7 @@ interface BloodRequest {
   requested_by: string | null;
   needed_before: string | null;
   poster_name?: string;
+  notified_donor_count?: number | null;
 }
 
 interface Response {
@@ -154,6 +157,7 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
         .from("blood_requests")
         .select("*")
         .eq("status", status)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
