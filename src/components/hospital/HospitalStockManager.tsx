@@ -7,6 +7,7 @@ import BloodStockCard from "./BloodStockCard";
 import StockUpdateSheet from "./StockUpdateSheet";
 import ExpiryAlerts from "./ExpiryAlerts";
 import { differenceInDays, parseISO, format } from "date-fns";
+import { useReferenceData, FALLBACK_BLOOD_GROUPS } from "@/contexts/ReferenceDataContext";
 
 interface BloodStock {
   id: string;
