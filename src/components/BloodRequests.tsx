@@ -298,9 +298,10 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
     
     const request = requests.find(r => r.id === requestId);
     
+    // Soft-delete: set deleted_at instead of hard delete (preserves analytics)
     const { error } = await supabase
       .from("blood_requests")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() } as never)
       .eq("id", requestId);
 
     if (error) {
@@ -311,6 +312,16 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
         description: error.message,
       });
     } else {
+      // Audit log (admin actions only)
+      if (isAdmin && request) {
+        await auditLog({
+          action: "request_delete",
+          entityType: "blood_request",
+          entityId: requestId,
+          before: request as unknown as Record<string, unknown>,
+        });
+      }
+
       // Send Telegram notification for deletion
       if (request) {
         const { data: { user } } = await supabase.auth.getUser();
@@ -413,7 +424,9 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
   const changeRequestStatus = async (requestId: string, newStatus: string) => {
     if (actionLoading) return;
     setActionLoading(requestId);
-    
+
+    const previousRequest = requests.find(r => r.id === requestId);
+
     const { data, error } = await supabase
       .from("blood_requests")
       .update({ status: newStatus })
@@ -427,6 +440,17 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
         description: error?.message || "You may not have permission.",
       });
     } else {
+      // Audit log
+      if (isAdmin && previousRequest) {
+        await auditLog({
+          action: "request_status_change",
+          entityType: "blood_request",
+          entityId: requestId,
+          before: { status: previousRequest.status },
+          after: { status: newStatus },
+        });
+      }
+
       const labels: Record<string, string> = { active: "Active", fulfilled: "Fulfilled", expired: "Expired" };
       toast({
         title: `Request moved to ${labels[newStatus] || newStatus}`,
