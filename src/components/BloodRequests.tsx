@@ -507,6 +507,9 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
           {request.needed_before && status === "active" && (
             <CountdownTimer neededBefore={request.needed_before} compact className="mt-1" />
           )}
+          {status === "active" && (
+            <MatchStats requestId={request.id} notifiedCount={request.notified_donor_count} />
+          )}
         </div>
         <div className="flex items-center gap-1.5 ml-2">
           <Badge className="bg-primary/10 text-primary border-0 text-xs px-2 py-0.5">
