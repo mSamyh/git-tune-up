@@ -7,6 +7,7 @@ import BloodStockCard from "./BloodStockCard";
 import StockUpdateSheet from "./StockUpdateSheet";
 import ExpiryAlerts from "./ExpiryAlerts";
 import { differenceInDays, parseISO, format } from "date-fns";
+import { useReferenceData, FALLBACK_BLOOD_GROUPS } from "@/contexts/ReferenceDataContext";
 
 interface BloodStock {
   id: string;
@@ -26,7 +27,7 @@ interface HospitalStockManagerProps {
   onStockUpdate: (stock: BloodStock[]) => void;
 }
 
-const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
+
 
 const HospitalStockManager = ({
   hospitalId,
@@ -34,6 +35,9 @@ const HospitalStockManager = ({
   bloodStock,
   onStockUpdate,
 }: HospitalStockManagerProps) => {
+  const { bloodGroupCodes } = useReferenceData();
+  const BLOOD_GROUPS = bloodGroupCodes.length > 0 ? bloodGroupCodes : FALLBACK_BLOOD_GROUPS;
+
   const [selectedBloodGroup, setSelectedBloodGroup] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -80,20 +84,20 @@ const HospitalStockManager = ({
             <p className="text-xs text-muted-foreground">Types</p>
           </CardContent>
         </Card>
-        <Card className="bg-emerald-500/10 border-emerald-500/20">
+        <Card className="bg-success/10 border-success/20">
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <Droplets className="h-4 w-4 text-emerald-500" />
-              <span className="text-2xl font-bold text-emerald-600">{totalUnits}</span>
+              <Droplets className="h-4 w-4 text-success" />
+              <span className="text-2xl font-bold text-success">{totalUnits}</span>
             </div>
             <p className="text-xs text-muted-foreground">Units</p>
           </CardContent>
         </Card>
-        <Card className={`${criticalCount > 0 ? "bg-red-500/10 border-red-500/20" : "bg-muted/50"}`}>
+        <Card className={`${criticalCount > 0 ? "bg-destructive/10 border-destructive/20" : "bg-muted/50"}`}>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <AlertTriangle className={`h-4 w-4 ${criticalCount > 0 ? "text-red-500" : "text-muted-foreground"}`} />
-              <span className={`text-2xl font-bold ${criticalCount > 0 ? "text-red-600" : "text-muted-foreground"}`}>
+              <AlertTriangle className={`h-4 w-4 ${criticalCount > 0 ? "text-destructive" : "text-muted-foreground"}`} />
+              <span className={`text-2xl font-bold ${criticalCount > 0 ? "text-destructive" : "text-muted-foreground"}`}>
                 {criticalCount}
               </span>
             </div>

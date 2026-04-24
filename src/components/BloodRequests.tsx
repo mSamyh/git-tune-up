@@ -13,6 +13,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { BloodRequestShareCard } from "@/components/BloodRequestShareCard";
 import { useReferenceData, FALLBACK_BLOOD_GROUPS } from "@/contexts/ReferenceDataContext";
+import { MatchStats } from "@/components/MatchStats";
+import { auditLog } from "@/lib/auditLog";
 
 interface BloodRequest {
   id: string;
@@ -30,6 +32,7 @@ interface BloodRequest {
   requested_by: string | null;
   needed_before: string | null;
   poster_name?: string;
+  notified_donor_count?: number | null;
 }
 
 interface Response {
@@ -154,6 +157,7 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
         .from("blood_requests")
         .select("*")
         .eq("status", status)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -294,9 +298,10 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
     
     const request = requests.find(r => r.id === requestId);
     
+    // Soft-delete: set deleted_at instead of hard delete (preserves analytics)
     const { error } = await supabase
       .from("blood_requests")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() } as never)
       .eq("id", requestId);
 
     if (error) {
@@ -307,6 +312,16 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
         description: error.message,
       });
     } else {
+      // Audit log (admin actions only)
+      if (isAdmin && request) {
+        await auditLog({
+          action: "request_delete",
+          entityType: "blood_request",
+          entityId: requestId,
+          before: request as unknown as Record<string, unknown>,
+        });
+      }
+
       // Send Telegram notification for deletion
       if (request) {
         const { data: { user } } = await supabase.auth.getUser();
@@ -409,7 +424,9 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
   const changeRequestStatus = async (requestId: string, newStatus: string) => {
     if (actionLoading) return;
     setActionLoading(requestId);
-    
+
+    const previousRequest = requests.find(r => r.id === requestId);
+
     const { data, error } = await supabase
       .from("blood_requests")
       .update({ status: newStatus })
@@ -423,6 +440,17 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
         description: error?.message || "You may not have permission.",
       });
     } else {
+      // Audit log
+      if (isAdmin && previousRequest) {
+        await auditLog({
+          action: "request_status_change",
+          entityType: "blood_request",
+          entityId: requestId,
+          before: { status: previousRequest.status },
+          after: { status: newStatus },
+        });
+      }
+
       const labels: Record<string, string> = { active: "Active", fulfilled: "Fulfilled", expired: "Expired" };
       toast({
         title: `Request moved to ${labels[newStatus] || newStatus}`,
@@ -478,6 +506,9 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
           <h3 className="font-semibold text-sm truncate">{request.patient_name}</h3>
           {request.needed_before && status === "active" && (
             <CountdownTimer neededBefore={request.needed_before} compact className="mt-1" />
+          )}
+          {status === "active" && (
+            <MatchStats requestId={request.id} notifiedCount={request.notified_donor_count} />
           )}
         </div>
         <div className="flex items-center gap-1.5 ml-2">

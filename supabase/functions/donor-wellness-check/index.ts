@@ -245,7 +245,6 @@ Deno.serve(async (req) => {
           }
 
           // Determine which template to use (first or followup)
-          const isFirstCheck = !donor.last_wellness_check;
           const template = isFirstCheck ? wellnessFirstTemplate : wellnessFollowupTemplate;
 
           if (!template) {

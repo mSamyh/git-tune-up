@@ -56,6 +56,45 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_user_id: string | null
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
       atolls: {
         Row: {
           created_at: string
@@ -170,11 +209,13 @@ export type Database = {
           contact_name: string
           contact_phone: string
           created_at: string | null
+          deleted_at: string | null
           emergency_type: string | null
           hospital_name: string
           id: string
           needed_before: string | null
           notes: string | null
+          notified_donor_count: number | null
           patient_name: string
           requested_by: string | null
           status: string | null
@@ -187,11 +228,13 @@ export type Database = {
           contact_name: string
           contact_phone: string
           created_at?: string | null
+          deleted_at?: string | null
           emergency_type?: string | null
           hospital_name: string
           id?: string
           needed_before?: string | null
           notes?: string | null
+          notified_donor_count?: number | null
           patient_name: string
           requested_by?: string | null
           status?: string | null
@@ -204,11 +247,13 @@ export type Database = {
           contact_name?: string
           contact_phone?: string
           created_at?: string | null
+          deleted_at?: string | null
           emergency_type?: string | null
           hospital_name?: string
           id?: string
           needed_before?: string | null
           notes?: string | null
+          notified_donor_count?: number | null
           patient_name?: string
           requested_by?: string | null
           status?: string | null
@@ -1216,6 +1261,42 @@ export type Database = {
           },
         ]
       }
+      request_matches: {
+        Row: {
+          created_at: string
+          donor_id: string
+          id: string
+          match_score: number
+          notified_at: string
+          proximity_rank: string | null
+          request_id: string
+          responded_at: string | null
+          response_status: string | null
+        }
+        Insert: {
+          created_at?: string
+          donor_id: string
+          id?: string
+          match_score?: number
+          notified_at?: string
+          proximity_rank?: string | null
+          request_id: string
+          responded_at?: string | null
+          response_status?: string | null
+        }
+        Update: {
+          created_at?: string
+          donor_id?: string
+          id?: string
+          match_score?: number
+          notified_at?: string
+          proximity_rank?: string | null
+          request_id?: string
+          responded_at?: string | null
+          response_status?: string | null
+        }
+        Relationships: []
+      }
       request_responses: {
         Row: {
           created_at: string | null
@@ -1223,6 +1304,7 @@ export type Database = {
           id: string
           message: string | null
           request_id: string
+          responded_at: string | null
           status: string | null
           updated_at: string | null
         }
@@ -1232,6 +1314,7 @@ export type Database = {
           id?: string
           message?: string | null
           request_id: string
+          responded_at?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -1241,6 +1324,7 @@ export type Database = {
           id?: string
           message?: string | null
           request_id?: string
+          responded_at?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -1565,6 +1649,19 @@ export type Database = {
         }
         Returns: Json
       }
+      find_matching_donors: {
+        Args: { p_limit?: number; p_request_id: string }
+        Returns: {
+          atoll: string
+          blood_group: string
+          district: string
+          donor_id: string
+          full_name: string
+          island: string
+          match_score: number
+          proximity_rank: string
+        }[]
+      }
       get_all_tiers: { Args: never; Returns: Json }
       get_blood_compatibility: {
         Args: { p_blood_group: string; p_mode: string }
@@ -1590,6 +1687,7 @@ export type Database = {
       }
       get_donation_count: { Args: { donor_uuid: string }; Returns: number }
       get_points_per_donation: { Args: never; Returns: number }
+      get_request_match_stats: { Args: { p_request_id: string }; Returns: Json }
       get_user_tier: { Args: { p_user_id: string }; Returns: Json }
       has_role: {
         Args: {
