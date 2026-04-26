@@ -248,9 +248,20 @@ const History = () => {
 
   // Lives saved (each donation can save up to 3 lives)
   const livesSaved = donationCount * 3;
-  // Streak: count consecutive donations within ~120 days of each other (rough)
   const ringCircumference = 2 * Math.PI * 52;
   const ringOffset = ringCircumference - (eligibilityProgress / 100) * ringCircumference;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background pb-20">
+        <AppHeader />
+        <main className="container mx-auto px-4 py-6 max-w-lg">
+          <Skeleton className="h-[500px] w-full rounded-3xl" />
+        </main>
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
