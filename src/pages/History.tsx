@@ -422,7 +422,7 @@ const History = () => {
           <DialogHeader className="px-4 py-3 border-b border-border/50">
             <DialogTitle>Add Donation</DialogTitle>
             <DialogDescription>
-              Record a new blood donation. You'll earn {pointsPerDonation} points!
+              Record a new blood donation. You'll earn {pointsPerDonation} points! Donations must be at least 90 days apart for your safety.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 p-4">
