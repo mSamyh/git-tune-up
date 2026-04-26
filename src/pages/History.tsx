@@ -7,17 +7,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import { BottomNav } from "@/components/BottomNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppHeader } from "@/components/AppHeader";
 import { useToast } from "@/hooks/use-toast";
 import { DonationHistoryByYear } from "@/components/DonationHistoryByYear";
 import { PointsHistoryPanel } from "@/components/PointsHistoryPanel";
-import { Plus, Calendar as CalendarIcon, Droplets, Award, TrendingUp, Timer, History as HistoryIcon, Coins, Sparkles, Heart, Flame } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import {
+  Plus,
+  Calendar as CalendarIcon,
+  Droplets,
+  Award,
+  Heart,
+  ShieldCheck,
+  Clock,
+  Info,
+  CheckCircle2,
+  Hourglass,
+  Activity,
+  Coins,
+} from "lucide-react";
+import { format, differenceInDays, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { awardDonationPoints, getPointsPerDonation, syncLastDonationDate } from "@/lib/donationPoints";
 
@@ -53,15 +64,12 @@ const History = () => {
 
   useEffect(() => {
     let isMounted = true;
-    
     const loadData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
         navigate("/auth");
         return;
       }
-
       if (!isMounted) return;
       setUserId(user.id);
 
@@ -70,11 +78,8 @@ const History = () => {
         .select("id, full_name, last_donation_date, user_type")
         .eq("id", user.id)
         .single();
-
       if (!isMounted) return;
-      if (profileData) {
-        setProfile(profileData);
-      }
+      if (profileData) setProfile(profileData);
 
       const { data: countData } = await supabase.rpc('get_donation_count', { donor_uuid: user.id });
       if (!isMounted) return;
@@ -85,17 +90,14 @@ const History = () => {
         .select("total_points")
         .eq("donor_id", user.id)
         .maybeSingle();
-      
       if (!isMounted) return;
       setTotalPoints(pointsData?.total_points || 0);
 
       await fetchDonations(user.id);
       if (isMounted) setLoading(false);
     };
-
     loadData();
     fetchPointsSettings();
-    
     return () => { isMounted = false; };
   }, [navigate]);
 
@@ -105,10 +107,7 @@ const History = () => {
       .select("*")
       .eq("donor_id", donorId)
       .order("donation_date", { ascending: false });
-
-    if (data) {
-      setDonations(data);
-    }
+    if (data) setDonations(data);
   };
 
   const fetchPointsSettings = async () => {
@@ -118,19 +117,13 @@ const History = () => {
 
   const handleAddDonation = async () => {
     if (!hospitalName.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Hospital name required",
-        description: "Please enter the hospital name",
-      });
+      toast({ variant: "destructive", title: "Hospital name required", description: "Please enter the hospital name" });
       return;
     }
-
     if (!tempDonationDate || !userId || !profile) return;
 
     const formattedDate = format(tempDonationDate, "yyyy-MM-dd");
 
-    // Enforce 90-day gap between donations (medical safety rule)
     const { data: existingDonations } = await supabase
       .from("donation_history")
       .select("donation_date, hospital_name")
@@ -141,10 +134,8 @@ const History = () => {
       const newDate = tempDonationDate;
       const conflict = existingDonations.find((d) => {
         const existing = new Date(d.donation_date);
-        const diffDays = Math.abs(differenceInDays(newDate, existing));
-        return diffDays < 90;
+        return Math.abs(differenceInDays(newDate, existing)) < 90;
       });
-
       if (conflict) {
         const conflictDate = new Date(conflict.donation_date);
         const diffDays = Math.abs(differenceInDays(tempDonationDate, conflictDate));
@@ -171,26 +162,16 @@ const History = () => {
 
     if (historyError) {
       if (historyError.code === '23505') {
-        toast({
-          variant: "destructive",
-          title: "Duplicate donation",
-          description: "You already have a donation recorded for this date",
-        });
+        toast({ variant: "destructive", title: "Duplicate donation", description: "You already have a donation recorded for this date" });
       } else {
-        toast({
-          variant: "destructive",
-          title: "Failed to add donation",
-          description: historyError.message,
-        });
+        toast({ variant: "destructive", title: "Failed to add donation", description: historyError.message });
       }
       return;
     }
 
     if (newDonation) {
       const awarded = await awardDonationPoints(userId, newDonation.id, hospitalName.trim(), pointsPerDonation);
-      if (awarded) {
-        setTotalPoints(prev => prev + pointsPerDonation);
-      }
+      if (awarded) setTotalPoints(prev => prev + pointsPerDonation);
     }
 
     await syncLastDonationDate(userId);
@@ -209,7 +190,6 @@ const History = () => {
     setDonationCount(prev => prev + 1);
     await fetchDonations(userId);
 
-    // Refetch profile to get updated last_donation_date
     const { data: updatedProfile } = await supabase
       .from("profiles")
       .select("id, full_name, last_donation_date, user_type")
@@ -217,46 +197,39 @@ const History = () => {
       .single();
     if (updatedProfile) setProfile(updatedProfile);
 
-    toast({
-      title: "Donation recorded",
-      description: `You earned ${pointsPerDonation} points!`,
-    });
+    toast({ title: "Donation recorded", description: `You earned ${pointsPerDonation} points!` });
   };
 
   const totalUnits = donations.reduce((sum, d) => sum + (d.units_donated || 1), 0);
   const isDonorType = profile?.user_type === 'donor' || profile?.user_type === 'both';
 
-  // Calculate days until eligible (90-day rule)
+  // Use the most recent donation from history (more reliable than profile.last_donation_date)
+  const lastDonationDateStr = donations[0]?.donation_date || profile?.last_donation_date || null;
+
   const getDaysUntilEligible = () => {
-    if (!profile?.last_donation_date) return 0;
-    const lastDonation = new Date(profile.last_donation_date);
-    const eligibleDate = new Date(lastDonation);
-    eligibleDate.setDate(eligibleDate.getDate() + 90);
-    const today = new Date();
-    const daysRemaining = differenceInDays(eligibleDate, today);
-    return Math.max(0, daysRemaining);
+    if (!lastDonationDateStr) return 0;
+    const lastDonation = new Date(lastDonationDateStr);
+    const eligibleDate = addDays(lastDonation, 90);
+    return Math.max(0, differenceInDays(eligibleDate, new Date()));
   };
 
   const daysUntilEligible = getDaysUntilEligible();
-  const daysSinceLastDonation = profile?.last_donation_date 
-    ? differenceInDays(new Date(), new Date(profile.last_donation_date))
+  const daysSinceLastDonation = lastDonationDateStr
+    ? Math.max(0, differenceInDays(new Date(), new Date(lastDonationDateStr)))
     : 0;
-  const eligibilityProgress = profile?.last_donation_date 
-    ? Math.min(100, (daysSinceLastDonation / 90) * 100)
-    : 100;
+  const progress = lastDonationDateStr ? Math.min(100, (daysSinceLastDonation / 90) * 100) : 100;
   const isEligible = daysUntilEligible === 0;
-
-  // Lives saved (each donation can save up to 3 lives)
   const livesSaved = donationCount * 3;
-  const ringCircumference = 2 * Math.PI * 52;
-  const ringOffset = ringCircumference - (eligibilityProgress / 100) * ringCircumference;
+  const nextEligibleDate = lastDonationDateStr ? addDays(new Date(lastDonationDateStr), 90) : null;
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background pb-20">
         <AppHeader />
-        <main className="container mx-auto px-4 py-6 max-w-lg">
-          <Skeleton className="h-[500px] w-full rounded-3xl" />
+        <main className="container mx-auto px-4 py-6 max-w-lg space-y-4">
+          <Skeleton className="h-72 w-full rounded-3xl" />
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
         </main>
         <BottomNav />
       </div>
@@ -264,196 +237,205 @@ const History = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-28">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-4 max-w-2xl animate-fade-in">
-        {/* ===== HERO: Eligibility Ring ===== */}
-        <div className="relative overflow-hidden rounded-3xl mb-5 shadow-xl">
-          {/* Mesh gradient backdrop */}
+      <main className="container mx-auto px-4 pt-3 pb-4 max-w-2xl animate-fade-in space-y-4">
+        {/* ========== HERO CARD ========== */}
+        <section
+          className="relative overflow-hidden rounded-[28px] shadow-2xl"
+          style={{
+            background:
+              "linear-gradient(135deg, hsl(0 75% 18%) 0%, hsl(348 70% 22%) 45%, hsl(15 65% 20%) 100%)",
+          }}
+        >
+          {/* Decorative blobs */}
+          <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-rose-500/30 blur-3xl" />
+          <div className="absolute -bottom-24 -left-16 w-56 h-56 rounded-full bg-amber-500/20 blur-3xl" />
           <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(120% 80% at 0% 0%, hsl(var(--primary) / 0.35) 0%, transparent 55%), radial-gradient(120% 80% at 100% 100%, hsl(265 70% 55% / 0.25) 0%, transparent 55%), linear-gradient(135deg, hsl(222 45% 10%) 0%, hsl(222 45% 14%) 100%)",
-            }}
-          />
-          <div
-            className="absolute inset-0 opacity-[0.06] mix-blend-overlay pointer-events-none"
+            className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none"
             style={{
               backgroundImage:
-                "linear-gradient(hsl(0 0% 100%) 1px, transparent 1px), linear-gradient(90deg, hsl(0 0% 100%) 1px, transparent 1px)",
-              backgroundSize: "24px 24px",
+                "radial-gradient(hsl(0 0% 100%) 1px, transparent 1px)",
+              backgroundSize: "18px 18px",
             }}
           />
 
-          <div className="relative px-5 pt-5 pb-6">
-            {/* Top row */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="bg-white/10 backdrop-blur-md p-2 rounded-xl border border-white/10">
-                  <HistoryIcon className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-white font-bold text-sm tracking-wide">My Journey</h1>
-                  <p className="text-white/50 text-[10px] tracking-wider uppercase">
-                    Donation History
-                  </p>
-                </div>
+          <div className="relative p-5">
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <p className="text-white/60 text-[10px] uppercase tracking-[0.2em] font-semibold mb-1">
+                  Your Journey
+                </p>
+                <h1 className="text-white text-2xl font-black leading-tight">
+                  Donation History
+                </h1>
               </div>
-
-              <div
-                className={cn(
-                  "px-3 py-1 rounded-full text-[10px] font-semibold backdrop-blur-md border",
-                  isEligible
-                    ? "bg-emerald-500/15 text-emerald-300 border-emerald-400/30"
-                    : "bg-amber-500/15 text-amber-300 border-amber-400/30"
-                )}
-              >
-                {isEligible ? "✓ Eligible" : `${daysUntilEligible}d to go`}
+              <div className="h-12 w-12 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-lg">
+                <Heart className="h-6 w-6 text-white fill-rose-300/40" />
               </div>
             </div>
 
-            {/* Ring + Lives saved */}
-            <div className="flex items-center gap-5">
-              <div className="relative shrink-0">
-                <svg width="120" height="120" viewBox="0 0 120 120" className="-rotate-90">
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="52"
-                    fill="none"
-                    stroke="hsl(0 0% 100% / 0.1)"
-                    strokeWidth="8"
-                  />
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="52"
-                    fill="none"
-                    stroke={isEligible ? "hsl(142 71% 50%)" : "hsl(38 92% 55%)"}
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    strokeDasharray={ringCircumference}
-                    strokeDashoffset={ringOffset}
-                    style={{ transition: "stroke-dashoffset 1s ease-out" }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  {profile?.last_donation_date ? (
+            {/* Lives saved hero number */}
+            <div className="flex items-end gap-3 mb-5">
+              <div>
+                <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">
+                  Lives impacted
+                </p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-white text-6xl font-black tabular-nums leading-none drop-shadow-lg">
+                    {livesSaved}
+                  </span>
+                  <span className="text-white/70 text-sm font-medium">lives</span>
+                </div>
+              </div>
+              <div className="ml-auto flex flex-col items-end gap-1">
+                <div
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-[11px] font-bold backdrop-blur-md border flex items-center gap-1.5",
+                    isEligible
+                      ? "bg-emerald-500/25 text-emerald-100 border-emerald-300/40"
+                      : "bg-amber-500/25 text-amber-100 border-amber-300/40"
+                  )}
+                >
+                  {isEligible ? (
                     <>
-                      <span className="text-white text-2xl font-black leading-none">
-                        {Math.min(90, daysSinceLastDonation)}
-                      </span>
-                      <span className="text-white/50 text-[9px] uppercase tracking-wider mt-0.5">
-                        of 90 days
-                      </span>
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Eligible
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-6 w-6 text-emerald-300 mb-0.5" />
-                      <span className="text-white/60 text-[9px] uppercase tracking-wider">
-                        Ready
-                      </span>
+                      <Hourglass className="h-3.5 w-3.5" />
+                      {daysUntilEligible}d to go
                     </>
                   )}
                 </div>
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-white/60 text-[10px] uppercase tracking-wider mb-1">
-                  Lives impacted
-                </p>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-white text-4xl font-black tabular-nums">{livesSaved}</span>
-                  <Heart className="h-5 w-5 text-rose-400 fill-rose-400" />
-                </div>
-                <p className="text-white/70 text-xs mt-1.5 leading-snug">
-                  {profile?.last_donation_date
-                    ? isEligible
-                      ? "Your body's ready — book your next donation."
-                      : `Last donated ${format(new Date(profile.last_donation_date), "MMM d")}.`
-                    : "Add your first donation to start tracking."}
+                <p className="text-white/50 text-[10px]">
+                  {donationCount} donation{donationCount !== 1 ? "s" : ""}
                 </p>
               </div>
             </div>
 
-            {/* Stats strip */}
-            <div className="grid grid-cols-3 gap-2 mt-5">
-              <div className="bg-white/8 backdrop-blur-md rounded-2xl p-2.5 border border-white/10">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Droplets className="h-3 w-3 text-white/60" />
-                  <span className="text-white/60 text-[9px] uppercase tracking-wider">Donations</span>
+            {/* 90-Day eligibility bar */}
+            <div className="bg-black/25 backdrop-blur-md rounded-2xl p-3.5 border border-white/10 mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
+                  <span className="text-white text-[11px] font-semibold uppercase tracking-wider">
+                    90-Day Recovery
+                  </span>
                 </div>
-                <p className="text-white font-black text-xl tabular-nums">{donationCount}</p>
+                <span className="text-white/80 text-[11px] font-bold tabular-nums">
+                  Day {Math.min(90, daysSinceLastDonation)}/90
+                </span>
               </div>
-              <div className="bg-white/8 backdrop-blur-md rounded-2xl p-2.5 border border-white/10">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Award className="h-3 w-3 text-amber-300" />
-                  <span className="text-white/60 text-[9px] uppercase tracking-wider">Points</span>
-                </div>
-                <p className="text-white font-black text-xl tabular-nums">{totalPoints}</p>
+              {/* Custom progress bar */}
+              <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    "absolute inset-y-0 left-0 rounded-full transition-all duration-1000",
+                    isEligible
+                      ? "bg-gradient-to-r from-emerald-400 to-green-300"
+                      : "bg-gradient-to-r from-amber-400 to-rose-300"
+                  )}
+                  style={{ width: `${progress}%` }}
+                />
               </div>
-              <div className="bg-white/8 backdrop-blur-md rounded-2xl p-2.5 border border-white/10">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <TrendingUp className="h-3 w-3 text-emerald-300" />
-                  <span className="text-white/60 text-[9px] uppercase tracking-wider">Units</span>
-                </div>
-                <p className="text-white font-black text-xl tabular-nums">{totalUnits}</p>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-white/60 text-[10px]">
+                  {lastDonationDateStr
+                    ? `Last: ${format(new Date(lastDonationDateStr), "MMM d, yyyy")}`
+                    : "No donations recorded"}
+                </p>
+                {nextEligibleDate && !isEligible && (
+                  <p className="text-white/80 text-[10px] font-medium">
+                    Next: {format(nextEligibleDate, "MMM d")}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Stats trio */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-2.5 border border-white/10">
+                <Droplets className="h-4 w-4 text-rose-200 mb-1.5" />
+                <p className="text-white text-xl font-black tabular-nums leading-none">{donationCount}</p>
+                <p className="text-white/60 text-[10px] mt-1">Donations</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-2.5 border border-white/10">
+                <Award className="h-4 w-4 text-amber-200 mb-1.5" />
+                <p className="text-white text-xl font-black tabular-nums leading-none">{totalPoints}</p>
+                <p className="text-white/60 text-[10px] mt-1">Points</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-2.5 border border-white/10">
+                <Activity className="h-4 w-4 text-emerald-200 mb-1.5" />
+                <p className="text-white text-xl font-black tabular-nums leading-none">{totalUnits}</p>
+                <p className="text-white/60 text-[10px] mt-1">Units</p>
               </div>
             </div>
           </div>
+        </section>
 
-          {/* Holographic accent */}
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-purple-500 to-primary" />
+        {/* ========== 90-DAY RULE INFO BANNER ========== */}
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 flex items-start gap-3">
+          <div className="h-9 w-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+            <Info className="h-4 w-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground leading-snug">
+              90 days between donations
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+              For your safety, the app blocks adding donations less than 90 days apart. Dates within the gap are disabled in the picker.
+            </p>
+          </div>
         </div>
 
-        {/* ===== Tabs ===== */}
+        {/* ========== TABS ========== */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-12 rounded-2xl bg-muted/50 p-1.5 mb-4">
+          <TabsList className="grid w-full grid-cols-2 h-12 rounded-2xl bg-muted/60 p-1.5">
             <TabsTrigger
               value="donations"
-              className="rounded-xl text-sm font-semibold data-[state=active]:shadow-md data-[state=active]:bg-card"
+              className="rounded-xl text-sm font-semibold data-[state=active]:shadow-md data-[state=active]:bg-card transition-all"
             >
               <Droplets className="h-4 w-4 mr-1.5" />
               Donations
             </TabsTrigger>
             <TabsTrigger
               value="points"
-              className="rounded-xl text-sm font-semibold data-[state=active]:shadow-md data-[state=active]:bg-card"
+              className="rounded-xl text-sm font-semibold data-[state=active]:shadow-md data-[state=active]:bg-card transition-all"
             >
               <Coins className="h-4 w-4 mr-1.5" />
               Points
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="donations" className="mt-0">
-            <Card className="rounded-3xl border-border/50 shadow-soft overflow-hidden">
-              <CardHeader className="pb-2 pt-4 px-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Flame className="h-4 w-4 text-primary" />
-                      Donation Timeline
-                    </CardTitle>
-                    <CardDescription className="text-xs mt-0.5">
-                      Grouped by year, latest first
-                    </CardDescription>
-                  </div>
-                  {donationCount > 0 && (
-                    <span className="text-[10px] text-muted-foreground bg-muted/60 px-2 py-1 rounded-full">
-                      {donationCount} total
-                    </span>
-                  )}
+          <TabsContent value="donations" className="mt-3">
+            <div className="rounded-3xl bg-card border border-border/60 shadow-sm overflow-hidden">
+              <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    Timeline
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Grouped by year, latest first
+                  </p>
                 </div>
-              </CardHeader>
-              <CardContent className="pb-4 px-5">
+                {donationCount > 0 && (
+                  <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                    {donationCount} total
+                  </span>
+                )}
+              </div>
+              <div className="px-4 pb-4">
                 {userId && <DonationHistoryByYear donorId={userId} variant="standalone" />}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </TabsContent>
 
-          <TabsContent value="points" className="mt-0">
+          <TabsContent value="points" className="mt-3">
             {userId && <PointsHistoryPanel userId={userId} />}
           </TabsContent>
         </Tabs>
@@ -463,7 +445,7 @@ const History = () => {
       {isDonorType && (
         <Button
           size="lg"
-          className="fixed bottom-24 right-4 h-14 w-14 rounded-2xl shadow-lg z-50 btn-press"
+          className="fixed bottom-24 right-4 h-14 w-14 rounded-2xl shadow-xl z-50 btn-press bg-gradient-to-br from-primary to-rose-600 hover:opacity-95"
           onClick={() => setShowAddDialog(true)}
         >
           <Plus className="h-6 w-6" />
@@ -472,16 +454,19 @@ const History = () => {
 
       {/* Add Donation Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-sm rounded-2xl">
-          <DialogHeader className="px-4 py-3 border-b border-border/50">
-            <DialogTitle>Add Donation</DialogTitle>
-            <DialogDescription>
-              Record a new blood donation. You'll earn {pointsPerDonation} points! Donations must be at least 90 days apart for your safety.
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader className="px-1 pt-1">
+            <DialogTitle className="text-lg flex items-center gap-2">
+              <Droplets className="h-5 w-5 text-primary" />
+              Add Donation
+            </DialogTitle>
+            <DialogDescription className="text-xs leading-relaxed">
+              Earn <span className="font-bold text-primary">{pointsPerDonation} points</span>. For your safety, donations must be at least <span className="font-semibold">90 days apart</span> — blocked dates are disabled below.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 p-4">
+          <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label>Donation Date</Label>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Donation Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -502,7 +487,6 @@ const History = () => {
                     onSelect={setTempDonationDate}
                     disabled={(date) => {
                       if (date > new Date()) return true;
-                      // Disable any date within 90 days of an existing donation
                       return donations.some((d) => {
                         const existing = new Date(d.donation_date);
                         return Math.abs(differenceInDays(date, existing)) < 90;
@@ -515,17 +499,17 @@ const History = () => {
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="hospital">Hospital Name</Label>
+              <Label htmlFor="hospital" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hospital Name</Label>
               <Input
                 id="hospital"
-                placeholder="Enter hospital name"
+                placeholder="e.g. IGMH, ADK Hospital, KRH"
                 value={hospitalName}
                 onChange={(e) => setHospitalName(e.target.value)}
                 className="h-11 rounded-xl"
               />
             </div>
           </div>
-          <DialogFooter className="gap-2 px-4 py-3 border-t border-border/50">
+          <DialogFooter className="gap-2">
             <Button
               variant="outline"
               className="rounded-xl"
@@ -537,7 +521,7 @@ const History = () => {
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               className="rounded-xl btn-press"
               onClick={handleAddDonation}
               disabled={!tempDonationDate || !hospitalName.trim()}
