@@ -130,6 +130,34 @@ const History = () => {
 
     const formattedDate = format(tempDonationDate, "yyyy-MM-dd");
 
+    // Enforce 90-day gap between donations (medical safety rule)
+    const { data: existingDonations } = await supabase
+      .from("donation_history")
+      .select("donation_date, hospital_name")
+      .eq("donor_id", userId)
+      .order("donation_date", { ascending: false });
+
+    if (existingDonations && existingDonations.length > 0) {
+      const newDate = tempDonationDate;
+      const conflict = existingDonations.find((d) => {
+        const existing = new Date(d.donation_date);
+        const diffDays = Math.abs(differenceInDays(newDate, existing));
+        return diffDays < 90;
+      });
+
+      if (conflict) {
+        const conflictDate = new Date(conflict.donation_date);
+        const diffDays = Math.abs(differenceInDays(tempDonationDate, conflictDate));
+        const waitDays = 90 - diffDays;
+        toast({
+          variant: "destructive",
+          title: "Too soon to donate",
+          description: `You have a donation on ${format(conflictDate, "MMM d, yyyy")} at ${conflict.hospital_name}. Donations must be at least 90 days apart. ${waitDays > 0 ? `Wait ${waitDays} more day${waitDays === 1 ? "" : "s"}.` : ""}`,
+        });
+        return;
+      }
+    }
+
     const { data: newDonation, error: historyError } = await supabase
       .from("donation_history")
       .insert({
@@ -394,7 +422,7 @@ const History = () => {
           <DialogHeader className="px-4 py-3 border-b border-border/50">
             <DialogTitle>Add Donation</DialogTitle>
             <DialogDescription>
-              Record a new blood donation. You'll earn {pointsPerDonation} points!
+              Record a new blood donation. You'll earn {pointsPerDonation} points! Donations must be at least 90 days apart for your safety.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 p-4">
@@ -418,7 +446,14 @@ const History = () => {
                     mode="single"
                     selected={tempDonationDate}
                     onSelect={setTempDonationDate}
-                    disabled={(date) => date > new Date()}
+                    disabled={(date) => {
+                      if (date > new Date()) return true;
+                      // Disable any date within 90 days of an existing donation
+                      return donations.some((d) => {
+                        const existing = new Date(d.donation_date);
+                        return Math.abs(differenceInDays(date, existing)) < 90;
+                      });
+                    }}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
