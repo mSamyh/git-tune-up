@@ -16,7 +16,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { useToast } from "@/hooks/use-toast";
 import { DonationHistoryByYear } from "@/components/DonationHistoryByYear";
 import { PointsHistoryPanel } from "@/components/PointsHistoryPanel";
-import { Plus, Calendar as CalendarIcon, Droplets, Award, TrendingUp, Timer, History as HistoryIcon, Coins } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Droplets, Award, TrendingUp, Timer, History as HistoryIcon, Coins, Sparkles, Heart, Flame } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { awardDonationPoints, getPointsPerDonation, syncLastDonationDate } from "@/lib/donationPoints";
