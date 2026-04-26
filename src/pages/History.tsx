@@ -446,7 +446,14 @@ const History = () => {
                     mode="single"
                     selected={tempDonationDate}
                     onSelect={setTempDonationDate}
-                    disabled={(date) => date > new Date()}
+                    disabled={(date) => {
+                      if (date > new Date()) return true;
+                      // Disable any date within 90 days of an existing donation
+                      return donations.some((d) => {
+                        const existing = new Date(d.donation_date);
+                        return Math.abs(differenceInDays(date, existing)) < 90;
+                      });
+                    }}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
