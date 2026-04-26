@@ -16,7 +16,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { useToast } from "@/hooks/use-toast";
 import { DonationHistoryByYear } from "@/components/DonationHistoryByYear";
 import { PointsHistoryPanel } from "@/components/PointsHistoryPanel";
-import { Plus, Calendar as CalendarIcon, Droplets, Award, TrendingUp, Timer, History as HistoryIcon, Coins } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Droplets, Award, TrendingUp, Timer, History as HistoryIcon, Coins, Sparkles, Heart, Flame } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { awardDonationPoints, getPointsPerDonation, syncLastDonationDate } from "@/lib/donationPoints";
@@ -246,12 +246,17 @@ const History = () => {
     : 100;
   const isEligible = daysUntilEligible === 0;
 
+  // Lives saved (each donation can save up to 3 lives)
+  const livesSaved = donationCount * 3;
+  const ringCircumference = 2 * Math.PI * 52;
+  const ringOffset = ringCircumference - (eligibilityProgress / 100) * ringCircumference;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background pb-20">
         <AppHeader />
         <main className="container mx-auto px-4 py-6 max-w-lg">
-          <Skeleton className="h-[500px] w-full rounded-2xl" />
+          <Skeleton className="h-[500px] w-full rounded-3xl" />
         </main>
         <BottomNav />
       </div>
@@ -259,147 +264,196 @@ const History = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       <AppHeader />
 
       <main className="container mx-auto px-4 py-4 max-w-2xl animate-fade-in">
-        {/* Header Section */}
-        <div className="mb-4">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-sm">
-              <HistoryIcon className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-xl font-display font-bold">Donation History</h1>
-              <p className="text-xs text-muted-foreground">Your blood donation journey</p>
-            </div>
-          </div>
-        </div>
+        {/* ===== HERO: Eligibility Ring ===== */}
+        <div className="relative overflow-hidden rounded-3xl mb-5 shadow-xl">
+          {/* Mesh gradient backdrop */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(120% 80% at 0% 0%, hsl(var(--primary) / 0.35) 0%, transparent 55%), radial-gradient(120% 80% at 100% 100%, hsl(265 70% 55% / 0.25) 0%, transparent 55%), linear-gradient(135deg, hsl(222 45% 10%) 0%, hsl(222 45% 14%) 100%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 opacity-[0.06] mix-blend-overlay pointer-events-none"
+            style={{
+              backgroundImage:
+                "linear-gradient(hsl(0 0% 100%) 1px, transparent 1px), linear-gradient(90deg, hsl(0 0% 100%) 1px, transparent 1px)",
+              backgroundSize: "24px 24px",
+            }}
+          />
 
-        {/* Interactive Stats Row */}
-        <div className="grid grid-cols-3 gap-2.5 mb-4">
-          <button
-            onClick={() => setActiveTab("donations")}
-            className={cn(
-              "p-3 rounded-2xl text-center transition-all btn-press",
-              activeTab === "donations"
-                ? "bg-primary/10 ring-2 ring-primary/30"
-                : "bg-muted/50 hover:bg-muted/70"
-            )}
-          >
-            <Droplets className={cn(
-              "h-5 w-5 mx-auto mb-1.5 transition-colors",
-              activeTab === "donations" ? "text-primary" : "text-muted-foreground"
-            )} />
-            <p className={cn(
-              "text-lg font-bold transition-colors",
-              activeTab === "donations" ? "text-primary" : "text-foreground"
-            )}>{donationCount}</p>
-            <p className="text-[10px] text-muted-foreground">Donations</p>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab("points")}
-            className={cn(
-              "p-3 rounded-2xl text-center transition-all btn-press",
-              activeTab === "points"
-                ? "bg-amber-500/10 ring-2 ring-amber-500/30"
-                : "bg-muted/50 hover:bg-muted/70"
-            )}
-          >
-            <Award className={cn(
-              "h-5 w-5 mx-auto mb-1.5 transition-colors",
-              activeTab === "points" ? "text-amber-600" : "text-muted-foreground"
-            )} />
-            <p className={cn(
-              "text-lg font-bold transition-colors",
-              activeTab === "points" ? "text-amber-600" : "text-foreground"
-            )}>{totalPoints}</p>
-            <p className="text-[10px] text-muted-foreground">Points</p>
-          </button>
-          
-          <div className="p-3 rounded-2xl bg-muted/50 text-center">
-            <TrendingUp className="h-5 w-5 text-muted-foreground mx-auto mb-1.5" />
-            <p className="text-lg font-bold">{totalUnits}</p>
-            <p className="text-[10px] text-muted-foreground">Units</p>
-          </div>
-        </div>
-
-        {/* Eligibility Progress Card */}
-        {profile?.last_donation_date && donationCount > 0 && (
-          <Card className="rounded-2xl border-border/50 shadow-soft mb-4 overflow-hidden">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center",
-                  isEligible 
-                    ? "bg-success/10" 
-                    : "bg-warning/10"
-                )}>
-                  <Timer className={cn(
-                    "h-5 w-5",
-                    isEligible ? "text-success" : "text-warning"
-                  )} />
+          <div className="relative px-5 pt-5 pb-6">
+            {/* Top row */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="bg-white/10 backdrop-blur-md p-2 rounded-xl border border-white/10">
+                  <HistoryIcon className="h-4 w-4 text-white" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">
-                    {isEligible 
-                      ? "You're eligible to donate!" 
-                      : `${daysUntilEligible} days until eligible`
-                    }
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Last donation: {format(new Date(profile.last_donation_date), "MMM d, yyyy")}
+                <div>
+                  <h1 className="text-white font-bold text-sm tracking-wide">My Journey</h1>
+                  <p className="text-white/50 text-[10px] tracking-wider uppercase">
+                    Donation History
                   </p>
                 </div>
               </div>
-              <Progress 
-                value={eligibilityProgress} 
+
+              <div
                 className={cn(
-                  "h-2",
-                  isEligible && "[&>div]:bg-success"
+                  "px-3 py-1 rounded-full text-[10px] font-semibold backdrop-blur-md border",
+                  isEligible
+                    ? "bg-emerald-500/15 text-emerald-300 border-emerald-400/30"
+                    : "bg-amber-500/15 text-amber-300 border-amber-400/30"
                 )}
-              />
-              <div className="flex justify-between mt-1.5">
-                <span className="text-[10px] text-muted-foreground">Day {Math.min(90, daysSinceLastDonation)}</span>
-                <span className="text-[10px] text-muted-foreground">90 days</span>
+              >
+                {isEligible ? "✓ Eligible" : `${daysUntilEligible}d to go`}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
 
-        {/* Tabbed Content */}
+            {/* Ring + Lives saved */}
+            <div className="flex items-center gap-5">
+              <div className="relative shrink-0">
+                <svg width="120" height="120" viewBox="0 0 120 120" className="-rotate-90">
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="52"
+                    fill="none"
+                    stroke="hsl(0 0% 100% / 0.1)"
+                    strokeWidth="8"
+                  />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="52"
+                    fill="none"
+                    stroke={isEligible ? "hsl(142 71% 50%)" : "hsl(38 92% 55%)"}
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={ringCircumference}
+                    strokeDashoffset={ringOffset}
+                    style={{ transition: "stroke-dashoffset 1s ease-out" }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  {profile?.last_donation_date ? (
+                    <>
+                      <span className="text-white text-2xl font-black leading-none">
+                        {Math.min(90, daysSinceLastDonation)}
+                      </span>
+                      <span className="text-white/50 text-[9px] uppercase tracking-wider mt-0.5">
+                        of 90 days
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-6 w-6 text-emerald-300 mb-0.5" />
+                      <span className="text-white/60 text-[9px] uppercase tracking-wider">
+                        Ready
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-white/60 text-[10px] uppercase tracking-wider mb-1">
+                  Lives impacted
+                </p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-white text-4xl font-black tabular-nums">{livesSaved}</span>
+                  <Heart className="h-5 w-5 text-rose-400 fill-rose-400" />
+                </div>
+                <p className="text-white/70 text-xs mt-1.5 leading-snug">
+                  {profile?.last_donation_date
+                    ? isEligible
+                      ? "Your body's ready — book your next donation."
+                      : `Last donated ${format(new Date(profile.last_donation_date), "MMM d")}.`
+                    : "Add your first donation to start tracking."}
+                </p>
+              </div>
+            </div>
+
+            {/* Stats strip */}
+            <div className="grid grid-cols-3 gap-2 mt-5">
+              <div className="bg-white/8 backdrop-blur-md rounded-2xl p-2.5 border border-white/10">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Droplets className="h-3 w-3 text-white/60" />
+                  <span className="text-white/60 text-[9px] uppercase tracking-wider">Donations</span>
+                </div>
+                <p className="text-white font-black text-xl tabular-nums">{donationCount}</p>
+              </div>
+              <div className="bg-white/8 backdrop-blur-md rounded-2xl p-2.5 border border-white/10">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Award className="h-3 w-3 text-amber-300" />
+                  <span className="text-white/60 text-[9px] uppercase tracking-wider">Points</span>
+                </div>
+                <p className="text-white font-black text-xl tabular-nums">{totalPoints}</p>
+              </div>
+              <div className="bg-white/8 backdrop-blur-md rounded-2xl p-2.5 border border-white/10">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <TrendingUp className="h-3 w-3 text-emerald-300" />
+                  <span className="text-white/60 text-[9px] uppercase tracking-wider">Units</span>
+                </div>
+                <p className="text-white font-black text-xl tabular-nums">{totalUnits}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Holographic accent */}
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-purple-500 to-primary" />
+        </div>
+
+        {/* ===== Tabs ===== */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-11 rounded-xl bg-muted/50 p-1">
-            <TabsTrigger value="donations" className="rounded-lg text-sm data-[state=active]:shadow-sm">
+          <TabsList className="grid w-full grid-cols-2 h-12 rounded-2xl bg-muted/50 p-1.5 mb-4">
+            <TabsTrigger
+              value="donations"
+              className="rounded-xl text-sm font-semibold data-[state=active]:shadow-md data-[state=active]:bg-card"
+            >
               <Droplets className="h-4 w-4 mr-1.5" />
               Donations
             </TabsTrigger>
-            <TabsTrigger value="points" className="rounded-lg text-sm data-[state=active]:shadow-sm">
+            <TabsTrigger
+              value="points"
+              className="rounded-xl text-sm font-semibold data-[state=active]:shadow-md data-[state=active]:bg-card"
+            >
               <Coins className="h-4 w-4 mr-1.5" />
               Points
             </TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="donations" className="mt-4">
-            <Card className="rounded-2xl border-border/50 shadow-soft overflow-hidden">
-              <CardHeader className="pb-2 pt-4">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-base">Blood Donations</CardTitle>
+
+          <TabsContent value="donations" className="mt-0">
+            <Card className="rounded-3xl border-border/50 shadow-soft overflow-hidden">
+              <CardHeader className="pb-2 pt-4 px-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Flame className="h-4 w-4 text-primary" />
+                      Donation Timeline
+                    </CardTitle>
+                    <CardDescription className="text-xs mt-0.5">
+                      Grouped by year, latest first
+                    </CardDescription>
+                  </div>
+                  {donationCount > 0 && (
+                    <span className="text-[10px] text-muted-foreground bg-muted/60 px-2 py-1 rounded-full">
+                      {donationCount} total
+                    </span>
+                  )}
                 </div>
-                <CardDescription className="text-xs">
-                  Your past donations grouped by year
-                </CardDescription>
               </CardHeader>
-              <CardContent className="pb-4">
-                {userId && (
-                  <DonationHistoryByYear donorId={userId} variant="standalone" />
-                )}
+              <CardContent className="pb-4 px-5">
+                {userId && <DonationHistoryByYear donorId={userId} variant="standalone" />}
               </CardContent>
             </Card>
           </TabsContent>
-          
-          <TabsContent value="points" className="mt-4">
+
+          <TabsContent value="points" className="mt-0">
             {userId && <PointsHistoryPanel userId={userId} />}
           </TabsContent>
         </Tabs>

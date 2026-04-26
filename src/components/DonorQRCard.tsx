@@ -85,16 +85,35 @@ export const DonorQRCard = ({ open, onOpenChange, donor }: DonorQRCardProps) => 
   };
 
   const getEligibilityStatus = () => {
-    if (!donor?.last_donation_date) return { eligible: true, text: "Eligible", daysLeft: 0 };
+    const status = donor?.availability_status || "available";
 
-    const daysSince = Math.floor(
-      (new Date().getTime() - new Date(donor.last_donation_date).getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    if (daysSince >= 90) {
-      return { eligible: true, text: "Eligible", daysLeft: 0 };
+    // Honor manual unavailable / reserved status first — overrides 90-day calc
+    if (status === "reserved") {
+      return { eligible: false, text: "Reserved", daysLeft: 0 };
     }
-    return { eligible: false, text: `${90 - daysSince}d wait`, daysLeft: 90 - daysSince };
+    if (status === "unavailable") {
+      // Show cooldown if applicable, else generic unavailable
+      if (donor?.last_donation_date) {
+        const daysSince = Math.floor(
+          (new Date().getTime() - new Date(donor.last_donation_date).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        if (daysSince < 90) {
+          return { eligible: false, text: `${90 - daysSince}d wait`, daysLeft: 90 - daysSince };
+        }
+      }
+      return { eligible: false, text: "Unavailable", daysLeft: 0 };
+    }
+
+    // status === 'available' (or unknown) — still respect 90-day medical rule
+    if (donor?.last_donation_date) {
+      const daysSince = Math.floor(
+        (new Date().getTime() - new Date(donor.last_donation_date).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysSince < 90) {
+        return { eligible: false, text: `${90 - daysSince}d wait`, daysLeft: 90 - daysSince };
+      }
+    }
+    return { eligible: true, text: "Eligible", daysLeft: 0 };
   };
 
   if (!donor) return null;
