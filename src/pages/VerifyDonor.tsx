@@ -67,35 +67,54 @@ const VerifyDonor = () => {
   };
 
   const getEligibility = () => {
-    if (!donor?.last_donation_date) {
-      return { 
-        eligible: true, 
-        status: "eligible", 
-        text: "Eligible to Donate",
-        subtext: "No previous donations recorded"
+    const status = donor?.availability_status || "available";
+    const lastDonation = donor?.last_donation_date ? new Date(donor.last_donation_date) : null;
+    const daysSince = lastDonation
+      ? Math.floor((new Date().getTime() - lastDonation.getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+
+    // Manual unavailable status — overrides 90-day calc (donor may be travelling/medical)
+    if (status === "reserved") {
+      return {
+        eligible: false,
+        status: "reserved",
+        text: "Reserved",
+        subtext: "This donor is reserved for an upcoming donation",
       };
     }
 
-    const lastDonation = new Date(donor.last_donation_date);
-    const daysSince = Math.floor(
-      (new Date().getTime() - lastDonation.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    if (daysSince >= 90) {
-      return { 
-        eligible: true, 
-        status: "eligible", 
-        text: "Eligible to Donate",
-        subtext: `${daysSince} days since last donation`
+    if (status === "unavailable") {
+      if (daysSince !== null && daysSince < 90) {
+        return {
+          eligible: false,
+          status: "waiting",
+          text: `Wait ${90 - daysSince} Days`,
+          subtext: `Last donated ${daysSince} days ago`,
+        };
+      }
+      return {
+        eligible: false,
+        status: "unavailable",
+        text: "Currently Unavailable",
+        subtext: "Donor has marked themselves unavailable",
       };
     }
 
-    const daysRemaining = 90 - daysSince;
-    return { 
-      eligible: false, 
-      status: "waiting", 
-      text: `Wait ${daysRemaining} Days`,
-      subtext: `Last donated ${daysSince} days ago`
+    // Available — still enforce 90-day safety
+    if (daysSince !== null && daysSince < 90) {
+      return {
+        eligible: false,
+        status: "waiting",
+        text: `Wait ${90 - daysSince} Days`,
+        subtext: `Last donated ${daysSince} days ago`,
+      };
+    }
+
+    return {
+      eligible: true,
+      status: "eligible",
+      text: "Eligible to Donate",
+      subtext: daysSince !== null ? `${daysSince} days since last donation` : "No previous donations recorded",
     };
   };
 
