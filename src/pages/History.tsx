@@ -21,12 +21,11 @@ import {
   Award,
   Heart,
   ShieldCheck,
-  Clock,
-  Info,
-  CheckCircle2,
-  Hourglass,
-  Activity,
+  Sparkles,
+  TrendingUp,
   Coins,
+  Flame,
+  ChevronRight,
 } from "lucide-react";
 import { format, differenceInDays, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -161,8 +160,11 @@ const History = () => {
       .single();
 
     if (historyError) {
+      // The DB trigger may also raise check_violation if somehow bypassed
       if (historyError.code === '23505') {
         toast({ variant: "destructive", title: "Duplicate donation", description: "You already have a donation recorded for this date" });
+      } else if (historyError.message?.toLowerCase().includes('90 days')) {
+        toast({ variant: "destructive", title: "Too soon to donate", description: historyError.message });
       } else {
         toast({ variant: "destructive", title: "Failed to add donation", description: historyError.message });
       }
@@ -203,7 +205,6 @@ const History = () => {
   const totalUnits = donations.reduce((sum, d) => sum + (d.units_donated || 1), 0);
   const isDonorType = profile?.user_type === 'donor' || profile?.user_type === 'both';
 
-  // Use the most recent donation from history (more reliable than profile.last_donation_date)
   const lastDonationDateStr = donations[0]?.donation_date || profile?.last_donation_date || null;
 
   const getDaysUntilEligible = () => {
@@ -216,18 +217,25 @@ const History = () => {
   const daysUntilEligible = getDaysUntilEligible();
   const daysSinceLastDonation = lastDonationDateStr
     ? Math.max(0, differenceInDays(new Date(), new Date(lastDonationDateStr)))
-    : 0;
+    : 90;
   const progress = lastDonationDateStr ? Math.min(100, (daysSinceLastDonation / 90) * 100) : 100;
   const isEligible = daysUntilEligible === 0;
   const livesSaved = donationCount * 3;
   const nextEligibleDate = lastDonationDateStr ? addDays(new Date(lastDonationDateStr), 90) : null;
+
+  // SVG ring math
+  const RING_SIZE = 168;
+  const STROKE = 12;
+  const RADIUS = (RING_SIZE - STROKE) / 2;
+  const CIRC = 2 * Math.PI * RADIUS;
+  const dashOffset = CIRC - (progress / 100) * CIRC;
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background pb-20">
         <AppHeader />
         <main className="container mx-auto px-4 py-6 max-w-lg space-y-4">
-          <Skeleton className="h-72 w-full rounded-3xl" />
+          <Skeleton className="h-80 w-full rounded-3xl" />
           <Skeleton className="h-24 w-full rounded-2xl" />
           <Skeleton className="h-64 w-full rounded-2xl" />
         </main>
@@ -237,162 +245,205 @@ const History = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-28">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 pb-28">
       <AppHeader />
 
       <main className="container mx-auto px-4 pt-3 pb-4 max-w-2xl animate-fade-in space-y-4">
-        {/* ========== HERO CARD ========== */}
-        <section
-          className="relative overflow-hidden rounded-[28px] shadow-2xl"
-          style={{
-            background:
-              "linear-gradient(135deg, hsl(0 75% 18%) 0%, hsl(348 70% 22%) 45%, hsl(15 65% 20%) 100%)",
-          }}
-        >
-          {/* Decorative blobs */}
-          <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-rose-500/30 blur-3xl" />
-          <div className="absolute -bottom-24 -left-16 w-56 h-56 rounded-full bg-amber-500/20 blur-3xl" />
+        {/* ============== HERO: Eligibility Ring ============== */}
+        <section className="relative overflow-hidden rounded-[32px] border border-border/40 bg-card shadow-xl">
+          {/* Top half: dark gradient with ring */}
           <div
-            className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none"
+            className="relative px-5 pt-6 pb-5"
             style={{
-              backgroundImage:
-                "radial-gradient(hsl(0 0% 100%) 1px, transparent 1px)",
-              backgroundSize: "18px 18px",
+              background:
+                "radial-gradient(circle at 30% 20%, hsl(0 70% 22%) 0%, hsl(0 80% 14%) 45%, hsl(348 60% 10%) 100%)",
             }}
-          />
+          >
+            {/* Soft noise / dots overlay */}
+            <div
+              className="absolute inset-0 opacity-[0.08] pointer-events-none"
+              style={{
+                backgroundImage: "radial-gradient(hsl(0 0% 100%) 1px, transparent 1px)",
+                backgroundSize: "16px 16px",
+              }}
+            />
+            {/* Glow blobs */}
+            <div className="absolute -top-16 -right-10 w-48 h-48 rounded-full bg-rose-500/30 blur-3xl" />
+            <div className="absolute -bottom-10 -left-12 w-40 h-40 rounded-full bg-amber-500/20 blur-3xl" />
 
-          <div className="relative p-5">
-            {/* Header row */}
-            <div className="flex items-center justify-between mb-5">
+            <div className="relative flex items-center justify-between mb-4">
               <div>
-                <p className="text-white/60 text-[10px] uppercase tracking-[0.2em] font-semibold mb-1">
-                  Your Journey
+                <p className="text-white/60 text-[10px] uppercase tracking-[0.25em] font-bold mb-1">
+                  Donation Journey
                 </p>
                 <h1 className="text-white text-2xl font-black leading-tight">
-                  Donation History
+                  {profile?.full_name?.split(" ")[0] || "Hero"}'s Story
                 </h1>
               </div>
-              <div className="h-12 w-12 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-lg">
-                <Heart className="h-6 w-6 text-white fill-rose-300/40" />
-              </div>
-            </div>
-
-            {/* Lives saved hero number */}
-            <div className="flex items-end gap-3 mb-5">
-              <div>
-                <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">
-                  Lives impacted
-                </p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-white text-6xl font-black tabular-nums leading-none drop-shadow-lg">
-                    {livesSaved}
-                  </span>
-                  <span className="text-white/70 text-sm font-medium">lives</span>
-                </div>
-              </div>
-              <div className="ml-auto flex flex-col items-end gap-1">
+              <div className="flex flex-col items-end gap-1">
                 <div
                   className={cn(
                     "px-3 py-1.5 rounded-full text-[11px] font-bold backdrop-blur-md border flex items-center gap-1.5",
                     isEligible
-                      ? "bg-emerald-500/25 text-emerald-100 border-emerald-300/40"
-                      : "bg-amber-500/25 text-amber-100 border-amber-300/40"
+                      ? "bg-emerald-400/20 text-emerald-100 border-emerald-300/40"
+                      : "bg-amber-400/20 text-amber-100 border-amber-300/40"
                   )}
                 >
+                  <Sparkles className="h-3 w-3" />
+                  {isEligible ? "Ready to donate" : "Recovery phase"}
+                </div>
+              </div>
+            </div>
+
+            {/* Ring + Lives saved */}
+            <div className="relative flex items-center justify-between gap-4">
+              {/* Circular Ring */}
+              <div className="relative shrink-0" style={{ width: RING_SIZE, height: RING_SIZE }}>
+                <svg width={RING_SIZE} height={RING_SIZE} className="-rotate-90">
+                  <defs>
+                    <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      {isEligible ? (
+                        <>
+                          <stop offset="0%" stopColor="hsl(142 76% 56%)" />
+                          <stop offset="100%" stopColor="hsl(160 84% 60%)" />
+                        </>
+                      ) : (
+                        <>
+                          <stop offset="0%" stopColor="hsl(45 95% 60%)" />
+                          <stop offset="100%" stopColor="hsl(15 90% 60%)" />
+                        </>
+                      )}
+                    </linearGradient>
+                  </defs>
+                  {/* Track */}
+                  <circle
+                    cx={RING_SIZE / 2}
+                    cy={RING_SIZE / 2}
+                    r={RADIUS}
+                    stroke="rgba(255,255,255,0.1)"
+                    strokeWidth={STROKE}
+                    fill="none"
+                  />
+                  {/* Progress */}
+                  <circle
+                    cx={RING_SIZE / 2}
+                    cy={RING_SIZE / 2}
+                    r={RADIUS}
+                    stroke="url(#ringGradient)"
+                    strokeWidth={STROKE}
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeDasharray={CIRC}
+                    strokeDashoffset={dashOffset}
+                    className="transition-all duration-1000"
+                  />
+                </svg>
+                {/* Center label */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
                   {isEligible ? (
                     <>
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Eligible
+                      <Heart className="h-6 w-6 text-emerald-300 fill-emerald-400/40 mb-1" />
+                      <p className="text-white text-xl font-black leading-none">Eligible</p>
+                      <p className="text-white/50 text-[10px] mt-1 font-medium">Donate now</p>
                     </>
                   ) : (
                     <>
-                      <Hourglass className="h-3.5 w-3.5" />
-                      {daysUntilEligible}d to go
+                      <p className="text-white/50 text-[10px] uppercase tracking-wider mb-0.5 font-bold">
+                        Wait
+                      </p>
+                      <p className="text-white text-3xl font-black tabular-nums leading-none">
+                        {daysUntilEligible}
+                      </p>
+                      <p className="text-white/60 text-[10px] mt-0.5">
+                        day{daysUntilEligible !== 1 ? "s" : ""}
+                      </p>
+                      <div className="mt-1.5 px-2 py-0.5 rounded-full bg-white/10 text-white/70 text-[9px] font-semibold">
+                        {Math.min(90, daysSinceLastDonation)}/90
+                      </div>
                     </>
                   )}
                 </div>
-                <p className="text-white/50 text-[10px]">
-                  {donationCount} donation{donationCount !== 1 ? "s" : ""}
-                </p>
               </div>
-            </div>
 
-            {/* 90-Day eligibility bar */}
-            <div className="bg-black/25 backdrop-blur-md rounded-2xl p-3.5 border border-white/10 mb-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
-                  <span className="text-white text-[11px] font-semibold uppercase tracking-wider">
-                    90-Day Recovery
-                  </span>
-                </div>
-                <span className="text-white/80 text-[11px] font-bold tabular-nums">
-                  Day {Math.min(90, daysSinceLastDonation)}/90
-                </span>
-              </div>
-              {/* Custom progress bar */}
-              <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className={cn(
-                    "absolute inset-y-0 left-0 rounded-full transition-all duration-1000",
-                    isEligible
-                      ? "bg-gradient-to-r from-emerald-400 to-green-300"
-                      : "bg-gradient-to-r from-amber-400 to-rose-300"
-                  )}
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-white/60 text-[10px]">
-                  {lastDonationDateStr
-                    ? `Last: ${format(new Date(lastDonationDateStr), "MMM d, yyyy")}`
-                    : "No donations recorded"}
-                </p>
-                {nextEligibleDate && !isEligible && (
-                  <p className="text-white/80 text-[10px] font-medium">
-                    Next: {format(nextEligibleDate, "MMM d")}
+              {/* Lives impacted */}
+              <div className="flex-1 min-w-0 space-y-3">
+                <div>
+                  <p className="text-white/50 text-[10px] uppercase tracking-wider font-bold mb-1">
+                    Lives Impacted
                   </p>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-white text-5xl font-black tabular-nums leading-none drop-shadow-2xl">
+                      {livesSaved}
+                    </span>
+                    <Flame className="h-5 w-5 text-rose-300 fill-rose-400/30" />
+                  </div>
+                  <p className="text-white/60 text-xs mt-1">
+                    From {donationCount} donation{donationCount !== 1 ? "s" : ""}
+                  </p>
+                </div>
+
+                {nextEligibleDate && !isEligible && (
+                  <div className="bg-white/5 backdrop-blur-md rounded-xl px-3 py-2 border border-white/10">
+                    <p className="text-white/50 text-[9px] uppercase tracking-wider font-bold">
+                      Next eligible
+                    </p>
+                    <p className="text-white text-sm font-bold mt-0.5">
+                      {format(nextEligibleDate, "MMM d, yyyy")}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
+          </div>
 
-            {/* Stats trio */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-2.5 border border-white/10">
-                <Droplets className="h-4 w-4 text-rose-200 mb-1.5" />
-                <p className="text-white text-xl font-black tabular-nums leading-none">{donationCount}</p>
-                <p className="text-white/60 text-[10px] mt-1">Donations</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-2.5 border border-white/10">
-                <Award className="h-4 w-4 text-amber-200 mb-1.5" />
-                <p className="text-white text-xl font-black tabular-nums leading-none">{totalPoints}</p>
-                <p className="text-white/60 text-[10px] mt-1">Points</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-2.5 border border-white/10">
-                <Activity className="h-4 w-4 text-emerald-200 mb-1.5" />
-                <p className="text-white text-xl font-black tabular-nums leading-none">{totalUnits}</p>
-                <p className="text-white/60 text-[10px] mt-1">Units</p>
-              </div>
+          {/* Bottom: stat cards on light surface */}
+          <div className="grid grid-cols-3 divide-x divide-border bg-card">
+            <button
+              onClick={() => setActiveTab("donations")}
+              className="px-3 py-3.5 text-center hover:bg-muted/50 transition-colors"
+            >
+              <Droplets className="h-4 w-4 text-rose-500 mx-auto mb-1" />
+              <p className="text-xl font-black tabular-nums leading-none">{donationCount}</p>
+              <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider font-semibold">
+                Donations
+              </p>
+            </button>
+            <button
+              onClick={() => setActiveTab("points")}
+              className="px-3 py-3.5 text-center hover:bg-muted/50 transition-colors"
+            >
+              <Award className="h-4 w-4 text-amber-500 mx-auto mb-1" />
+              <p className="text-xl font-black tabular-nums leading-none">{totalPoints}</p>
+              <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider font-semibold">
+                Points
+              </p>
+            </button>
+            <div className="px-3 py-3.5 text-center">
+              <TrendingUp className="h-4 w-4 text-emerald-500 mx-auto mb-1" />
+              <p className="text-xl font-black tabular-nums leading-none">{totalUnits}</p>
+              <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider font-semibold">
+                Units
+              </p>
             </div>
           </div>
         </section>
 
-        {/* ========== 90-DAY RULE INFO BANNER ========== */}
-        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-            <Info className="h-4 w-4 text-primary" />
+        {/* ============== 90-Day Safety Banner ============== */}
+        <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/[0.06] to-transparent p-3.5 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+            <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground leading-snug">
-              90 days between donations
+            <p className="text-sm font-bold text-foreground leading-snug">
+              90-day medical safety rule
             </p>
             <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-              For your safety, the app blocks adding donations less than 90 days apart. Dates within the gap are disabled in the picker.
+              Enforced by the system — dates within 90 days of any donation cannot be added.
             </p>
           </div>
         </div>
 
-        {/* ========== TABS ========== */}
+        {/* ============== Tabs ============== */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 h-12 rounded-2xl bg-muted/60 p-1.5">
             <TabsTrigger
@@ -416,7 +467,7 @@ const History = () => {
               <div className="px-4 pt-4 pb-2 flex items-center justify-between">
                 <div>
                   <h3 className="text-base font-bold flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-primary" />
+                    <ChevronRight className="h-4 w-4 text-primary" />
                     Timeline
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
@@ -424,7 +475,7 @@ const History = () => {
                   </p>
                 </div>
                 {donationCount > 0 && (
-                  <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                  <span className="text-[10px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
                     {donationCount} total
                   </span>
                 )}
@@ -445,7 +496,7 @@ const History = () => {
       {isDonorType && (
         <Button
           size="lg"
-          className="fixed bottom-24 right-4 h-14 w-14 rounded-2xl shadow-xl z-50 btn-press bg-gradient-to-br from-primary to-rose-600 hover:opacity-95"
+          className="fixed bottom-24 right-4 h-14 w-14 rounded-2xl shadow-2xl z-50 btn-press bg-gradient-to-br from-primary to-rose-600 hover:opacity-95 ring-4 ring-primary/20"
           onClick={() => setShowAddDialog(true)}
         >
           <Plus className="h-6 w-6" />
