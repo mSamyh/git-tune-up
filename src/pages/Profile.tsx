@@ -313,151 +313,193 @@ const Profile = () => {
 
   const isDonor = userType === 'donor' || userType === 'both';
 
+  const statusMeta = (() => {
+    switch (availabilityStatus) {
+      case 'available':
+        return { label: 'Available to donate', dot: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', cover: 'from-emerald-600 via-emerald-700 to-teal-900' };
+      case 'reserved':
+        return { label: 'Reserved', dot: 'bg-amber-500', text: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-500/10', border: 'border-amber-500/20', cover: 'from-amber-600 via-orange-700 to-rose-900' };
+      default:
+        return { label: 'Unavailable', dot: 'bg-rose-500', text: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-500/10', border: 'border-rose-500/20', cover: 'from-slate-700 via-slate-800 to-slate-950' };
+    }
+  })();
+
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 pb-24">
       <AppHeader />
 
-      <main className="container mx-auto max-w-2xl px-4">
-        {/* Profile Header */}
-        <div className="py-5 animate-fade-in">
-          {/* Top row: Avatar and Stats */}
-          <div className="flex items-center gap-5 mb-5">
-            {/* Avatar with status ring */}
-            <div className="relative flex-shrink-0">
-              <div className={`p-[2px] rounded-full bg-gradient-to-tr ${getStatusColor()}`}>
-                <div className="p-[2px] rounded-full bg-background">
-                  <AvatarUpload
-                    currentAvatarUrl={profile.avatar_url}
-                    userName={profile.full_name}
-                    onUploadComplete={(url) => setProfile(prev => prev ? {...prev, avatar_url: url} : null)}
-                    size="lg"
-                  />
-                </div>
-              </div>
-              {/* Status indicator */}
-              <div className={`absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-background flex items-center justify-center shadow-sm ${
-                availabilityStatus === 'available' ? 'bg-success' : 
-                availabilityStatus === 'reserved' ? 'bg-warning' : 'bg-destructive'
-              }`}>
-                {availabilityStatus === 'available' && <Check className="h-3 w-3 text-success-foreground" />}
-                {availabilityStatus === 'reserved' && <Clock className="h-3 w-3 text-warning-foreground" />}
-                {availabilityStatus === 'unavailable' && <X className="h-3 w-3 text-destructive-foreground" />}
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="flex-1 flex justify-around">
-              <button onClick={() => navigate('/history')} className="text-center hover:opacity-70 transition-opacity">
-                <p className="text-xl font-bold">{donationCount}</p>
-                <p className="text-xs text-muted-foreground">Donations</p>
-              </button>
-              <button onClick={() => navigate('/rewards')} className="text-center hover:opacity-70 transition-opacity">
-                <p className="text-xl font-bold">{totalPoints}</p>
-                <p className="text-xs text-muted-foreground">Points</p>
-              </button>
-              <div className="text-center">
-                <p className="text-xl font-bold text-primary">{profile.blood_group}</p>
-                <p className="text-xs text-muted-foreground">Blood</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Name and Bio */}
-          <div className="mb-4">
-            <h1 className="text-base font-bold">{profile.full_name}</h1>
-            {profile.title && (
-              <Badge 
-                className="text-[10px] border-0 font-medium px-2 py-0.5 mt-1"
-                style={{ 
-                  backgroundColor: profile.title_color ? `${profile.title_color}20` : 'hsl(var(--primary) / 0.1)',
-                  color: profile.title_color || 'hsl(var(--primary))'
-                }}
-              >
-                {profile.title}
-              </Badge>
-            )}
-            
-            {/* Category/Type badge */}
-            <p className="text-sm text-muted-foreground">
-              {userType === 'both' ? 'Donor & Receiver' : userType === 'donor' ? 'Blood Donor' : 'Blood Receiver'}
-            </p>
-            
-            {profile.bio && (
-              <p className="text-sm mt-1">{profile.bio}</p>
-            )}
-            
-            {/* Location and contact - Interactive links */}
-            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
-              {profile.island && (
-                <a 
-                  href={`https://maps.google.com/?q=${encodeURIComponent(profile.island + ', Maldives')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
-                >
-                  <MapPin className="h-3 w-3" />
-                  {profile.island}
-                  <ExternalLink className="h-2.5 w-2.5 opacity-50" />
-                </a>
-              )}
-              <a 
-                href={`tel:${profile.phone}`}
-                className="flex items-center gap-1 text-muted-foreground hover:text-success transition-colors"
-              >
-                <Phone className="h-3 w-3" />
-                {profile.phone}
-              </a>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 mb-5">
-            <Button 
-              variant="secondary" 
-              className="flex-1 rounded-xl h-10 text-sm font-medium"
-              onClick={() => setShowEditDialog(true)}
-            >
-              Edit profile
-            </Button>
-            <Button 
-              variant="secondary" 
-              className="flex-1 rounded-xl h-10 text-sm font-medium"
-              onClick={() => navigate('/rewards')}
-            >
-              <Gift className="h-4 w-4 mr-1.5" />
-              Rewards
-            </Button>
-            <Button 
-              variant="secondary" 
-              size="icon"
-              className="rounded-xl h-10 w-10"
-              onClick={() => setShowQRCard(true)}
-            >
-              <QrCode className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="secondary" 
-              size="icon"
-              className="rounded-xl h-10 w-10"
-              onClick={() => {
-                if (navigator.share) {
-                  navigator.share({
-                    title: `${profile.full_name} - Blood Donor`,
-                    text: `${profile.full_name} is a ${profile.blood_group} blood donor at LeyHadhiya`,
-                    url: window.location.href,
-                  });
-                } else {
-                  navigator.clipboard.writeText(window.location.href);
-                  toast({ title: "Link copied", description: "Profile link copied to clipboard" });
-                }
+      <main className="container mx-auto max-w-2xl px-0 sm:px-4 animate-fade-in">
+        {/* ============ COVER + AVATAR ============ */}
+        <section className="relative">
+          {/* Gradient cover banner */}
+          <div className={`relative h-32 bg-gradient-to-br ${statusMeta.cover} overflow-hidden sm:rounded-b-[28px]`}>
+            <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-black/20 blur-3xl" />
+            <div
+              className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none"
+              style={{
+                backgroundImage: "radial-gradient(hsl(0 0% 100%) 1px, transparent 1px)",
+                backgroundSize: "16px 16px",
               }}
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
+            />
+
+            {/* Status pill */}
+            <div className="absolute top-3 right-4">
+              <div className="px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 flex items-center gap-1.5 shadow-lg">
+                <span className={`h-1.5 w-1.5 rounded-full ${statusMeta.dot} animate-pulse`} />
+                <span className="text-white text-[11px] font-bold">{statusMeta.label}</span>
+              </div>
+            </div>
+
+            {/* Blood group floating badge */}
+            <div className="absolute top-3 left-4">
+              <div className="px-3 py-1 rounded-full bg-white/95 backdrop-blur-md flex items-center gap-1.5 shadow-xl">
+                <Droplet className="h-3 w-3 text-rose-600 fill-rose-500" />
+                <span className="text-rose-600 text-xs font-black tabular-nums">{profile.blood_group}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Removed redundant Quick Stats Highlights - stats shown in header row above */}
-        </div>
+          {/* Avatar overlapping cover */}
+          <div className="px-5 -mt-12 relative">
+            <div className="flex items-end justify-between">
+              <div className="relative">
+                <div className={`p-[3px] rounded-full bg-gradient-to-br ${statusMeta.cover} shadow-2xl`}>
+                  <div className="p-[2px] rounded-full bg-background">
+                    <AvatarUpload
+                      currentAvatarUrl={profile.avatar_url}
+                      userName={profile.full_name}
+                      onUploadComplete={(url) => setProfile(prev => prev ? {...prev, avatar_url: url} : null)}
+                      size="lg"
+                    />
+                  </div>
+                </div>
+                {availabilityStatus === 'available' && (
+                  <div className="absolute bottom-1 right-1 h-5 w-5 rounded-full bg-emerald-500 border-[3px] border-background flex items-center justify-center shadow">
+                    <Check className="h-2.5 w-2.5 text-white" />
+                  </div>
+                )}
+              </div>
+
+              {/* Quick action buttons (right of avatar, below cover) */}
+              <div className="flex items-center gap-2 mb-2">
+                <button
+                  onClick={() => setShowQRCard(true)}
+                  className="h-9 w-9 rounded-xl bg-card border border-border shadow-sm flex items-center justify-center hover:bg-muted transition-colors"
+                >
+                  <QrCode className="h-4 w-4 text-foreground" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: `${profile.full_name} - Blood Donor`,
+                        text: `${profile.full_name} is a ${profile.blood_group} blood donor at LeyHadhiya`,
+                        url: window.location.href,
+                      });
+                    } else {
+                      navigator.clipboard.writeText(window.location.href);
+                      toast({ title: "Link copied" });
+                    }
+                  }}
+                  className="h-9 w-9 rounded-xl bg-card border border-border shadow-sm flex items-center justify-center hover:bg-muted transition-colors"
+                >
+                  <Share2 className="h-4 w-4 text-foreground" />
+                </button>
+                <button
+                  onClick={() => setShowEditDialog(true)}
+                  className="h-9 px-3 rounded-xl bg-foreground text-background shadow-sm flex items-center gap-1.5 font-semibold text-xs hover:opacity-90 transition-opacity"
+                >
+                  <Edit2 className="h-3 w-3" />
+                  Edit
+                </button>
+              </div>
+            </div>
+
+            {/* Name + Title */}
+            <div className="mt-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl font-black leading-tight">{profile.full_name}</h1>
+                {profile.title && (
+                  <Badge
+                    className="text-[10px] border-0 font-bold px-2 py-0.5"
+                    style={{
+                      backgroundColor: profile.title_color ? `${profile.title_color}20` : 'hsl(var(--primary) / 0.1)',
+                      color: profile.title_color || 'hsl(var(--primary))'
+                    }}
+                  >
+                    <Sparkles className="h-2.5 w-2.5 mr-1" />
+                    {profile.title}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5 font-medium uppercase tracking-wider">
+                {userType === 'both' ? 'Donor · Receiver' : userType === 'donor' ? 'Blood Donor' : 'Blood Receiver'}
+              </p>
+
+              {profile.bio && (
+                <p className="text-sm mt-2 text-foreground/80 leading-relaxed">{profile.bio}</p>
+              )}
+
+              {/* Location + Phone chips */}
+              <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                {profile.island && (
+                  <a
+                    href={`https://maps.google.com/?q=${encodeURIComponent(profile.island + ', Maldives')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 hover:bg-muted text-xs text-foreground/80 transition-colors"
+                  >
+                    <MapPin className="h-3 w-3 text-emerald-600" />
+                    {profile.island}
+                  </a>
+                )}
+                <a
+                  href={`tel:${profile.phone}`}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 hover:bg-muted text-xs text-foreground/80 transition-colors"
+                >
+                  <Phone className="h-3 w-3 text-blue-600" />
+                  {profile.phone}
+                </a>
+              </div>
+            </div>
+
+            {/* ============ STATS STRIP ============ */}
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <button
+                onClick={() => navigate('/history')}
+                className="rounded-2xl bg-card border border-border/60 px-3 py-3 hover:border-primary/40 hover:shadow-md transition-all active:scale-95 text-left"
+              >
+                <Heart className="h-4 w-4 text-rose-500 mb-1.5" />
+                <p className="text-2xl font-black tabular-nums leading-none">{donationCount}</p>
+                <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider font-semibold">
+                  Donations
+                </p>
+              </button>
+              <button
+                onClick={() => navigate('/rewards')}
+                className="rounded-2xl bg-card border border-border/60 px-3 py-3 hover:border-amber-500/40 hover:shadow-md transition-all active:scale-95 text-left"
+              >
+                <Award className="h-4 w-4 text-amber-500 mb-1.5" />
+                <p className="text-2xl font-black tabular-nums leading-none">{totalPoints}</p>
+                <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider font-semibold">
+                  Points
+                </p>
+              </button>
+              <div className="rounded-2xl bg-gradient-to-br from-rose-500 to-primary px-3 py-3 shadow-md text-left">
+                <Droplet className="h-4 w-4 text-white/80 fill-white/30 mb-1.5" />
+                <p className="text-2xl font-black tabular-nums leading-none text-white">
+                  {donationCount * 3}
+                </p>
+                <p className="text-[10px] text-white/70 mt-1 uppercase tracking-wider font-semibold">
+                  Lives Saved
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="px-5 mt-5">
 
         {/* Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -634,6 +676,7 @@ const Profile = () => {
             <CheckAdminButton />
           </TabsContent>
         </Tabs>
+        </div>
       </main>
 
       {/* Edit Profile Dialog */}
