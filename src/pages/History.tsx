@@ -503,35 +503,87 @@ const History = () => {
         </Button>
       )}
 
-      {/* Add Donation Dialog */}
+      {/* Add Donation Dialog — Specific Date Card */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-sm rounded-3xl">
-          <DialogHeader className="px-1 pt-1">
-            <DialogTitle className="text-lg flex items-center gap-2">
-              <Droplets className="h-5 w-5 text-primary" />
-              Add Donation
-            </DialogTitle>
-            <DialogDescription className="text-xs leading-relaxed">
-              Earn <span className="font-bold text-primary">{pointsPerDonation} points</span>. For your safety, donations must be at least <span className="font-semibold">90 days apart</span> — blocked dates are disabled below.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Donation Date</Label>
+        <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden gap-0">
+          {/* Header strip */}
+          <div className="px-5 pt-5 pb-3 bg-gradient-to-br from-primary/5 via-transparent to-rose-500/5">
+            <DialogHeader>
+              <DialogTitle className="text-lg flex items-center gap-2">
+                <div className="h-8 w-8 rounded-xl bg-primary/15 flex items-center justify-center">
+                  <Droplets className="h-4 w-4 text-primary" />
+                </div>
+                Record Donation
+              </DialogTitle>
+              <DialogDescription className="text-xs leading-relaxed">
+                Earn <span className="font-bold text-primary">{pointsPerDonation} points</span>. Donations must be at least <span className="font-semibold">90 days apart</span>.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="px-5 py-4 space-y-4">
+            {/* ===== SPECIFIC DATE CARD (tear-off calendar look) ===== */}
+            <div className="relative">
+              <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-2 block">
+                Donation Date
+              </Label>
+
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
+                  <button
+                    type="button"
                     className={cn(
-                      "w-full justify-start text-left font-normal h-11 rounded-xl",
-                      !tempDonationDate && "text-muted-foreground"
+                      "group w-full relative overflow-hidden rounded-2xl border-2 transition-all duration-200 active:scale-[0.98]",
+                      tempDonationDate
+                        ? "border-primary/30 shadow-md shadow-primary/10 bg-card"
+                        : "border-dashed border-border bg-muted/40 hover:border-primary/40 hover:bg-card"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {tempDonationDate ? format(tempDonationDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
+                    {tempDonationDate ? (
+                      <div className="flex items-stretch">
+                        {/* Left: red header strip with month */}
+                        <div className="bg-gradient-to-b from-rose-600 to-primary px-3 py-3 flex flex-col items-center justify-center min-w-[72px] relative">
+                          <div className="absolute top-1.5 left-1/2 -translate-x-1/2 flex gap-1">
+                            <span className="h-1 w-1 rounded-full bg-white/50" />
+                            <span className="h-1 w-1 rounded-full bg-white/50" />
+                          </div>
+                          <p className="text-white/90 text-[10px] font-bold uppercase tracking-widest mt-1">
+                            {format(tempDonationDate, "MMM")}
+                          </p>
+                          <p className="text-white text-[9px] font-medium opacity-80">
+                            {format(tempDonationDate, "yyyy")}
+                          </p>
+                        </div>
+                        {/* Right: big day number + weekday */}
+                        <div className="flex-1 px-4 py-3 flex items-center justify-between">
+                          <div>
+                            <p className="text-foreground text-5xl font-black leading-none tabular-nums">
+                              {format(tempDonationDate, "d")}
+                            </p>
+                            <p className="text-muted-foreground text-[11px] font-bold uppercase tracking-wider mt-1.5">
+                              {format(tempDonationDate, "EEEE")}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <CalendarIcon className="h-4 w-4 text-primary" />
+                            <span className="text-[9px] text-muted-foreground font-semibold">
+                              Tap to change
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-7 px-4 gap-2">
+                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                          <CalendarIcon className="h-5 w-5 text-primary" />
+                        </div>
+                        <p className="text-sm font-semibold text-foreground">Pick donation date</p>
+                        <p className="text-[11px] text-muted-foreground">Tap to open calendar</p>
+                      </div>
+                    )}
+                  </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 rounded-2xl" align="start">
                   <Calendar
                     mode="single"
                     selected={tempDonationDate}
@@ -548,22 +600,70 @@ const History = () => {
                   />
                 </PopoverContent>
               </Popover>
+
+              {/* Quick presets */}
+              <div className="flex gap-1.5 mt-2">
+                {[
+                  { label: "Today", date: new Date() },
+                  { label: "Yesterday", date: addDays(new Date(), -1) },
+                  { label: "1 week ago", date: addDays(new Date(), -7) },
+                ].map((preset) => {
+                  const blocked = donations.some((d) => {
+                    const existing = new Date(d.donation_date);
+                    return Math.abs(differenceInDays(preset.date, existing)) < 90;
+                  });
+                  return (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      disabled={blocked}
+                      onClick={() => setTempDonationDate(preset.date)}
+                      className={cn(
+                        "flex-1 px-2 py-1.5 rounded-lg text-[10px] font-semibold transition-all",
+                        blocked
+                          ? "bg-muted/40 text-muted-foreground/40 line-through cursor-not-allowed"
+                          : "bg-muted hover:bg-primary/10 hover:text-primary text-foreground active:scale-95"
+                      )}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            {/* Hospital Name */}
             <div className="space-y-2">
-              <Label htmlFor="hospital" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hospital Name</Label>
+              <Label htmlFor="hospital" className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                Hospital
+              </Label>
               <Input
                 id="hospital"
-                placeholder="e.g. IGMH, ADK Hospital, KRH"
+                placeholder="e.g. IGMH, ADK, KRH"
                 value={hospitalName}
                 onChange={(e) => setHospitalName(e.target.value)}
                 className="h-11 rounded-xl"
               />
             </div>
+
+            {/* Mini reward callout */}
+            {tempDonationDate && hospitalName.trim() && (
+              <div className="flex items-center gap-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3 py-2.5 animate-fade-in">
+                <Award className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <p className="text-xs text-foreground">
+                  You'll earn{" "}
+                  <span className="font-bold text-amber-600 dark:text-amber-400">
+                    +{pointsPerDonation} points
+                  </span>
+                </p>
+              </div>
+            )}
           </div>
-          <DialogFooter className="gap-2">
+
+          <DialogFooter className="px-5 pb-5 pt-0 gap-2 sm:gap-2">
             <Button
               variant="outline"
-              className="rounded-xl"
+              className="rounded-xl flex-1"
               onClick={() => {
                 setShowAddDialog(false);
                 setHospitalName("");
@@ -573,11 +673,11 @@ const History = () => {
               Cancel
             </Button>
             <Button
-              className="rounded-xl btn-press"
+              className="rounded-xl btn-press flex-1 bg-gradient-to-r from-primary to-rose-600"
               onClick={handleAddDonation}
               disabled={!tempDonationDate || !hospitalName.trim()}
             >
-              Add Donation
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>
