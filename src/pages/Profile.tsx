@@ -676,6 +676,7 @@ const Profile = () => {
             <CheckAdminButton />
           </TabsContent>
         </Tabs>
+        </div>
       </main>
 
       {/* Edit Profile Dialog */}
