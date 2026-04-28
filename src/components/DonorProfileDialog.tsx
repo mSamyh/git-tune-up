@@ -70,7 +70,6 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
       }
 
       checkOwnProfile();
-      fetchDonationHistory();
       checkAdmin();
     }
   }, [isOpen, donor]);
