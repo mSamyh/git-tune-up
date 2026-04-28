@@ -483,251 +483,199 @@ const BloodRequests = ({ status = "active", highlightId, onStatusChange }: Blood
     const isHighlighted = highlightId === request.id;
     const canManage = isRequestor(request) || isAdmin;
     const isUrgent = request.urgency === 'urgent' || request.urgency === 'Emergency';
-    
-    const getCardStyles = () => {
-      if (isHighlighted) {
-        return 'border-primary/40 bg-primary/5 ring-2 ring-primary/30';
-      }
-      if (isUrgent && status === 'active') {
-        return 'border-l-4 border-l-destructive bg-destructive/[0.03]';
-      }
-      return 'border-border/40 bg-card/50';
-    };
-    
+
     return (
-    <div 
+    <div
       key={request.id}
       ref={isHighlighted ? highlightRef : null}
-      className={`p-4 rounded-xl transition-all ${getCardStyles()} ${isUrgent && status === 'active' ? 'urgency-pulse' : ''}`}
+      className={cn(
+        "relative rounded-2xl overflow-hidden border bg-card shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5",
+        isHighlighted && "ring-2 ring-primary/40 border-primary/40",
+        isUrgent && status === 'active' && !isHighlighted && "border-destructive/40 urgency-pulse",
+        !isUrgent && !isHighlighted && "border-border/60"
+      )}
     >
-      {/* Top row: patient + blood group */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-sm truncate">{request.patient_name}</h3>
-          {request.needed_before && status === "active" && (
-            <CountdownTimer neededBefore={request.needed_before} compact className="mt-1" />
-          )}
-          {status === "active" && (
-            <MatchStats requestId={request.id} notifiedCount={request.notified_donor_count} />
-          )}
+      {/* Top accent strip */}
+      <div className={cn(
+        "h-1 w-full",
+        isUrgent && status === 'active' ? "bg-gradient-to-r from-destructive via-rose-500 to-amber-500" :
+        status === 'fulfilled' ? "bg-gradient-to-r from-emerald-500 to-teal-500" :
+        status === 'expired' ? "bg-muted-foreground/30" :
+        "bg-gradient-to-r from-primary via-rose-500 to-primary"
+      )} />
+
+      <div className="p-4">
+        {/* ===== HEADER: Patient + Blood Type Hero ===== */}
+        <div className="flex items-start gap-3 mb-3">
+          {/* Big blood drop badge */}
+          <div className="relative shrink-0">
+            <div className={cn(
+              "h-14 w-14 rounded-2xl flex flex-col items-center justify-center shadow-md",
+              isUrgent && status === 'active'
+                ? "bg-gradient-to-br from-destructive to-rose-700 text-white"
+                : "bg-gradient-to-br from-primary to-rose-600 text-white"
+            )}>
+              <Droplet className="h-3.5 w-3.5 fill-white/40 mb-0.5" />
+              <span className="text-sm font-black tabular-nums leading-none">{request.blood_group}</span>
+            </div>
+            {isUrgent && status === 'active' && (
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-amber-400 border-2 border-background flex items-center justify-center shadow animate-pulse">
+                <span className="text-[8px] font-black text-rose-950">!</span>
+              </span>
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">
+                  Patient
+                </p>
+                <h3 className="font-black text-base text-foreground truncate leading-tight">
+                  {request.patient_name}
+                </h3>
+              </div>
+              {isUrgent && status === 'active' && (
+                <Badge variant="destructive" className="text-[9px] px-2 py-0.5 font-black uppercase tracking-wider shrink-0 animate-pulse">
+                  Urgent
+                </Badge>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                {request.units_needed} unit{request.units_needed !== 1 ? 's' : ''}
+              </span>
+              {request.emergency_type && (
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-5 font-semibold">
+                  {request.emergency_type}
+                </Badge>
+              )}
+            </div>
+
+            {request.needed_before && status === "active" && (
+              <CountdownTimer neededBefore={request.needed_before} compact className="mt-2" />
+            )}
+            {status === "active" && (
+              <MatchStats requestId={request.id} notifiedCount={request.notified_donor_count} />
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 ml-2">
-          <Badge className="bg-primary/10 text-primary border-0 text-xs px-2 py-0.5">
-            <Droplet className="h-3 w-3 mr-1" />
-            {request.blood_group}
-          </Badge>
-          {isUrgent && (
-            <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5 animate-pulse">URGENT</Badge>
-          )}
-        </div>
-      </div>
 
-      {/* Info rows */}
-      <div className="space-y-1.5 text-xs">
-        <button 
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full text-left"
-          onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(request.hospital_name)}`, '_blank')}
-        >
-          <MapPin className="h-3 w-3 shrink-0" />
-          <span className="truncate hover:underline">{request.hospital_name}</span>
-        </button>
+        {/* ===== INFO ROWS ===== */}
+        <div className="grid grid-cols-1 gap-1.5 mb-3 p-3 rounded-xl bg-muted/40 border border-border/40">
+          <button
+            className="flex items-center gap-2 text-xs text-foreground hover:text-primary transition-colors w-full text-left group"
+            onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(request.hospital_name)}`, '_blank')}
+          >
+            <div className="h-6 w-6 rounded-md bg-emerald-500/15 flex items-center justify-center shrink-0">
+              <MapPin className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <span className="truncate font-semibold group-hover:underline">{request.hospital_name}</span>
+          </button>
 
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <User className="h-3 w-3 shrink-0" />
-          <span>{request.contact_name}</span>
-        </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="h-6 w-6 rounded-md bg-blue-500/15 flex items-center justify-center shrink-0">
+              <User className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+            </div>
+            <span className="truncate font-medium">{request.contact_name}</span>
+          </div>
 
-        <a 
-          href={`tel:${request.contact_phone}`}
-          className="flex items-center gap-2 text-primary hover:underline"
-        >
-          <Phone className="h-3 w-3 shrink-0" />
-          <span className="font-medium">{request.contact_phone}</span>
-        </a>
-
-        <div className="flex items-center gap-2 pt-1">
-          <span className="text-muted-foreground">Units:</span>
-          <span className="font-medium text-primary">{request.units_needed}</span>
-          {request.emergency_type && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">{request.emergency_type}</Badge>
-          )}
+          <a
+            href={`tel:${request.contact_phone}`}
+            className="flex items-center gap-2 text-xs text-primary hover:underline"
+          >
+            <div className="h-6 w-6 rounded-md bg-primary/15 flex items-center justify-center shrink-0">
+              <Phone className="h-3 w-3 text-primary" />
+            </div>
+            <span className="font-bold tabular-nums">{request.contact_phone}</span>
+          </a>
         </div>
 
         {request.notes && (
-          <p className="text-muted-foreground pt-1 italic line-clamp-2">{request.notes}</p>
-        )}
-      </div>
-
-      {/* Actions */}
-      <div className="mt-3 flex items-center justify-between flex-wrap gap-2">
-        <div className="flex gap-1.5 flex-wrap">
-          {/* Share - available to all */}
-          <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => setShareRequest(request)}>
-            <Share2 className="h-3 w-3 mr-1" />
-            Share
-          </Button>
-          
-          {canManage ? (
-            <>
-              {isRequestor(request) && (
-                <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => viewResponses(request)}>
-                  <MessageSquare className="h-3 w-3 mr-1" />
-                  Responses
-                </Button>
-              )}
-
-              {/* Active tab actions */}
-              {status === "active" && (
-                <>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="h-7 text-xs rounded-lg text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-500/10" 
-                    onClick={() => markAsFulfilled(request.id)}
-                    disabled={actionLoading === request.id}
-                  >
-                    {actionLoading === request.id ? (
-                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                    )}
-                    Done
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="h-7 text-xs rounded-lg text-amber-600 border-amber-500/30 hover:bg-amber-50 dark:hover:bg-amber-500/10" 
-                    onClick={() => markAsExpired(request.id)}
-                    disabled={actionLoading === request.id}
-                  >
-                    {actionLoading === request.id ? (
-                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <XCircle className="h-3 w-3 mr-1" />
-                    )}
-                    Expire
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="destructive" 
-                    className="h-7 text-xs rounded-lg" 
-                    onClick={() => deleteRequest(request.id)}
-                    disabled={actionLoading === request.id}
-                  >
-                    {actionLoading === request.id ? (
-                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Trash className="h-3 w-3 mr-1" />
-                    )}
-                    Delete
-                  </Button>
-                </>
-              )}
-
-              {/* Fulfilled tab: admin can reactivate or expire */}
-              {status === "fulfilled" && isAdmin && (
-                <>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="h-7 text-xs rounded-lg text-blue-600 border-blue-500/30 hover:bg-blue-50 dark:hover:bg-blue-500/10" 
-                    onClick={() => changeRequestStatus(request.id, "active")}
-                    disabled={actionLoading === request.id}
-                  >
-                    {actionLoading === request.id ? (
-                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <RotateCcw className="h-3 w-3 mr-1" />
-                    )}
-                    Reactivate
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="h-7 text-xs rounded-lg text-amber-600 border-amber-500/30 hover:bg-amber-50 dark:hover:bg-amber-500/10" 
-                    onClick={() => changeRequestStatus(request.id, "expired")}
-                    disabled={actionLoading === request.id}
-                  >
-                    {actionLoading === request.id ? (
-                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <XCircle className="h-3 w-3 mr-1" />
-                    )}
-                    Expire
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="destructive" 
-                    className="h-7 text-xs rounded-lg" 
-                    onClick={() => deleteRequest(request.id)}
-                    disabled={actionLoading === request.id}
-                  >
-                    <Trash className="h-3 w-3 mr-1" />
-                    Delete
-                  </Button>
-                </>
-              )}
-
-              {/* Expired tab: admin can reactivate or fulfill */}
-              {status === "expired" && isAdmin && (
-                <>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="h-7 text-xs rounded-lg text-blue-600 border-blue-500/30 hover:bg-blue-50 dark:hover:bg-blue-500/10" 
-                    onClick={() => changeRequestStatus(request.id, "active")}
-                    disabled={actionLoading === request.id}
-                  >
-                    {actionLoading === request.id ? (
-                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <RotateCcw className="h-3 w-3 mr-1" />
-                    )}
-                    Reactivate
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="h-7 text-xs rounded-lg text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-500/10" 
-                    onClick={() => changeRequestStatus(request.id, "fulfilled")}
-                    disabled={actionLoading === request.id}
-                  >
-                    {actionLoading === request.id ? (
-                      <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                    )}
-                    Fulfill
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="destructive" 
-                    className="h-7 text-xs rounded-lg" 
-                    onClick={() => deleteRequest(request.id)}
-                    disabled={actionLoading === request.id}
-                  >
-                    <Trash className="h-3 w-3 mr-1" />
-                    Delete
-                  </Button>
-                </>
-              )}
-            </>
-          ) : status === "active" && (
-            <Button size="sm" className="h-7 text-xs rounded-lg" onClick={() => handleRespond(request)}>
-              <MessageSquare className="h-3 w-3 mr-1" />
-              Respond
-            </Button>
-          )}
-        </div>
-        
-        {/* Posted by and timestamp */}
-        <div className="text-[10px] text-muted-foreground text-right ml-auto">
-          <div className="flex items-center gap-1 justify-end">
-            <span>by {request.poster_name || 'Anonymous'}</span>
+          <div className="mb-3 px-3 py-2 rounded-xl bg-amber-500/[0.06] border-l-2 border-amber-500/40">
+            <p className="text-[11px] text-foreground/80 italic line-clamp-2 leading-relaxed">
+              "{request.notes}"
+            </p>
           </div>
-          <div className="flex items-center gap-1 justify-end">
-            <Clock className="h-2.5 w-2.5" />
-            <span>{formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}</span>
+        )}
+
+        {/* ===== ACTIONS ===== */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap">
+            <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => setShareRequest(request)}>
+              <Share2 className="h-3 w-3 mr-1" />
+              Share
+            </Button>
+
+            {canManage ? (
+              <>
+                {isRequestor(request) && (
+                  <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" onClick={() => viewResponses(request)}>
+                    <MessageSquare className="h-3 w-3 mr-1" />
+                    Responses
+                  </Button>
+                )}
+
+                {status === "active" && (
+                  <>
+                    <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-500/10" onClick={() => markAsFulfilled(request.id)} disabled={actionLoading === request.id}>
+                      {actionLoading === request.id ? <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+                      Done
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-amber-600 border-amber-500/30 hover:bg-amber-50 dark:hover:bg-amber-500/10" onClick={() => markAsExpired(request.id)} disabled={actionLoading === request.id}>
+                      {actionLoading === request.id ? <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <XCircle className="h-3 w-3 mr-1" />}
+                      Expire
+                    </Button>
+                    <Button size="sm" variant="destructive" className="h-7 text-xs rounded-lg" onClick={() => deleteRequest(request.id)} disabled={actionLoading === request.id}>
+                      {actionLoading === request.id ? <div className="h-3 w-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <Trash className="h-3 w-3 mr-1" />}
+                      Delete
+                    </Button>
+                  </>
+                )}
+
+                {status === "fulfilled" && isAdmin && (
+                  <>
+                    <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-blue-600 border-blue-500/30" onClick={() => changeRequestStatus(request.id, "active")} disabled={actionLoading === request.id}>
+                      <RotateCcw className="h-3 w-3 mr-1" />Reactivate
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-amber-600 border-amber-500/30" onClick={() => changeRequestStatus(request.id, "expired")} disabled={actionLoading === request.id}>
+                      <XCircle className="h-3 w-3 mr-1" />Expire
+                    </Button>
+                    <Button size="sm" variant="destructive" className="h-7 text-xs rounded-lg" onClick={() => deleteRequest(request.id)}>
+                      <Trash className="h-3 w-3 mr-1" />Delete
+                    </Button>
+                  </>
+                )}
+
+                {status === "expired" && isAdmin && (
+                  <>
+                    <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-blue-600 border-blue-500/30" onClick={() => changeRequestStatus(request.id, "active")} disabled={actionLoading === request.id}>
+                      <RotateCcw className="h-3 w-3 mr-1" />Reactivate
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg text-emerald-600 border-emerald-500/30" onClick={() => changeRequestStatus(request.id, "fulfilled")} disabled={actionLoading === request.id}>
+                      <CheckCircle className="h-3 w-3 mr-1" />Fulfill
+                    </Button>
+                    <Button size="sm" variant="destructive" className="h-7 text-xs rounded-lg" onClick={() => deleteRequest(request.id)}>
+                      <Trash className="h-3 w-3 mr-1" />Delete
+                    </Button>
+                  </>
+                )}
+              </>
+            ) : status === "active" && (
+              <Button size="sm" className="h-7 text-xs rounded-lg bg-gradient-to-r from-primary to-rose-600 shadow-md" onClick={() => handleRespond(request)}>
+                <Heart className="h-3 w-3 mr-1 fill-white" />
+                Respond
+              </Button>
+            )}
+          </div>
+
+          <div className="text-[10px] text-muted-foreground text-right ml-auto leading-tight">
+            <div className="font-semibold">by {request.poster_name || 'Anonymous'}</div>
+            <div className="flex items-center gap-1 justify-end opacity-70">
+              <Clock className="h-2.5 w-2.5" />
+              <span>{formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}</span>
+            </div>
           </div>
         </div>
       </div>
