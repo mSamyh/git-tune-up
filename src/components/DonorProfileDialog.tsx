@@ -311,19 +311,22 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
 
           {/* Stats row — modern segmented */}
           <div className="grid grid-cols-3 gap-2">
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-3 text-center border border-primary/10">
-              <Droplet className="h-4 w-4 text-primary mx-auto mb-1" fill="currentColor" />
-              <p className="text-lg font-bold tabular-nums leading-none">{totalDonations}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Donations</p>
+            <div className="relative overflow-hidden bg-gradient-to-br from-primary/15 to-primary/5 rounded-2xl p-3 text-center border border-primary/20 shadow-sm">
+              <div className="absolute -top-3 -right-3 h-12 w-12 rounded-full bg-primary/10 blur-xl" />
+              <Droplet className="h-4 w-4 text-primary mx-auto mb-1 relative" fill="currentColor" />
+              <p className="text-xl font-black tabular-nums leading-none text-primary relative">{totalDonations}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1 font-bold relative">Donations</p>
             </div>
-            <div className="bg-gradient-to-br from-rose-500/10 to-rose-500/5 rounded-2xl p-3 text-center border border-rose-500/10">
-              <span className="block text-lg font-bold text-primary leading-none">{donor.blood_group}</span>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-2">Blood Type</p>
+            <div className="relative overflow-hidden bg-gradient-to-br from-rose-500 to-primary rounded-2xl p-3 text-center shadow-md">
+              <div className="absolute inset-0 opacity-[0.1]" style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "10px 10px" }} />
+              <span className="block text-xl font-black text-white leading-none relative drop-shadow">{donor.blood_group}</span>
+              <p className="text-[10px] text-white/80 uppercase tracking-wider mt-2 font-bold relative">Blood Type</p>
             </div>
-            <div className="bg-gradient-to-br from-success/10 to-success/5 rounded-2xl p-3 text-center border border-success/10">
-              <Heart className="h-4 w-4 text-success mx-auto mb-1" fill="currentColor" />
-              <p className="text-lg font-bold tabular-nums text-success leading-none">{livesSaved}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Lives</p>
+            <div className="relative overflow-hidden bg-gradient-to-br from-success/15 to-success/5 rounded-2xl p-3 text-center border border-success/20 shadow-sm">
+              <div className="absolute -top-3 -right-3 h-12 w-12 rounded-full bg-success/10 blur-xl" />
+              <Heart className="h-4 w-4 text-success mx-auto mb-1 relative" fill="currentColor" />
+              <p className="text-xl font-black tabular-nums text-success leading-none relative">{livesSaved}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1 font-bold relative">Lives</p>
             </div>
           </div>
 
@@ -458,39 +461,75 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
           {!isEditing && donationHistory.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2 px-1">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <Activity className="h-3.5 w-3.5" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                  <div className="h-5 w-5 rounded-md bg-primary/15 flex items-center justify-center">
+                    <Activity className="h-3 w-3 text-primary" />
+                  </div>
                   Recent Donations
                 </h3>
-                <span className="text-[10px] text-muted-foreground">Last {donationHistory.length}</span>
+                <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                  Last {donationHistory.length}
+                </span>
               </div>
-              <Card className="rounded-2xl border-border/50 overflow-hidden">
-                <div className="divide-y divide-border/40">
-                  {donationHistory.map((d, i) => (
-                    <div key={d.id} className="flex items-center gap-3 p-3 hover:bg-muted/30 transition">
-                      <div className="relative">
-                        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                          <Droplet className="h-4 w-4 text-primary" fill="currentColor" />
-                        </div>
-                        {i === 0 && (
-                          <div className="absolute -top-0.5 -right-0.5 h-2 w-2 bg-success rounded-full ring-2 ring-background" />
-                        )}
+              <div className="space-y-2">
+                {donationHistory.map((d, i) => {
+                  const date = new Date(d.donation_date);
+                  const isLatest = i === 0;
+                  return (
+                    <div
+                      key={d.id}
+                      className={`relative flex items-stretch gap-2.5 rounded-2xl overflow-hidden border transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                        isLatest
+                          ? "border-primary/30 bg-gradient-to-r from-primary/[0.07] to-card shadow-sm"
+                          : "border-border/50 bg-card"
+                      }`}
+                    >
+                      {/* Date block */}
+                      <div className={`shrink-0 w-14 flex flex-col items-center justify-center py-2 ${
+                        isLatest
+                          ? "bg-gradient-to-b from-rose-600 to-primary text-white"
+                          : "bg-muted/60 text-foreground"
+                      }`}>
+                        <span className={`text-[8px] font-black uppercase tracking-widest ${isLatest ? "text-white/80" : "text-muted-foreground"}`}>
+                          {date.toLocaleDateString("en-US", { month: "short" })}
+                        </span>
+                        <span className="text-xl font-black tabular-nums leading-none mt-0.5">
+                          {date.getDate()}
+                        </span>
+                        <span className={`text-[8px] font-bold uppercase tracking-wider mt-1 ${isLatest ? "text-white/60" : "text-muted-foreground/60"}`}>
+                          {date.toLocaleDateString("en-US", { weekday: "short" })}
+                        </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{d.hospital_name}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {format(new Date(d.donation_date), 'MMM d, yyyy')}
-                          <span className="mx-1.5">·</span>
-                          {formatDistanceToNow(new Date(d.donation_date), { addSuffix: true })}
+                      {/* Hospital + meta */}
+                      <div className="flex-1 min-w-0 py-2 pr-2 flex flex-col justify-center">
+                        <p className="text-sm font-bold text-foreground leading-tight line-clamp-1">
+                          {d.hospital_name}
                         </p>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <span className="text-[10px] font-semibold text-muted-foreground">
+                            {formatDistanceToNow(date, { addSuffix: true })}
+                          </span>
+                          {isLatest && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-wider">
+                              <Sparkles className="h-2 w-2" />Latest
+                            </span>
+                          )}
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[9px] font-black uppercase tracking-wider">
+                            <Droplet className="h-2 w-2" />{d.units_donated || 1}u
+                          </span>
+                        </div>
                       </div>
-                      <Badge variant="secondary" className="rounded-full text-[10px] h-5 px-2 shrink-0">
-                        {d.units_donated || 1}u
-                      </Badge>
+                      {/* Lives chip */}
+                      <div className="shrink-0 flex flex-col items-center justify-center px-2.5 border-l border-dashed border-border/50">
+                        <Heart className="h-3 w-3 text-rose-500 fill-rose-500 mb-0.5" />
+                        <span className="text-sm font-black tabular-nums leading-none text-rose-600 dark:text-rose-400">
+                          {(d.units_donated || 1) * 3}
+                        </span>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </Card>
+                  );
+                })}
+              </div>
             </div>
           )}
 

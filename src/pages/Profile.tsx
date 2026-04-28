@@ -534,20 +534,82 @@ const Profile = () => {
 
           {/* Overview Tab */}
           <TabsContent value="posts" className="mt-5 space-y-4">
-            {/* Achievements section - replaces redundant stats */}
+            {/* Achievements section */}
             {isDonor && (
               <AchievementsPreview donationCount={donationCount} totalPoints={totalPoints} userName={profile.full_name} />
             )}
 
+            {/* Next milestone progress */}
+            {isDonor && (
+              <Card className="rounded-2xl border-border/50 overflow-hidden">
+                <div className="p-4 bg-gradient-to-br from-amber-500/[0.08] via-transparent to-rose-500/[0.08]">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center shadow-md">
+                        <Sparkles className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Journey</p>
+                        <p className="text-sm font-black">
+                          {donationCount === 0 ? "Start your story" : `${donationCount} donation${donationCount !== 1 ? "s" : ""} · ${donationCount * 3} lives`}
+                        </p>
+                      </div>
+                    </div>
+                    {(() => {
+                      const milestones = [1, 5, 10, 25, 50, 100];
+                      const next = milestones.find(m => m > donationCount) || donationCount + 10;
+                      const prev = [...milestones].reverse().find(m => m <= donationCount) || 0;
+                      const pct = Math.min(100, Math.max(0, ((donationCount - prev) / (next - prev)) * 100));
+                      return (
+                        <div className="text-right">
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Next</p>
+                          <p className="text-base font-black tabular-nums text-amber-600 dark:text-amber-400">
+                            {next}
+                          </p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  {(() => {
+                    const milestones = [1, 5, 10, 25, 50, 100];
+                    const next = milestones.find(m => m > donationCount) || donationCount + 10;
+                    const prev = [...milestones].reverse().find(m => m <= donationCount) || 0;
+                    const pct = Math.min(100, Math.max(0, ((donationCount - prev) / (next - prev)) * 100));
+                    const remaining = next - donationCount;
+                    return (
+                      <>
+                        <div className="h-2.5 rounded-full bg-muted/60 overflow-hidden relative">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-500 to-rose-500 rounded-full transition-all duration-1000 relative"
+                            style={{ width: `${pct}%` }}
+                          >
+                            <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-2 text-center font-medium">
+                          {remaining} more donation{remaining !== 1 ? "s" : ""} to reach <span className="font-bold text-foreground">{next}</span>
+                        </p>
+                      </>
+                    );
+                  })()}
+                </div>
+              </Card>
+            )}
+
             {/* Quick Actions as list */}
-            <Card className="rounded-xl border-border/50 overflow-hidden">
+            <Card className="rounded-2xl border-border/50 overflow-hidden">
               <button 
-                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors active:scale-[0.99]"
                 onClick={() => navigate('/history')}
               >
                 <div className="flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  <span className="text-sm font-medium">View Donation History</span>
+                  <div className="h-10 w-10 rounded-xl bg-rose-500/15 flex items-center justify-center">
+                    <Calendar className="h-5 w-5 text-rose-500" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-bold">Donation History</p>
+                    <p className="text-[11px] text-muted-foreground">Timeline of your contributions</p>
+                  </div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </button>
@@ -556,12 +618,17 @@ const Profile = () => {
                 <>
                   <div className="border-t border-border/50" />
                   <button 
-                    className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                    className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors active:scale-[0.99]"
                     onClick={() => setShowRewardsDialog(true)}
                   >
                     <div className="flex items-center gap-3">
-                      <Gift className="h-5 w-5 text-warning" />
-                      <span className="text-sm font-medium">Rewards & Benefits</span>
+                      <div className="h-10 w-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
+                        <Gift className="h-5 w-5 text-amber-500" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-bold">Rewards & Benefits</p>
+                        <p className="text-[11px] text-muted-foreground">Redeem your points</p>
+                      </div>
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </button>
@@ -570,12 +637,17 @@ const Profile = () => {
               
               <div className="border-t border-border/50" />
               <button 
-                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors active:scale-[0.99]"
                 onClick={() => setShowQRCard(true)}
               >
                 <div className="flex items-center gap-3">
-                  <QrCode className="h-5 w-5 text-info" />
-                  <span className="text-sm font-medium">Donor ID Card</span>
+                  <div className="h-10 w-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
+                    <QrCode className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-bold">Donor ID Card</p>
+                    <p className="text-[11px] text-muted-foreground">Share your donor QR</p>
+                  </div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </button>
