@@ -458,7 +458,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
           )}
 
           {/* Recent donations timeline */}
-          {!isEditing && donationHistory.length > 0 && (
+          {!isEditing && isOwnProfile && donationHistory.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2 px-1">
                 <h3 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
