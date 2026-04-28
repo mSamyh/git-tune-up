@@ -220,7 +220,7 @@ const History = () => {
     : 90;
   const progress = lastDonationDateStr ? Math.min(100, (daysSinceLastDonation / 90) * 100) : 100;
   const isEligible = daysUntilEligible === 0;
-  const livesSaved = donationCount * 3;
+  const livesSaved = donationCount;
   const nextEligibleDate = lastDonationDateStr ? addDays(new Date(lastDonationDateStr), 90) : null;
 
   // SVG ring math
