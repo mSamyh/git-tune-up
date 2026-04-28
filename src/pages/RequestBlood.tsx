@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, X, Clock } from "lucide-react";
+import { Heart, X, Clock, User, Building2, Phone, AlertTriangle, FileText, Droplet } from "lucide-react";
 import { LocationSelector } from "@/components/LocationSelector";
 import { AppHeader } from "@/components/AppHeader";
 import { format, addHours } from "date-fns";
