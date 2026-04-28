@@ -78,7 +78,13 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
   const checkOwnProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setIsOwnProfile(false); return; }
-    setIsOwnProfile(user.id === donor.id);
+    const own = user.id === donor.id;
+    setIsOwnProfile(own);
+    if (own) {
+      fetchDonationHistory();
+    } else {
+      setDonationHistory([]);
+    }
   };
 
   const fetchDonationHistory = async () => {
