@@ -335,7 +335,7 @@ export function AchievementsPreview({ donationCount, totalPoints, userName }: Ac
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {selectedAchievement.requirement_type === "donations"
-                          ? "Each donation saves up to 3 lives"
+                          ? "Each donation saves a life"
                           : "Points are earned with every donation"
                         }
                       </p>
