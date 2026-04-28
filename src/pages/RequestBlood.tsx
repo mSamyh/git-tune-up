@@ -13,6 +13,7 @@ import { LocationSelector } from "@/components/LocationSelector";
 import { AppHeader } from "@/components/AppHeader";
 import { format, addHours } from "date-fns";
 import { useReferenceData, FALLBACK_BLOOD_GROUPS, FALLBACK_URGENCY_OPTIONS, FALLBACK_EMERGENCY_TYPES } from "@/contexts/ReferenceDataContext";
+import { cn } from "@/lib/utils";
 
 const RequestBlood = () => {
   const { bloodGroupCodes, urgencyOptions, emergencyTypes } = useReferenceData();
