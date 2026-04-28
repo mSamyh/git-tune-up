@@ -489,7 +489,7 @@ const Profile = () => {
               <div className="rounded-2xl bg-gradient-to-br from-rose-500 to-primary px-3 py-3 shadow-md text-left">
                 <Droplet className="h-4 w-4 text-white/80 fill-white/30 mb-1.5" />
                 <p className="text-2xl font-black tabular-nums leading-none text-white">
-                  {donationCount * 3}
+                  {donationCount}
                 </p>
                 <p className="text-[10px] text-white/70 mt-1 uppercase tracking-wider font-semibold">
                   Lives Saved
@@ -551,7 +551,7 @@ const Profile = () => {
                       <div>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Journey</p>
                         <p className="text-sm font-black">
-                          {donationCount === 0 ? "Start your story" : `${donationCount} donation${donationCount !== 1 ? "s" : ""} · ${donationCount * 3} lives`}
+                          {donationCount === 0 ? "Start your story" : `${donationCount} donation${donationCount !== 1 ? "s" : ""} · ${donationCount} life${donationCount !== 1 ? "s" : ""} saved`}
                         </p>
                       </div>
                     </div>

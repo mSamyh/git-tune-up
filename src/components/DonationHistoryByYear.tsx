@@ -156,7 +156,7 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
                 <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-rose-500/10">
                   <Heart className="h-3 w-3 text-rose-500 fill-rose-500" />
                   <span className="text-[10px] font-black tabular-nums text-rose-600 dark:text-rose-400">
-                    {yearDonations.length * 3}
+                    {yearDonations.length}
                   </span>
                 </div>
                 <ChevronDown
@@ -265,10 +265,10 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
                       <div className="shrink-0 flex flex-col items-center justify-center px-3 border-l border-dashed border-border/50">
                         <Heart className="h-3 w-3 text-rose-500 fill-rose-500 mb-0.5" />
                         <span className="text-base font-black tabular-nums leading-none text-rose-600 dark:text-rose-400">
-                          {(donation.units_donated || 1) * 3}
+                          {(donation.units_donated || 1)}
                         </span>
                         <span className="text-[8px] uppercase tracking-wider font-bold text-muted-foreground mt-0.5">
-                          lives
+                          life{(donation.units_donated || 1) !== 1 ? "s" : ""}
                         </span>
                       </div>
                     </div>

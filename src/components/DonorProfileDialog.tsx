@@ -150,7 +150,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
 
   const isFirstTimeDonor = !donor.last_donation_date && donationHistory.length === 0;
   const totalDonations = donor.donation_count || 0;
-  const livesSaved = totalDonations * 3;
+  const livesSaved = totalDonations;
   const rank = getTopDonorRank(donor.id, topDonors);
 
   const handleSaveProfile = async () => {
@@ -523,7 +523,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
                       <div className="shrink-0 flex flex-col items-center justify-center px-2.5 border-l border-dashed border-border/50">
                         <Heart className="h-3 w-3 text-rose-500 fill-rose-500 mb-0.5" />
                         <span className="text-sm font-black tabular-nums leading-none text-rose-600 dark:text-rose-400">
-                          {(d.units_donated || 1) * 3}
+                          {(d.units_donated || 1)}
                         </span>
                       </div>
                     </div>
@@ -540,8 +540,8 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
                 <Award className="h-5 w-5 text-amber-600" />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-semibold">Hero of {livesSaved} lives</p>
-                <p className="text-[11px] text-muted-foreground">Every donation can save up to 3 lives</p>
+                <p className="text-xs font-semibold">Hero of {livesSaved} life{livesSaved !== 1 ? "s" : ""}</p>
+                <p className="text-[11px] text-muted-foreground">Each donation saves one life</p>
               </div>
             </div>
           )}
