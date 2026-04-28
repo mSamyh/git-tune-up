@@ -152,222 +152,305 @@ const RequestBlood = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 pb-20">
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-6 max-w-2xl">
-        <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
-          {/* Header */}
-          <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4">
+      <main className="container mx-auto px-4 py-5 max-w-2xl animate-fade-in">
+        <div className="bg-card rounded-3xl border border-border/60 shadow-xl overflow-hidden">
+          {/* Hero header — matches donation entry card aesthetic */}
+          <div
+            className="relative px-5 pt-6 pb-5 text-white overflow-hidden"
+            style={{
+              background:
+                "radial-gradient(circle at 30% 20%, hsl(0 70% 28%) 0%, hsl(0 80% 16%) 55%, hsl(348 60% 11%) 100%)",
+            }}
+          >
+            <div
+              className="absolute inset-0 opacity-[0.08] pointer-events-none"
+              style={{
+                backgroundImage: "radial-gradient(hsl(0 0% 100%) 1px, transparent 1px)",
+                backgroundSize: "16px 16px",
+              }}
+            />
+            <div className="absolute -top-12 -right-8 w-40 h-40 rounded-full bg-rose-500/30 blur-3xl" />
+
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate(-1)}
-              className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 hover:bg-background"
+              className="absolute right-3 top-3 h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md"
             >
               <X className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-                <Heart className="h-5 w-5 text-primary-foreground" />
+
+            <div className="relative flex items-center gap-3">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-rose-500 to-primary flex items-center justify-center shadow-2xl border border-white/20">
+                <Heart className="h-7 w-7 text-white fill-white/30" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold">Request Blood</h1>
-                <p className="text-xs text-muted-foreground">Create a blood donation request</p>
+                <p className="text-white/60 text-[10px] uppercase tracking-[0.25em] font-bold mb-0.5">
+                  New Request
+                </p>
+                <h1 className="text-white text-xl font-black leading-tight">Request Blood</h1>
+                <p className="text-white/70 text-xs mt-0.5">Notify nearby matched donors instantly</p>
               </div>
             </div>
           </div>
-          
+
           {/* Form */}
-          <div className="p-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="patientName" className="text-sm font-medium">Patient Name</Label>
+          <div className="p-5">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Section: Patient */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <User className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <h2 className="text-xs font-black uppercase tracking-wider text-foreground">Patient</h2>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="patientName" className="text-xs font-semibold text-muted-foreground">Patient Name</Label>
+                    <Input
+                      id="patientName"
+                      value={formData.patientName}
+                      onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+                      required
+                      className="h-11 rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bloodGroup" className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                      <Droplet className="h-3 w-3 text-rose-500" /> Blood Group
+                    </Label>
+                    <Select
+                      value={formData.bloodGroup}
+                      onValueChange={(value) => setFormData({ ...formData, bloodGroup: value })}
+                      required
+                    >
+                      <SelectTrigger className="h-11 rounded-xl">
+                        <SelectValue placeholder="Select blood group" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bloodGroups.map((group) => (
+                          <SelectItem key={group} value={group}>
+                            {group}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="unitsNeeded" className="text-xs font-semibold text-muted-foreground">Units Needed</Label>
                   <Input
-                    id="patientName"
-                    value={formData.patientName}
-                    onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+                    id="unitsNeeded"
+                    type="number"
+                    min="1"
+                    value={formData.unitsNeeded}
+                    onChange={(e) => setFormData({ ...formData, unitsNeeded: e.target.value })}
                     required
                     className="h-11 rounded-xl"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bloodGroup" className="text-sm font-medium">Blood Group</Label>
+              </section>
+
+              {/* Section: Hospital */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Building2 className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <h2 className="text-xs font-black uppercase tracking-wider text-foreground">Hospital & Location</h2>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground">Location (Atoll & Island)</Label>
+                  <LocationSelector
+                    selectedAtoll={selectedAtoll}
+                    selectedIsland={selectedIsland}
+                    onAtollChange={setSelectedAtoll}
+                    onIslandChange={setSelectedIsland}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="hospitalName" className="text-xs font-semibold text-muted-foreground">Hospital Name</Label>
+                  <Input
+                    id="hospitalName"
+                    value={formData.hospitalName}
+                    onChange={(e) => setFormData({ ...formData, hospitalName: e.target.value })}
+                    required
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+              </section>
+
+              {/* Section: Contact */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Phone className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <h2 className="text-xs font-black uppercase tracking-wider text-foreground">Contact</h2>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="contactName" className="text-xs font-semibold text-muted-foreground">Contact Name</Label>
+                    <Input
+                      id="contactName"
+                      value={formData.contactName}
+                      onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
+                      required
+                      className="h-11 rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="contactPhone" className="text-xs font-semibold text-muted-foreground">Contact Phone</Label>
+                    <Input
+                      id="contactPhone"
+                      value={formData.contactPhone}
+                      onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                      required
+                      className="h-11 rounded-xl"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Section: Urgency */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                  </div>
+                  <h2 className="text-xs font-black uppercase tracking-wider text-foreground">Urgency & Timing</h2>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground">Emergency Type</Label>
                   <Select
-                    value={formData.bloodGroup}
-                    onValueChange={(value) => setFormData({ ...formData, bloodGroup: value })}
+                    value={formData.emergencyType}
+                    onValueChange={(value) => setFormData({ ...formData, emergencyType: value })}
                     required
                   >
                     <SelectTrigger className="h-11 rounded-xl">
-                      <SelectValue placeholder="Select blood group" />
+                      <SelectValue placeholder="Select emergency type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {bloodGroups.map((group) => (
-                        <SelectItem key={group} value={group}>
-                          {group}
+                      {emergencyTypesList.map((type) => (
+                        <SelectItem key={type.code} value={type.code}>
+                          {type.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="unitsNeeded" className="text-sm font-medium">Units Needed</Label>
-                <Input
-                  id="unitsNeeded"
-                  type="number"
-                  min="1"
-                  value={formData.unitsNeeded}
-                  onChange={(e) => setFormData({ ...formData, unitsNeeded: e.target.value })}
-                  required
-                  className="h-11 rounded-xl"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Location (Atoll & Island)</Label>
-                <LocationSelector
-                  selectedAtoll={selectedAtoll}
-                  selectedIsland={selectedIsland}
-                  onAtollChange={setSelectedAtoll}
-                  onIslandChange={setSelectedIsland}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="hospitalName" className="text-sm font-medium">Hospital Name</Label>
-                <Input
-                  id="hospitalName"
-                  value={formData.hospitalName}
-                  onChange={(e) => setFormData({ ...formData, hospitalName: e.target.value })}
-                  required
-                  className="h-11 rounded-xl"
-                />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="contactName" className="text-sm font-medium">Contact Name</Label>
-                  <Input
-                    id="contactName"
-                    value={formData.contactName}
-                    onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                    required
-                    className="h-11 rounded-xl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contactPhone" className="text-sm font-medium">Contact Phone</Label>
-                  <Input
-                    id="contactPhone"
-                    value={formData.contactPhone}
-                    onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                    required
-                    className="h-11 rounded-xl"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Emergency Type</Label>
-                <Select
-                  value={formData.emergencyType}
-                  onValueChange={(value) => setFormData({ ...formData, emergencyType: value })}
-                  required
-                >
-                  <SelectTrigger className="h-11 rounded-xl">
-                    <SelectValue placeholder="Select emergency type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {emergencyTypesList.map((type) => (
-                      <SelectItem key={type.code} value={type.code}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {formData.emergencyType === "custom" && (
-                <div className="space-y-2">
-                  <Label htmlFor="customEmergency" className="text-sm font-medium">Specify Emergency Type</Label>
-                  <Input
-                    id="customEmergency"
-                    value={formData.customEmergency}
-                    onChange={(e) => setFormData({ ...formData, customEmergency: e.target.value })}
-                    placeholder="Enter custom emergency type"
-                    required
-                    className="h-11 rounded-xl"
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label>Urgency Level</Label>
-                <RadioGroup
-                  value={formData.urgency}
-                  onValueChange={(value) => setFormData({ ...formData, urgency: value })}
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="normal" id="normal" />
-                    <Label htmlFor="normal" className="font-normal">Normal</Label>
+                {formData.emergencyType === "custom" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="customEmergency" className="text-xs font-semibold text-muted-foreground">Specify Emergency Type</Label>
+                    <Input
+                      id="customEmergency"
+                      value={formData.customEmergency}
+                      onChange={(e) => setFormData({ ...formData, customEmergency: e.target.value })}
+                      placeholder="Enter custom emergency type"
+                      required
+                      className="h-11 rounded-xl"
+                    />
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="urgent" id="urgent" />
-                    <Label htmlFor="urgent" className="font-normal">Urgent</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              {/* Needed Before - Countdown Timer */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Needed Within
-                </Label>
-                <Select
-                  value={neededBeforeOption}
-                  onValueChange={setNeededBeforeOption}
-                >
-                  <SelectTrigger className="h-11 rounded-xl">
-                    <SelectValue placeholder="Select timeframe (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {neededBeforeOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {neededBeforeOption === "custom" && (
-                  <Input
-                    type="datetime-local"
-                    value={customDateTime}
-                    onChange={(e) => setCustomDateTime(e.target.value)}
-                    min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
-                    className="mt-2 h-11 rounded-xl"
-                  />
                 )}
-                <p className="text-xs text-muted-foreground">
-                  Setting a deadline helps donors prioritize urgent requests
-                </p>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes" className="text-sm font-medium">Additional Notes</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground">Urgency Level</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: "normal", label: "Normal", desc: "Within 24h+" },
+                      { value: "urgent", label: "Urgent", desc: "ASAP" },
+                    ].map((opt) => {
+                      const active = formData.urgency === opt.value;
+                      return (
+                        <button
+                          type="button"
+                          key={opt.value}
+                          onClick={() => setFormData({ ...formData, urgency: opt.value })}
+                          className={cn(
+                            "rounded-xl border px-3 py-2.5 text-left transition-all active:scale-[0.98]",
+                            active
+                              ? opt.value === "urgent"
+                                ? "border-amber-500/60 bg-gradient-to-br from-amber-500/15 to-rose-500/10 shadow-sm"
+                                : "border-primary/50 bg-primary/5 shadow-sm"
+                              : "border-border/60 bg-card hover:border-primary/30"
+                          )}
+                        >
+                          <p className="text-sm font-bold leading-none">{opt.label}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">{opt.desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                    <Clock className="h-3 w-3" />
+                    Needed Within
+                  </Label>
+                  <Select
+                    value={neededBeforeOption}
+                    onValueChange={setNeededBeforeOption}
+                  >
+                    <SelectTrigger className="h-11 rounded-xl">
+                      <SelectValue placeholder="Select timeframe (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {neededBeforeOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {neededBeforeOption === "custom" && (
+                    <Input
+                      type="datetime-local"
+                      value={customDateTime}
+                      onChange={(e) => setCustomDateTime(e.target.value)}
+                      min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
+                      className="mt-2 h-11 rounded-xl"
+                    />
+                  )}
+                  <p className="text-[11px] text-muted-foreground">
+                    Setting a deadline helps donors prioritize urgent requests
+                  </p>
+                </div>
+              </section>
+
+              {/* Section: Notes */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center">
+                    <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                  <h2 className="text-xs font-black uppercase tracking-wider text-foreground">Additional Notes</h2>
+                </div>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={3}
+                  placeholder="Any extra context for donors (optional)"
                   className="rounded-xl resize-none"
                 />
+              </section>
+
+              {/* Submit callout */}
+              <div className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/[0.07] via-rose-500/[0.05] to-transparent p-3 flex items-center gap-2.5">
+                <Heart className="h-4 w-4 text-primary fill-primary/30 shrink-0" />
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  Matching donors nearby will be auto-notified the moment you submit.
+                </p>
               </div>
 
-              <Button type="submit" className="w-full h-12 rounded-xl font-medium btn-press" disabled={loading}>
+              <Button type="submit" className="w-full h-12 rounded-xl font-bold btn-press text-base" disabled={loading}>
                 {loading ? "Creating request..." : "Create Request"}
               </Button>
             </form>
