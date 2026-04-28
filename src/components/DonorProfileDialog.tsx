@@ -311,19 +311,22 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
 
           {/* Stats row — modern segmented */}
           <div className="grid grid-cols-3 gap-2">
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-3 text-center border border-primary/10">
-              <Droplet className="h-4 w-4 text-primary mx-auto mb-1" fill="currentColor" />
-              <p className="text-lg font-bold tabular-nums leading-none">{totalDonations}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Donations</p>
+            <div className="relative overflow-hidden bg-gradient-to-br from-primary/15 to-primary/5 rounded-2xl p-3 text-center border border-primary/20 shadow-sm">
+              <div className="absolute -top-3 -right-3 h-12 w-12 rounded-full bg-primary/10 blur-xl" />
+              <Droplet className="h-4 w-4 text-primary mx-auto mb-1 relative" fill="currentColor" />
+              <p className="text-xl font-black tabular-nums leading-none text-primary relative">{totalDonations}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1 font-bold relative">Donations</p>
             </div>
-            <div className="bg-gradient-to-br from-rose-500/10 to-rose-500/5 rounded-2xl p-3 text-center border border-rose-500/10">
-              <span className="block text-lg font-bold text-primary leading-none">{donor.blood_group}</span>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-2">Blood Type</p>
+            <div className="relative overflow-hidden bg-gradient-to-br from-rose-500 to-primary rounded-2xl p-3 text-center shadow-md">
+              <div className="absolute inset-0 opacity-[0.1]" style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "10px 10px" }} />
+              <span className="block text-xl font-black text-white leading-none relative drop-shadow">{donor.blood_group}</span>
+              <p className="text-[10px] text-white/80 uppercase tracking-wider mt-2 font-bold relative">Blood Type</p>
             </div>
-            <div className="bg-gradient-to-br from-success/10 to-success/5 rounded-2xl p-3 text-center border border-success/10">
-              <Heart className="h-4 w-4 text-success mx-auto mb-1" fill="currentColor" />
-              <p className="text-lg font-bold tabular-nums text-success leading-none">{livesSaved}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Lives</p>
+            <div className="relative overflow-hidden bg-gradient-to-br from-success/15 to-success/5 rounded-2xl p-3 text-center border border-success/20 shadow-sm">
+              <div className="absolute -top-3 -right-3 h-12 w-12 rounded-full bg-success/10 blur-xl" />
+              <Heart className="h-4 w-4 text-success mx-auto mb-1 relative" fill="currentColor" />
+              <p className="text-xl font-black tabular-nums text-success leading-none relative">{livesSaved}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1 font-bold relative">Lives</p>
             </div>
           </div>
 
