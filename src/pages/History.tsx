@@ -203,6 +203,8 @@ const History = () => {
   };
 
   const totalUnits = donations.reduce((sum, d) => sum + (d.units_donated || 1), 0);
+  // Always derive from actual loaded records to stay 1:1 with donations
+  const actualDonationCount = donations.length || donationCount;
   const isDonorType = profile?.user_type === 'donor' || profile?.user_type === 'both';
 
   const lastDonationDateStr = donations[0]?.donation_date || profile?.last_donation_date || null;
