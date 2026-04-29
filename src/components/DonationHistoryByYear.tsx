@@ -261,14 +261,14 @@ export const DonationHistoryByYear = ({ donorId, variant = "card" }: DonationHis
                         )}
                       </div>
 
-                      {/* Lives saved chip */}
+                      {/* Life saved chip — 1 donation = 1 life */}
                       <div className="shrink-0 flex flex-col items-center justify-center px-3 border-l border-dashed border-border/50">
                         <Heart className="h-3 w-3 text-rose-500 fill-rose-500 mb-0.5" />
                         <span className="text-base font-black tabular-nums leading-none text-rose-600 dark:text-rose-400">
-                          {(donation.units_donated || 1)}
+                          1
                         </span>
                         <span className="text-[8px] uppercase tracking-wider font-bold text-muted-foreground mt-0.5">
-                          life{(donation.units_donated || 1) !== 1 ? "s" : ""}
+                          life
                         </span>
                       </div>
                     </div>
