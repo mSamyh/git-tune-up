@@ -203,6 +203,8 @@ const History = () => {
   };
 
   const totalUnits = donations.reduce((sum, d) => sum + (d.units_donated || 1), 0);
+  // Always derive from actual loaded records to stay 1:1 with donations
+  const actualDonationCount = donations.length || donationCount;
   const isDonorType = profile?.user_type === 'donor' || profile?.user_type === 'both';
 
   const lastDonationDateStr = donations[0]?.donation_date || profile?.last_donation_date || null;
@@ -220,7 +222,7 @@ const History = () => {
     : 90;
   const progress = lastDonationDateStr ? Math.min(100, (daysSinceLastDonation / 90) * 100) : 100;
   const isEligible = daysUntilEligible === 0;
-  const livesSaved = donationCount;
+  const livesSaved = actualDonationCount;
   const nextEligibleDate = lastDonationDateStr ? addDays(new Date(lastDonationDateStr), 90) : null;
 
   // SVG ring math
