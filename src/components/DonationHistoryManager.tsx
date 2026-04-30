@@ -547,11 +547,11 @@ export const DonationHistoryManager = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Hospital Name</Label>
-                <Input
+                <Label>Hospital</Label>
+                <HospitalCombobox
                   value={hospitalName}
-                  onChange={(e) => setHospitalName(e.target.value)}
-                  placeholder="Enter hospital name"
+                  onChange={setHospitalName}
+                  placeholder="Select or search hospital"
                 />
               </div>
 
