@@ -422,10 +422,10 @@ const History = () => {
               </p>
             </button>
             <div className="px-3 py-3.5 text-center">
-              <TrendingUp className="h-4 w-4 text-emerald-500 mx-auto mb-1" />
-              <p className="text-xl font-black tabular-nums leading-none">{totalUnits}</p>
+              <Heart className="h-4 w-4 text-emerald-500 mx-auto mb-1 fill-emerald-500/20" />
+              <p className="text-xl font-black tabular-nums leading-none">{livesSaved}</p>
               <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider font-semibold">
-                Units
+                Lives
               </p>
             </div>
           </div>
