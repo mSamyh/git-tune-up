@@ -14,6 +14,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { useToast } from "@/hooks/use-toast";
 import { DonationHistoryByYear } from "@/components/DonationHistoryByYear";
 import { PointsHistoryPanel } from "@/components/PointsHistoryPanel";
+import { HospitalCombobox } from "@/components/HospitalCombobox";
 import {
   Plus,
   Calendar as CalendarIcon,
@@ -421,10 +422,10 @@ const History = () => {
               </p>
             </button>
             <div className="px-3 py-3.5 text-center">
-              <TrendingUp className="h-4 w-4 text-emerald-500 mx-auto mb-1" />
-              <p className="text-xl font-black tabular-nums leading-none">{totalUnits}</p>
+              <Heart className="h-4 w-4 text-emerald-500 mx-auto mb-1 fill-emerald-500/20" />
+              <p className="text-xl font-black tabular-nums leading-none">{livesSaved}</p>
               <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider font-semibold">
-                Units
+                Lives
               </p>
             </div>
           </div>
@@ -639,12 +640,10 @@ const History = () => {
               <Label htmlFor="hospital" className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
                 Hospital
               </Label>
-              <Input
-                id="hospital"
-                placeholder="e.g. IGMH, ADK, KRH"
+              <HospitalCombobox
                 value={hospitalName}
-                onChange={(e) => setHospitalName(e.target.value)}
-                className="h-11 rounded-xl"
+                onChange={setHospitalName}
+                placeholder="Select or type hospital"
               />
             </div>
 

@@ -12,6 +12,7 @@ import {
   FileText, Droplet, Sparkles, ShieldCheck, ChevronRight, Activity
 } from "lucide-react";
 import { LocationSelector } from "@/components/LocationSelector";
+import { HospitalCombobox } from "@/components/HospitalCombobox";
 import { AppHeader } from "@/components/AppHeader";
 import { format, addHours } from "date-fns";
 import { useReferenceData, FALLBACK_BLOOD_GROUPS, FALLBACK_URGENCY_OPTIONS, FALLBACK_EMERGENCY_TYPES } from "@/contexts/ReferenceDataContext";
@@ -356,15 +357,12 @@ const RequestBlood = () => {
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="hospitalName" className="text-xs font-semibold text-muted-foreground">
-                      Hospital name
+                      Hospital
                     </Label>
-                    <Input
-                      id="hospitalName"
-                      placeholder="e.g. IGMH"
+                    <HospitalCombobox
                       value={formData.hospitalName}
-                      onChange={(e) => setFormData({ ...formData, hospitalName: e.target.value })}
-                      required
-                      className="h-11 rounded-xl"
+                      onChange={(val) => setFormData({ ...formData, hospitalName: val })}
+                      placeholder="Select or search hospital"
                     />
                   </div>
                 </div>

@@ -59,8 +59,7 @@ const About = () => {
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Every two seconds, someone around the world needs blood. Blood cannot be manufactured 
-                — it can only come from generous donors like you. A single donation can save up to 
-                three lives.
+                — it can only come from generous donors like you. Every single donation can save a life.
               </p>
               <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
                 <p className="text-sm font-medium">

@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar as CalendarIcon, Plus, Trash, User, Pencil, Users, ListPlus, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { HospitalCombobox } from "@/components/HospitalCombobox";
 import { 
   awardDonationPoints, 
   deductDonationPoints, 
@@ -546,11 +547,11 @@ export const DonationHistoryManager = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Hospital Name</Label>
-                <Input
+                <Label>Hospital</Label>
+                <HospitalCombobox
                   value={hospitalName}
-                  onChange={(e) => setHospitalName(e.target.value)}
-                  placeholder="Enter hospital name"
+                  onChange={setHospitalName}
+                  placeholder="Select or search hospital"
                 />
               </div>
 
@@ -623,11 +624,11 @@ export const DonationHistoryManager = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Hospital Name</Label>
-                <Input
+                <Label>Hospital</Label>
+                <HospitalCombobox
                   value={hospitalName}
-                  onChange={(e) => setHospitalName(e.target.value)}
-                  placeholder="Enter hospital name"
+                  onChange={setHospitalName}
+                  placeholder="Select or search hospital"
                 />
               </div>
 
@@ -713,10 +714,10 @@ export const DonationHistoryManager = () => {
                           />
                         </div>
                         
-                        <Input
+                        <HospitalCombobox
                           value={entry.hospital}
-                          onChange={(e) => updateEntryField(entry.id, "hospital", e.target.value)}
-                          placeholder="Hospital name"
+                          onChange={(val) => updateEntryField(entry.id, "hospital", val)}
+                          placeholder="Hospital"
                         />
                         
                         <Input
@@ -870,12 +871,11 @@ export const DonationHistoryManager = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Hospital Name</Label>
-              <Input
+              <Label>Hospital</Label>
+              <HospitalCombobox
                 value={editHospital}
-                onChange={(e) => setEditHospital(e.target.value)}
-                placeholder="Enter hospital name"
-                maxLength={200}
+                onChange={setEditHospital}
+                placeholder="Select or search hospital"
               />
             </div>
 

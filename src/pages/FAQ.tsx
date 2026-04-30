@@ -320,7 +320,7 @@ const FAQ = () => {
         },
         {
           q: "Why is blood donation important?",
-          a: "Blood cannot be manufactured — it can only come from donors. Every donation can save up to three lives. Regular donations ensure hospitals have blood available for emergencies, surgeries, and patients with chronic conditions."
+          a: "Blood cannot be manufactured — it can only come from donors. Every donation can save a life. Regular donations ensure hospitals have blood available for emergencies, surgeries, and patients with chronic conditions."
         }
       ]
     }

@@ -25,6 +25,7 @@ import { RewardsAdminPanel } from "@/components/RewardsAdminPanel";
 import { AchievementsAdminPanel } from "@/components/AchievementsAdminPanel";
 import { MerchantAdminPanel } from "@/components/MerchantAdminPanel";
 import { HospitalAdminPanel } from "@/components/HospitalAdminPanel";
+import { HospitalCombobox } from "@/components/HospitalCombobox";
 import { RedemptionAuditPanel } from "@/components/RedemptionAuditPanel";
 import { Textarea } from "@/components/ui/textarea";
 import { AppHeader } from "@/components/AppHeader";
@@ -1541,11 +1542,11 @@ const Admin = () => {
                 </Popover>
               </div>
               <div className="space-y-2 mt-4">
-                <Label className="text-sm font-medium">Hospital Name</Label>
-                <Input
+                <Label className="text-sm font-medium">Hospital</Label>
+                <HospitalCombobox
                   value={historyForm.hospital_name}
-                  onChange={(e) => setHistoryForm({ ...historyForm, hospital_name: e.target.value })}
-                  className="h-11 rounded-xl"
+                  onChange={(val) => setHistoryForm({ ...historyForm, hospital_name: val })}
+                  placeholder="Select or search hospital"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4 mt-4">
@@ -1612,11 +1613,11 @@ const Admin = () => {
                 </Popover>
               </div>
               <div className="space-y-2 mt-4">
-                <Label className="text-sm font-medium">Hospital Name</Label>
-                <Input
+                <Label className="text-sm font-medium">Hospital</Label>
+                <HospitalCombobox
                   value={editDonationForm.hospital_name}
-                  onChange={(e) => setEditDonationForm({ ...editDonationForm, hospital_name: e.target.value })}
-                  className="h-11 rounded-xl"
+                  onChange={(val) => setEditDonationForm({ ...editDonationForm, hospital_name: val })}
+                  placeholder="Select or search hospital"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4 mt-4">
@@ -1689,11 +1690,11 @@ const Admin = () => {
                 </div>
               </div>
               <div className="space-y-2 mt-4">
-                <Label className="text-sm font-medium">Hospital Name</Label>
-                <Input
+                <Label className="text-sm font-medium">Hospital</Label>
+                <HospitalCombobox
                   value={editRequestForm.hospital_name}
-                  onChange={(e) => setEditRequestForm({ ...editRequestForm, hospital_name: e.target.value })}
-                  className="h-11 rounded-xl"
+                  onChange={(val) => setEditRequestForm({ ...editRequestForm, hospital_name: val })}
+                  placeholder="Select or search hospital"
                 />
               </div>
             </div>
