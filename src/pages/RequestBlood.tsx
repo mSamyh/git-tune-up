@@ -12,6 +12,7 @@ import {
   FileText, Droplet, Sparkles, ShieldCheck, ChevronRight, Activity
 } from "lucide-react";
 import { LocationSelector } from "@/components/LocationSelector";
+import { HospitalCombobox } from "@/components/HospitalCombobox";
 import { AppHeader } from "@/components/AppHeader";
 import { format, addHours } from "date-fns";
 import { useReferenceData, FALLBACK_BLOOD_GROUPS, FALLBACK_URGENCY_OPTIONS, FALLBACK_EMERGENCY_TYPES } from "@/contexts/ReferenceDataContext";
