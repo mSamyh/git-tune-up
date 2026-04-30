@@ -1690,11 +1690,11 @@ const Admin = () => {
                 </div>
               </div>
               <div className="space-y-2 mt-4">
-                <Label className="text-sm font-medium">Hospital Name</Label>
-                <Input
+                <Label className="text-sm font-medium">Hospital</Label>
+                <HospitalCombobox
                   value={editRequestForm.hospital_name}
-                  onChange={(e) => setEditRequestForm({ ...editRequestForm, hospital_name: e.target.value })}
-                  className="h-11 rounded-xl"
+                  onChange={(val) => setEditRequestForm({ ...editRequestForm, hospital_name: val })}
+                  placeholder="Select or search hospital"
                 />
               </div>
             </div>
