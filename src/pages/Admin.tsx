@@ -1349,9 +1349,16 @@ const Admin = () => {
             <MerchantAdminPanel />
           </TabsContent>
 
-          {/* Hospitals Tab */}
-          <TabsContent value="hospitals" className="mt-0">
-            <HospitalAdminPanel />
+          {/* Hospitals Tab (portal accounts + dropdown list) */}
+          <TabsContent value="hospitals" className="mt-0 space-y-6">
+            <HospitalNamesPanel />
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold mb-1">Hospital Portal Accounts</h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Hospitals with login access to manage their own blood stock.
+              </p>
+              <HospitalAdminPanel />
+            </div>
           </TabsContent>
 
           {/* Audit Tab */}
