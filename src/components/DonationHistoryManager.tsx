@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar as CalendarIcon, Plus, Trash, User, Pencil, Users, ListPlus, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { HospitalCombobox } from "@/components/HospitalCombobox";
 import { 
   awardDonationPoints, 
   deductDonationPoints, 
