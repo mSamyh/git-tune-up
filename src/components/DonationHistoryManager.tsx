@@ -714,10 +714,10 @@ export const DonationHistoryManager = () => {
                           />
                         </div>
                         
-                        <Input
+                        <HospitalCombobox
                           value={entry.hospital}
-                          onChange={(e) => updateEntryField(entry.id, "hospital", e.target.value)}
-                          placeholder="Hospital name"
+                          onChange={(val) => updateEntryField(entry.id, "hospital", val)}
+                          placeholder="Hospital"
                         />
                         
                         <Input
