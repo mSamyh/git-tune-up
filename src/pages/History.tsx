@@ -639,12 +639,10 @@ const History = () => {
               <Label htmlFor="hospital" className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
                 Hospital
               </Label>
-              <Input
-                id="hospital"
-                placeholder="e.g. IGMH, ADK, KRH"
+              <HospitalCombobox
                 value={hospitalName}
-                onChange={(e) => setHospitalName(e.target.value)}
-                className="h-11 rounded-xl"
+                onChange={setHospitalName}
+                placeholder="Select or type hospital"
               />
             </div>
 
