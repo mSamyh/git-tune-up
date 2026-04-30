@@ -25,6 +25,7 @@ import { RewardsAdminPanel } from "@/components/RewardsAdminPanel";
 import { AchievementsAdminPanel } from "@/components/AchievementsAdminPanel";
 import { MerchantAdminPanel } from "@/components/MerchantAdminPanel";
 import { HospitalAdminPanel } from "@/components/HospitalAdminPanel";
+import { HospitalCombobox } from "@/components/HospitalCombobox";
 import { RedemptionAuditPanel } from "@/components/RedemptionAuditPanel";
 import { Textarea } from "@/components/ui/textarea";
 import { AppHeader } from "@/components/AppHeader";
