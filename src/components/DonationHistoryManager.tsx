@@ -871,12 +871,11 @@ export const DonationHistoryManager = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Hospital Name</Label>
-              <Input
+              <Label>Hospital</Label>
+              <HospitalCombobox
                 value={editHospital}
-                onChange={(e) => setEditHospital(e.target.value)}
-                placeholder="Enter hospital name"
-                maxLength={200}
+                onChange={setEditHospital}
+                placeholder="Select or search hospital"
               />
             </div>
 
