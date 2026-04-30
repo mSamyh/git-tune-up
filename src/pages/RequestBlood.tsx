@@ -356,15 +356,12 @@ const RequestBlood = () => {
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="hospitalName" className="text-xs font-semibold text-muted-foreground">
-                      Hospital name
+                      Hospital
                     </Label>
-                    <Input
-                      id="hospitalName"
-                      placeholder="e.g. IGMH"
+                    <HospitalCombobox
                       value={formData.hospitalName}
-                      onChange={(e) => setFormData({ ...formData, hospitalName: e.target.value })}
-                      required
-                      className="h-11 rounded-xl"
+                      onChange={(val) => setFormData({ ...formData, hospitalName: val })}
+                      placeholder="Select or search hospital"
                     />
                   </div>
                 </div>
