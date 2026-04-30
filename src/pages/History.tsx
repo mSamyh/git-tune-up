@@ -14,6 +14,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { useToast } from "@/hooks/use-toast";
 import { DonationHistoryByYear } from "@/components/DonationHistoryByYear";
 import { PointsHistoryPanel } from "@/components/PointsHistoryPanel";
+import { HospitalCombobox } from "@/components/HospitalCombobox";
 import {
   Plus,
   Calendar as CalendarIcon,
