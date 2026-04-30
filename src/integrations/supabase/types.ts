@@ -810,6 +810,39 @@ export type Database = {
         }
         Relationships: []
       }
+      hospital_names: {
+        Row: {
+          atoll: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          island: string | null
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          atoll?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          island?: string | null
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          atoll?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          island?: string | null
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hospitals: {
         Row: {
           address: string | null
