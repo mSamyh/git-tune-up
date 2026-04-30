@@ -47,9 +47,10 @@ export const HospitalCombobox = ({
     let mounted = true;
     (async () => {
       const { data } = await supabase
-        .from("hospitals")
+        .from("hospital_names")
         .select("id, name, atoll, island")
         .eq("is_active", true)
+        .order("sort_order", { ascending: true })
         .order("name");
       if (mounted && data) setHospitals(data);
       if (mounted) setLoading(false);
