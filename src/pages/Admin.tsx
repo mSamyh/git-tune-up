@@ -1613,11 +1613,11 @@ const Admin = () => {
                 </Popover>
               </div>
               <div className="space-y-2 mt-4">
-                <Label className="text-sm font-medium">Hospital Name</Label>
-                <Input
+                <Label className="text-sm font-medium">Hospital</Label>
+                <HospitalCombobox
                   value={editDonationForm.hospital_name}
-                  onChange={(e) => setEditDonationForm({ ...editDonationForm, hospital_name: e.target.value })}
-                  className="h-11 rounded-xl"
+                  onChange={(val) => setEditDonationForm({ ...editDonationForm, hospital_name: val })}
+                  placeholder="Select or search hospital"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4 mt-4">
