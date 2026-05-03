@@ -39,6 +39,7 @@ export const HospitalCombobox = ({
   className,
   triggerClassName,
   allowCustom = true,
+  onHospitalSelect,
 }: HospitalComboboxProps) => {
   const [open, setOpen] = useState(false);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
