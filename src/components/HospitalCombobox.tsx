@@ -63,8 +63,9 @@ export const HospitalCombobox = ({
     };
   }, []);
 
-  const handleSelect = (name: string) => {
+  const handleSelect = (name: string, hospital?: Hospital) => {
     onChange(name);
+    onHospitalSelect?.(hospital ?? null);
     setOpen(false);
     setSearch("");
   };
