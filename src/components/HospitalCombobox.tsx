@@ -130,7 +130,7 @@ export const HospitalCombobox = ({
                     <CommandItem
                       key={h.id}
                       value={h.name}
-                      onSelect={() => handleSelect(h.name)}
+                      onSelect={() => handleSelect(h.name, h)}
                       className="cursor-pointer"
                     >
                       <Check
