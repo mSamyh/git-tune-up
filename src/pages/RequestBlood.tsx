@@ -11,12 +11,12 @@ import {
   Heart, ArrowLeft, Clock, User, Building2, Phone, AlertTriangle,
   FileText, Droplet, Sparkles, ShieldCheck, ChevronRight, Activity
 } from "lucide-react";
-import { LocationSelector } from "@/components/LocationSelector";
 import { HospitalCombobox } from "@/components/HospitalCombobox";
 import { AppHeader } from "@/components/AppHeader";
 import { format, addHours } from "date-fns";
 import { useReferenceData, FALLBACK_BLOOD_GROUPS, FALLBACK_URGENCY_OPTIONS, FALLBACK_EMERGENCY_TYPES } from "@/contexts/ReferenceDataContext";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 const RequestBlood = () => {
   const { bloodGroupCodes, urgencyOptions, emergencyTypes } = useReferenceData();
@@ -82,6 +82,8 @@ const RequestBlood = () => {
     return Math.round((filled / required.length) * 100);
   }, [formData, selectedAtoll, selectedIsland]);
 
+  const hospitalLocationLabel = [selectedAtoll, selectedIsland].filter(Boolean).join(" · ");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -91,7 +93,9 @@ const RequestBlood = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("You must be logged in to create a request");
-      if (!selectedAtoll || !selectedIsland) throw new Error("Please select both atoll and island");
+      if (!selectedAtoll || !selectedIsland) {
+        throw new Error("Please choose a hospital with a saved atoll and island");
+      }
 
       const emergencyTypeValue = formData.emergencyType === "custom"
         ? formData.customEmergency
@@ -138,7 +142,7 @@ const RequestBlood = () => {
           },
         },
       });
-      if (smsError) console.error("SMS notification error:", smsError);
+      if (smsError) logger.error("SMS notification error:", smsError);
 
       toast({
         title: "Request created",
@@ -352,25 +356,45 @@ const RequestBlood = () => {
                     </Label>
                     <HospitalCombobox
                       value={formData.hospitalName}
-                      onChange={(val) => setFormData({ ...formData, hospitalName: val })}
+                      onChange={(val) => {
+                        setFormData({ ...formData, hospitalName: val });
+                        setSelectedAtoll("");
+                        setSelectedIsland("");
+                      }}
                       onHospitalSelect={(h) => {
                         if (h?.atoll) setSelectedAtoll(h.atoll);
                         if (h?.island) setSelectedIsland(h.island);
                       }}
-                      placeholder="Select or search hospital"
+                      allowCustom={false}
+                      placeholder="Select hospital"
                     />
                     <p className="text-[10px] text-muted-foreground">
-                      Atoll & island auto-fill from the selected hospital. Edit below if needed.
+                      The hospital's saved atoll and island will be used automatically for donor matching.
                     </p>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-muted-foreground">Atoll & island</Label>
-                    <LocationSelector
-                      selectedAtoll={selectedAtoll}
-                      selectedIsland={selectedIsland}
-                      onAtollChange={setSelectedAtoll}
-                      onIslandChange={setSelectedIsland}
-                    />
+                  <div className="rounded-2xl border border-border/60 bg-muted/30 p-3.5 space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <Label className="text-xs font-semibold text-muted-foreground">Matched location</Label>
+                      {hospitalLocationLabel ? (
+                        <span className="text-[10px] font-semibold text-primary">Auto-filled</span>
+                      ) : null}
+                    </div>
+                    {hospitalLocationLabel ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-xl border border-border/60 bg-background px-3 py-2.5">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Atoll</p>
+                          <p className="mt-1 text-sm font-semibold text-foreground">{selectedAtoll}</p>
+                        </div>
+                        <div className="rounded-xl border border-border/60 bg-background px-3 py-2.5">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Island</p>
+                          <p className="mt-1 text-sm font-semibold text-foreground">{selectedIsland}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] leading-relaxed text-muted-foreground">
+                        Select a hospital from the hospital list to auto-fill its atoll and island.
+                      </p>
+                    )}
                   </div>
                 </div>
               </section>
