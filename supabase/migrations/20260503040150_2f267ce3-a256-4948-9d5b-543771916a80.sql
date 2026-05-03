@@ -1,0 +1,1 @@
+UPDATE public.hospital_names SET atoll='Ha' WHERE name='Ihavandhoo Health Centre';
