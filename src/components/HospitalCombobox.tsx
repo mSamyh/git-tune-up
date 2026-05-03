@@ -28,6 +28,8 @@ interface HospitalComboboxProps {
   /** Triggering element height; defaults to h-11 to match form fields */
   triggerClassName?: string;
   allowCustom?: boolean;
+  /** Called with the full hospital record when a registered hospital is picked (null for custom) */
+  onHospitalSelect?: (hospital: Hospital | null) => void;
 }
 
 export const HospitalCombobox = ({
@@ -37,6 +39,7 @@ export const HospitalCombobox = ({
   className,
   triggerClassName,
   allowCustom = true,
+  onHospitalSelect,
 }: HospitalComboboxProps) => {
   const [open, setOpen] = useState(false);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
@@ -60,8 +63,9 @@ export const HospitalCombobox = ({
     };
   }, []);
 
-  const handleSelect = (name: string) => {
+  const handleSelect = (name: string, hospital?: Hospital) => {
     onChange(name);
+    onHospitalSelect?.(hospital ?? null);
     setOpen(false);
     setSearch("");
   };
@@ -126,7 +130,7 @@ export const HospitalCombobox = ({
                     <CommandItem
                       key={h.id}
                       value={h.name}
-                      onSelect={() => handleSelect(h.name)}
+                      onSelect={() => handleSelect(h.name, h)}
                       className="cursor-pointer"
                     >
                       <Check

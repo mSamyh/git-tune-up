@@ -344,17 +344,8 @@ const RequestBlood = () => {
 
               {/* Hospital */}
               <section>
-                <SectionHeader icon={Building2} label="Hospital & Location" />
+              <SectionHeader icon={Building2} label="Hospital & Location" />
                 <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-muted-foreground">Atoll & island</Label>
-                    <LocationSelector
-                      selectedAtoll={selectedAtoll}
-                      selectedIsland={selectedIsland}
-                      onAtollChange={setSelectedAtoll}
-                      onIslandChange={setSelectedIsland}
-                    />
-                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="hospitalName" className="text-xs font-semibold text-muted-foreground">
                       Hospital
@@ -362,7 +353,23 @@ const RequestBlood = () => {
                     <HospitalCombobox
                       value={formData.hospitalName}
                       onChange={(val) => setFormData({ ...formData, hospitalName: val })}
+                      onHospitalSelect={(h) => {
+                        if (h?.atoll) setSelectedAtoll(h.atoll);
+                        if (h?.island) setSelectedIsland(h.island);
+                      }}
                       placeholder="Select or search hospital"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Atoll & island auto-fill from the selected hospital. Edit below if needed.
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-muted-foreground">Atoll & island</Label>
+                    <LocationSelector
+                      selectedAtoll={selectedAtoll}
+                      selectedIsland={selectedIsland}
+                      onAtollChange={setSelectedAtoll}
+                      onIslandChange={setSelectedIsland}
                     />
                   </div>
                 </div>
