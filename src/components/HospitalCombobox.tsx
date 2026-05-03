@@ -28,6 +28,8 @@ interface HospitalComboboxProps {
   /** Triggering element height; defaults to h-11 to match form fields */
   triggerClassName?: string;
   allowCustom?: boolean;
+  /** Called with the full hospital record when a registered hospital is picked (null for custom) */
+  onHospitalSelect?: (hospital: Hospital | null) => void;
 }
 
 export const HospitalCombobox = ({
