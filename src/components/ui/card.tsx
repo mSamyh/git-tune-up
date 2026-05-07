@@ -10,8 +10,8 @@ const Card = React.forwardRef<
     ref={ref}
     data-interactive={interactive ? "true" : undefined}
     className={cn(
-      "rounded-2xl border border-border/50 bg-card text-card-foreground shadow-sm transition-all duration-300",
-      interactive && "hover:-translate-y-0.5 hover:shadow-md hover:border-primary/20 cursor-pointer",
+      "rounded-xl border border-border bg-card text-card-foreground transition-colors duration-200",
+      interactive && "hover:border-primary/30 cursor-pointer",
       className,
     )}
     {...props}
