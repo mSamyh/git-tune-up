@@ -180,29 +180,29 @@ export const BloodUnitManager = ({ hospitalId }: BloodUnitManagerProps) => {
     <div className="space-y-6 pb-32">
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <Card className="bg-emerald-500/10 border-emerald-500/20">
+        <Card>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <Package className="h-4 w-4 text-emerald-500" />
-              <span className="text-2xl font-bold text-emerald-600">{stats.totalAvailable}</span>
+              <Package className="h-4 w-4 text-emerald-600" />
+              <span className="text-2xl font-semibold text-emerald-700 tabular-nums">{stats.totalAvailable}</span>
             </div>
             <p className="text-xs text-muted-foreground">Available</p>
           </CardContent>
         </Card>
-        <Card className="bg-amber-500/10 border-amber-500/20">
+        <Card>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <Clock className="h-4 w-4 text-amber-500" />
-              <span className="text-2xl font-bold text-amber-600">{stats.reserved}</span>
+              <Clock className="h-4 w-4 text-amber-600" />
+              <span className="text-2xl font-semibold text-amber-700 tabular-nums">{stats.reserved}</span>
             </div>
             <p className="text-xs text-muted-foreground">Reserved</p>
           </CardContent>
         </Card>
-        <Card className={`${stats.expiringSoon > 0 ? "bg-red-500/10 border-red-500/20" : "bg-muted/50"}`}>
+        <Card className={stats.expiringSoon > 0 ? "border-red-200" : ""}>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <AlertTriangle className={`h-4 w-4 ${stats.expiringSoon > 0 ? "text-red-500" : "text-muted-foreground"}`} />
-              <span className={`text-2xl font-bold ${stats.expiringSoon > 0 ? "text-red-600" : "text-muted-foreground"}`}>
+              <AlertTriangle className={`h-4 w-4 ${stats.expiringSoon > 0 ? "text-red-600" : "text-muted-foreground"}`} />
+              <span className={`text-2xl font-semibold tabular-nums ${stats.expiringSoon > 0 ? "text-red-700" : "text-muted-foreground"}`}>
                 {stats.expiringSoon}
               </span>
             </div>
@@ -224,12 +224,12 @@ export const BloodUnitManager = ({ hospitalId }: BloodUnitManagerProps) => {
             {stats.byBloodGroup.map(({ bloodGroup, count }) => (
               <div
                 key={bloodGroup}
-                className={`rounded-xl p-3 text-center border ${
-                  count > 0 ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border/50"
+                className={`rounded-lg p-3 text-center border transition-colors ${
+                  count > 0 ? "border-border bg-card" : "border-border bg-muted/40"
                 }`}
               >
-                <p className="text-sm font-bold">{bloodGroup}</p>
-                <p className={`text-xl font-bold ${count > 0 ? "text-primary" : "text-muted-foreground"}`}>
+                <p className="text-xs font-semibold text-muted-foreground">{bloodGroup}</p>
+                <p className={`text-xl font-semibold tabular-nums ${count > 0 ? "text-foreground" : "text-muted-foreground"}`}>
                   {count}
                 </p>
               </div>

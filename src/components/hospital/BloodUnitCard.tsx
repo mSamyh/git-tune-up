@@ -59,18 +59,8 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const getBloodGroupBg = (bloodGroup: string) => {
-  const colors: Record<string, string> = {
-    "A+": "bg-red-500",
-    "A-": "bg-red-600",
-    "B+": "bg-blue-500",
-    "B-": "bg-blue-600",
-    "O+": "bg-emerald-500",
-    "O-": "bg-emerald-600",
-    "AB+": "bg-purple-500",
-    "AB-": "bg-purple-600",
-  };
-  return colors[bloodGroup] || "bg-gray-500";
+const getBloodGroupBg = (_bloodGroup: string) => {
+  return "bg-muted text-foreground border border-border";
 };
 
 const getComponentLabel = (type: string) => {
@@ -102,7 +92,7 @@ export const BloodUnitCard = ({
         <div className="flex items-center gap-3">
           <div
             className={cn(
-              "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm",
+              "w-11 h-11 rounded-lg flex items-center justify-center font-semibold text-sm",
               getBloodGroupBg(unit.blood_group)
             )}
           >

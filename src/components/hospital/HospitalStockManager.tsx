@@ -75,29 +75,29 @@ const HospitalStockManager = ({
     <div className="space-y-6 pb-20">
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <Card className="bg-primary/5 border-primary/20">
+        <Card>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <Package className="h-4 w-4 text-primary" />
-              <span className="text-2xl font-bold text-primary">{typesWithStock}</span>
+              <Package className="h-4 w-4 text-muted-foreground" />
+              <span className="text-2xl font-semibold tabular-nums">{typesWithStock}</span>
             </div>
             <p className="text-xs text-muted-foreground">Types</p>
           </CardContent>
         </Card>
-        <Card className="bg-success/10 border-success/20">
+        <Card>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <Droplets className="h-4 w-4 text-success" />
-              <span className="text-2xl font-bold text-success">{totalUnits}</span>
+              <Droplets className="h-4 w-4 text-emerald-600" />
+              <span className="text-2xl font-semibold text-emerald-700 tabular-nums">{totalUnits}</span>
             </div>
             <p className="text-xs text-muted-foreground">Units</p>
           </CardContent>
         </Card>
-        <Card className={`${criticalCount > 0 ? "bg-destructive/10 border-destructive/20" : "bg-muted/50"}`}>
+        <Card className={criticalCount > 0 ? "border-red-200" : ""}>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <AlertTriangle className={`h-4 w-4 ${criticalCount > 0 ? "text-destructive" : "text-muted-foreground"}`} />
-              <span className={`text-2xl font-bold ${criticalCount > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+              <AlertTriangle className={`h-4 w-4 ${criticalCount > 0 ? "text-red-600" : "text-muted-foreground"}`} />
+              <span className={`text-2xl font-semibold tabular-nums ${criticalCount > 0 ? "text-red-700" : "text-muted-foreground"}`}>
                 {criticalCount}
               </span>
             </div>

@@ -18,9 +18,9 @@ const ExpiryAlerts = ({ expiringStock }: ExpiryAlertsProps) => {
   if (expiringStock.length === 0) return null;
 
   return (
-    <Card className="bg-amber-500/10 border-amber-500/30">
+    <Card className="border-amber-200">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2 text-amber-600">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2 text-amber-700">
           <AlertTriangle className="h-4 w-4" />
           Expiring Soon
         </CardTitle>
@@ -34,16 +34,16 @@ const ExpiryAlerts = ({ expiringStock }: ExpiryAlertsProps) => {
           return (
             <div
               key={stock.id}
-              className="flex items-center justify-between p-2 rounded-lg bg-background/50"
+              className="flex items-center justify-between p-2 rounded-lg border border-border"
             >
               <div className="flex items-center gap-3">
                 <Badge
                   variant="outline"
-                  className="font-bold bg-amber-500/20 text-amber-700 border-amber-500/30"
+                  className="font-semibold border-border bg-muted text-foreground"
                 >
                   {stock.blood_group}
                 </Badge>
-                <span className="text-sm">
+                <span className="text-sm text-muted-foreground">
                   {stock.units_available} units
                 </span>
               </div>
