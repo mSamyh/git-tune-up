@@ -224,12 +224,12 @@ export const BloodUnitManager = ({ hospitalId }: BloodUnitManagerProps) => {
             {stats.byBloodGroup.map(({ bloodGroup, count }) => (
               <div
                 key={bloodGroup}
-                className={`rounded-xl p-3 text-center border ${
-                  count > 0 ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border/50"
+                className={`rounded-lg p-3 text-center border transition-colors ${
+                  count > 0 ? "border-border bg-card" : "border-border bg-muted/40"
                 }`}
               >
-                <p className="text-sm font-bold">{bloodGroup}</p>
-                <p className={`text-xl font-bold ${count > 0 ? "text-primary" : "text-muted-foreground"}`}>
+                <p className="text-xs font-semibold text-muted-foreground">{bloodGroup}</p>
+                <p className={`text-xl font-semibold tabular-nums ${count > 0 ? "text-foreground" : "text-muted-foreground"}`}>
                   {count}
                 </p>
               </div>
