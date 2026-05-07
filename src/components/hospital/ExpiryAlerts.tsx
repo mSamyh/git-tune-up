@@ -18,9 +18,9 @@ const ExpiryAlerts = ({ expiringStock }: ExpiryAlertsProps) => {
   if (expiringStock.length === 0) return null;
 
   return (
-    <Card className="bg-amber-500/10 border-amber-500/30">
+    <Card className="border-amber-200">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2 text-amber-600">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2 text-amber-700">
           <AlertTriangle className="h-4 w-4" />
           Expiring Soon
         </CardTitle>
