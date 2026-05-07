@@ -92,7 +92,7 @@ export const BloodUnitCard = ({
         <div className="flex items-center gap-3">
           <div
             className={cn(
-              "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm",
+              "w-11 h-11 rounded-lg flex items-center justify-center font-semibold text-sm",
               getBloodGroupBg(unit.blood_group)
             )}
           >
