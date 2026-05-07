@@ -12,39 +12,39 @@
 
 @layer base {
   :root {
-    /* Core palette - Warm off-white foundation */
-    --background: 30 20% 98%;
-    --foreground: 0 0% 12%;
+    /* Core palette - Airy white foundation */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 14%;
 
-    /* Tiered surfaces for layered depth */
+    /* Tiered surfaces - very subtle */
     --surface-1: 0 0% 100%;
-    --surface-2: 30 15% 97%;
-    --surface-3: 30 12% 94%;
+    --surface-2: 0 0% 99%;
+    --surface-3: 0 0% 97%;
 
     /* Card surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 12%;
+    --card-foreground: 0 0% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 12%;
+    --popover-foreground: 0 0% 14%;
 
-    /* Primary - Refined blood red */
-    --primary: 0 72% 50%;
+    /* Primary - Soft blood red accent */
+    --primary: 0 70% 52%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 0 80% 60%;
-    --primary-deep: 354 78% 38%;
+    --primary-glow: 0 70% 60%;
+    --primary-deep: 354 70% 42%;
 
     /* Secondary */
-    --secondary: 30 10% 95%;
-    --secondary-foreground: 0 0% 20%;
+    --secondary: 0 0% 97%;
+    --secondary-foreground: 0 0% 18%;
 
     /* Muted */
-    --muted: 30 10% 94%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 0 0% 97%;
+    --muted-foreground: 0 0% 48%;
 
     /* Accent */
-    --accent: 0 65% 95%;
-    --accent-foreground: 0 72% 45%;
+    --accent: 0 60% 97%;
+    --accent-foreground: 0 70% 45%;
 
     /* Status colors (semantic) */
     --success: 152 62% 40%;
