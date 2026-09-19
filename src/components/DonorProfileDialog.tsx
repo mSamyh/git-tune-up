@@ -287,7 +287,7 @@ export const DonorProfileDialog = ({ donor, isOpen, onClose, topDonors = [], onU
             </div>
 
             {/* Status note bubble */}
-            {status === 'unavailable' && donor.status_note && (
+            {(status === 'unavailable' || status === 'reserved') && donor.status_note && (
               <div className="mt-2 inline-block">
                 <div className="relative bg-muted/70 rounded-2xl px-3 py-1.5 text-xs text-muted-foreground shadow-sm border border-border/30">
                   {donor.status_note}

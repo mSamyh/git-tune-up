@@ -377,6 +377,9 @@ export const DonorTable = ({ bloodGroupFilter = "all", searchTerm = "", atollFil
           
           // Get note content for Instagram Notes bubble
           const getNoteContent = () => {
+            if (donor.availability_status === "reserved" && donor.status_note) {
+              return donor.status_note;
+            }
             if (donor.availability_status === "reserved" && donor.reserved_until) {
               const date = new Date(donor.reserved_until);
               const monthName = date.toLocaleDateString('en-US', { month: 'short' });

@@ -166,6 +166,7 @@ const Profile = () => {
     // Add metadata for reserved status
     if (status === 'reserved' && metadata?.reservedUntil) {
       updateData.reserved_until = metadata.reservedUntil;
+      updateData.status_note = metadata.statusNote || null;
     }
     
     // Add metadata for unavailable status
@@ -186,7 +187,7 @@ const Profile = () => {
         ...prev, 
         availability_status: status,
         reserved_until: status === 'reserved' ? (metadata?.reservedUntil || null) : null,
-        status_note: status === 'unavailable' ? (metadata?.statusNote || null) : null,
+        status_note: status === 'unavailable' || status === 'reserved' ? (metadata?.statusNote || null) : null,
       } : null);
       setAvailabilityStatus(status);
       toast({ title: "Status updated" });
