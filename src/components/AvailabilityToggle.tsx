@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, Clock, Ban, CalendarDays } from "lucide-react";
+import { Check, Clock, Ban, CalendarDays, MessageSquare, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useReferenceData } from "@/contexts/ReferenceDataContext";
 import { LucideIcon } from "lucide-react";
@@ -153,6 +153,7 @@ export const AvailabilityToggle = ({
     }
     return new Date().getFullYear().toString();
   });
+  const [reservedNoteInput, setReservedNoteInput] = useState(statusNote || "");
   
   // Unavailable dialog state
   const [noteInput, setNoteInput] = useState(statusNote || "");
@@ -173,7 +174,7 @@ export const AvailabilityToggle = ({
     : FALLBACK_STATUSES;
 
   const handleClick = (status: string) => {
-    if (status === value) return;
+    if (status === value && status !== "reserved" && status !== "unavailable") return;
     
     if (status === "reserved") {
       // Reset to existing or default values
@@ -182,6 +183,7 @@ export const AvailabilityToggle = ({
         setSelectedMonth((date.getMonth() + 1).toString().padStart(2, "0"));
         setSelectedYear(date.getFullYear().toString());
       }
+      setReservedNoteInput(statusNote || "");
       setShowReservedDialog(true);
       return;
     }
@@ -207,8 +209,19 @@ export const AvailabilityToggle = ({
     const reservedUntilDate = `${selectedYear}-${selectedMonth}-${lastDay.toString().padStart(2, "0")}`;
     
     setAnimatingStatus("reserved");
-    onChange("reserved", { reservedUntil: reservedUntilDate });
+    onChange("reserved", {
+      reservedUntil: reservedUntilDate,
+      statusNote: reservedNoteInput.trim() || undefined,
+    });
     setShowReservedDialog(false);
+  };
+
+  const handleDeleteReservedNote = () => {
+    setReservedNoteInput("");
+    if (value === "reserved" && reservedUntil) {
+      onChange("reserved", { reservedUntil, statusNote: "" });
+      setShowReservedDialog(false);
+    }
   };
   
   const handleSaveUnavailable = () => {
@@ -341,6 +354,25 @@ export const AvailabilityToggle = ({
                 </Select>
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reserved-public-note" className="flex items-center gap-2 text-sm">
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                Public note <span className="font-normal text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                id="reserved-public-note"
+                value={reservedNoteInput}
+                onChange={(event) => setReservedNoteInput(event.target.value.slice(0, MAX_NOTE_LENGTH))}
+                placeholder="e.g. Reserved for a family member"
+                className="h-11"
+                maxLength={MAX_NOTE_LENGTH}
+              />
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Visible to everyone in the donor directory</span>
+                <span>{reservedNoteInput.length}/{MAX_NOTE_LENGTH}</span>
+              </div>
+            </div>
             
             <p className="text-xs text-muted-foreground">
               You'll automatically become available after this month ends (unless you've donated recently).
@@ -348,6 +380,12 @@ export const AvailabilityToggle = ({
           </div>
           
           <DialogFooter>
+            {statusNote && value === "reserved" && (
+              <Button variant="ghost" onClick={handleDeleteReservedNote} className="mr-auto text-destructive hover:text-destructive">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete note
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setShowReservedDialog(false)}>
               Cancel
             </Button>
